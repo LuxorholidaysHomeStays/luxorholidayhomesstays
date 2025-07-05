@@ -1,0 +1,1607 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Playfair:ital,opsz,wght@0,5..1200,300..900;1,5..1200,300..900&display=swap');
+
+@import "tailwindcss";
+
+/* Custom theme colors */
+:root {
+    --color-primary: white;
+    --color-dark: #1A1A1A;
+    --color-secondary: #D4AF37;
+    --color-gold: #BFA181;
+    --color-text: black;
+}
+
+/* Preloader styles */
+#preloader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+}
+
+.preloader-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.preloader-logo {
+    width: 150px;
+    height: auto;
+    animation: pulse 2s infinite;
+}
+
+.loader-line {
+    width: 200px;
+    height: 3px;
+    position: relative;
+    overflow: hidden;
+    background-color: #f5f5f5;
+    margin: 20px auto;
+    border-radius: 20px;
+}
+
+.loader-line:before {
+    content: "";
+    position: absolute;
+    left: -50%;
+    height: 3px;
+    width: 40%;
+    background-color: var(--color-gold);
+    animation: lineAnim 1s linear infinite;
+    border-radius: 20px;
+}
+
+.preloader-content p {
+    font-family: 'Playfair', serif;
+    font-weight: 500;
+    color: var(--color-gold);
+    animation: fadeIn 2s infinite alternate;
+    letter-spacing: 2px;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes lineAnim {
+    0% {
+        left: -40%;
+    }
+    50% {
+        left: 20%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0.6;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.preloader-hide {
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* Remove ALL gaps between navbar and content */
+.navbar + * {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+body {
+    background-color: white;
+    color: black;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Dark theme only for navbar and contact page */
+nav.glass-mirror-nav {
+
+    color: white !important;
+}
+
+/* Light theme for featured destinations and room details */
+.featured-destinations,
+.room-details,
+.rooms-list,
+.villa-details {
+    background-color: white !important;
+    color: black !important;
+}
+
+#root {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Contact page specific styles */
+
+
+/* Gold accent elements */
+.gold-accent {
+    background: linear-gradient(to right, #D4AF37, #BFA181);
+}
+
+.gold-text {
+    background: linear-gradient(to right, #D4AF37, #BFA181);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+/* Custom Scrollbar Styles */
+.scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+    display: none;
+}
+
+@media (min-width: 1024px) {
+    .lg\:custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #D4AF37 transparent;
+    }
+    .lg\:custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .lg\:custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .lg\:custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #D4AF37;
+        border-radius: 20px;
+        border: 2px solid transparent;
+    }
+}
+
+/* Remove any top padding/margin on pages to avoid gap with navbar */
+body {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+#root {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+#root > div {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Remove any space between navbar and content */
+.pt-navbar {
+    padding-top: 0 !important;
+}
+
+@media (min-width: 768px) {
+    .pt-navbar {
+        padding-top: 0 !important;
+    }
+}
+
+/* Ensure no gap between navbar and content */
+.content-under-navbar {
+    margin-top: 0 !important;
+}
+
+@media (min-width: 768px) {
+    .content-under-navbar {
+        margin-top: 0 !important;
+    }
+}
+
+*{
+    font-family: Outfit;
+}
+
+.font-playfair{
+    font-family: Outfit !important;
+}
+/* Add this to your existing CSS file */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.animate-blink {
+  animation: blink 0.8s infinite;
+}
+
+/* Animation keyframes for AllRooms component */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Enhanced animations for VillaDetails component */
+@keyframes fadeInSlow {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInStagger {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInFast {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Enhanced smooth animations for VillaDetails */
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(34, 197, 94, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.6), 0 0 30px rgba(34, 197, 94, 0.4);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Animation classes */
+.animate-fadeIn {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.8s ease-out;
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft 0.6s ease-out;
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease-out;
+  animation-fill-mode: both;
+}
+
+/* Animation classes for VillaDetails */
+.animate-fadeInSlow {
+  animation: fadeInSlow 1s ease-out;
+}
+
+.animate-slideDown {
+  animation: slideDown 0.5s ease-out;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.8s ease-out;
+  animation-delay: 0.2s;
+  animation-fill-mode: both;
+}
+
+.animate-fadeInScale {
+  animation: fadeInScale 0.4s ease-out;
+}
+
+.animate-slideInUp {
+  animation: slideInUp 0.6s ease-out;
+}
+
+.animate-slideInDown {
+  animation: slideInDown 0.3s ease-out;
+}
+
+.animate-fadeInStagger {
+  animation: fadeInStagger 0.8s ease-out;
+}
+
+.animate-fadeInFast {
+  animation: fadeInFast 0.3s ease-out;
+}
+
+.animate-glowPulse {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+.animate-floatUp {
+  animation: floatUp 3s ease-in-out infinite;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.3s ease-out;
+}
+
+/* Enhanced Multi-Step Booking Animations */
+.animate-fadeInUp {
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-slideDown {
+  animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Step transition effects */
+.step-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Timeline progress enhancements */
+.timeline-step {
+  position: relative;
+}
+
+.timeline-step::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  width: 2rem;
+  height: 2px;
+  background: linear-gradient(to right, currentColor, transparent);
+  transform: translateY(-50%);
+  transition: all 0.3s ease;
+}
+
+.timeline-step:last-child::before {
+  display: none;
+}
+
+/* Enhanced button hover effects */
+.booking-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.booking-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+
+.booking-button:hover::before {
+  left: 100%;
+}
+
+/* Guest counter improvements */
+.guest-counter {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: all 0.3s ease;
+}
+
+.guest-counter:hover {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.1);
+}
+
+/* Calendar date enhancements */
+.calendar-date-selected {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
+  transform: scale(1.05);
+}
+
+.calendar-date-range {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  border: 2px solid #22c55e;
+}
+
+/* Enhanced Calendar Date Boxes - Larger for Better Price Display */
+.calendar-date {
+  min-height: 100px !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 8px;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.calendar-date:hover:not(.opacity-30):not(.opacity-50) {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 25px rgba(34, 197, 94, 0.2);
+  border-color: #22c55e !important;
+}
+
+.calendar-date-selected {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+  color: white !important;
+  font-weight: bold;
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+  transform: scale(1.08);
+  border-color: #15803d !important;
+}
+
+.calendar-date-range {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  border-color: #22c55e;
+}
+
+/* Price display improvements */
+.calendar-date .price-badge {
+  background: rgba(34, 197, 94, 0.1);
+  color: #15803d;
+  font-weight: 700;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  min-width: 60px;
+  text-align: center;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.calendar-date-selected .price-badge {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: white !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Responsive calendar improvements */
+@media (max-width: 768px) {
+  .calendar-date {
+    min-height: 85px !important;
+    padding: 8px 4px;
+  }
+  
+  .calendar-date .price-badge {
+    font-size: 0.75rem;
+    padding: 4px 6px;
+    min-width: 50px;
+  }
+}
+
+@media (max-width: 640px) {
+  .calendar-date {
+    min-height: 75px !important;
+    padding: 6px 3px;
+  }
+  
+  .calendar-date .price-badge {
+    font-size: 0.7rem;
+    padding: 3px 4px;
+    min-width: 45px;
+  }
+}
+
+/* Form input enhancements */
+.booking-input {
+  border: 2px solid #e2e8f0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.booking-input:focus {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+  background: #ffffff;
+}
+
+/* Cost breakdown animations */
+.cost-item {
+  transition: all 0.2s ease;
+}
+
+.cost-item:hover {
+  background: rgba(34, 197, 94, 0.05);
+  padding: 0.75rem;
+  margin: 0 -0.75rem;
+  border-radius: 0.5rem;
+}
+
+/* Mobile responsiveness improvements */
+@media (max-width: 640px) {
+  .timeline-step {
+    font-size: 0.875rem;
+  }
+  
+  .booking-button {
+    padding: 0.875rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .calendar-date {
+    min-height: 70px;
+    padding: 0.5rem;
+  }
+  
+  .guest-counter {
+    padding: 0.75rem;
+  }
+}
+
+/* Loading state improvements */
+.booking-loading {
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+  cursor: not-allowed;
+}
+
+.booking-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Validation feedback */
+.input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.input-success {
+  border-color: #22c55e !important;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1) !important;
+}
+
+/* Step completion indicators */
+.step-completed {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+  transform: scale(1.1);
+}
+
+.step-active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  }
+}
+
+/* Custom slider styling */
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: #16a34a;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  background: #15803d;
+  transform: scale(1.1);
+}
+
+.slider::-moz-range-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: #16a34a;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Line clamp utility */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+/* Custom shadows */
+.shadow-3xl {
+  box-shadow: 0 35px 60px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Smooth transitions */
+.transition-smooth {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hover effects */
+.hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Custom scrollbar */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Glassmorphism effect */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Enhanced glass effect for navbar */
+.glass-nav {
+    background: rgba(0, 0, 0, 0.6) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2) !important;
+    box-shadow: 
+        0 4px 30px rgba(0, 0, 0, 0.1),
+        inset 0 0 0 1px rgba(212, 175, 55, 0.1) !important;
+}
+
+/* Enhanced glass mirror effect */
+.glass-mirror-nav {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border-bottom: 1px solid rgba(251, 191, 36, 0.1);
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.2),
+    0 2px 4px -1px rgba(0, 0, 0, 0.1),
+    inset 0 0 0 1px rgba(251, 191, 36, 0.05);
+}
+
+/* Fix profile icon visibility at breakpoints */
+@media (max-width: 1185px) {
+  .desktop-nav {
+    display: none !important;
+  }
+  .desktop-profile {
+    display: none !important;
+  }
+  .mobile-nav-trigger {
+    display: flex !important;
+  }
+}
+
+@media (min-width: 1186px) {
+  .mobile-nav-trigger {
+    display: none !important;
+  }
+  .desktop-profile {
+    display: flex !important;
+  }
+  .desktop-nav {
+    display: flex !important;
+  }
+}
+
+/* Desktop profile visibility */
+@media (min-width: 1024px) {
+    .desktop-profile {
+        display: flex !important;
+    }
+    .mobile-profile {
+        display: none !important;
+    }
+}
+
+/* Mobile profile visibility */
+@media (max-width: 1023.98px) {
+    .desktop-profile {
+        display: none !important;
+    }
+    .mobile-profile {
+        display: flex !important;
+    }
+}
+
+/* Enhanced glass effect for navbar */
+nav.glass-mirror-nav {
+    background: rgba(0, 0, 0, 0.7) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2) !important;
+    box-shadow: 
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06),
+        0 0 0 1px rgba(212, 175, 55, 0.1) !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+}
+
+/* Enhanced Date Range Picker Styles - Fixed Performance Issues */
+.enhanced-date-range .rdrCalendarWrapper {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-family: inherit !important;
+}
+
+.enhanced-date-range .rdrMonth {
+  background: transparent !important;
+  padding: 8px !important;
+}
+
+.enhanced-date-range .rdrMonthName {
+  font-weight: 600 !important;
+  color: #111827 !important;
+  font-size: 16px !important;
+  padding: 10px 0 !important;
+  text-align: center !important;
+  margin: 0 50px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.enhanced-date-range .rdrMonthName {
+    font-size: 14px !important;
+    margin: 0 40px !important;
+  }
+
+.enhanced-date-range .rdrWeekDays {
+  margin-bottom: 8px !important;
+}
+
+.enhanced-date-range .rdrWeekDay {
+  color: #6b7280 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  height: 35px !important;
+  line-height: 35px !important;
+  text-align: center !important;
+}
+
+.enhanced-date-range .rdrDays {
+  gap: 1px !important;
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  grid-template-rows: repeat(6, 1fr) !important;
+  width: 100% !important;
+  min-height: 240px !important;
+  max-height: 240px !important;
+}
+
+.enhanced-date-range .rdrDay {
+  height: 38px !important;
+  width: 100% !important;
+  margin: 0 !important;
+  border-radius: 6px !important;
+  border: 1px solid transparent !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  min-width: 38px !important;
+  min-height: 38px !important;
+  max-width: 38px !important;
+  max-height: 38px !important;
+  aspect-ratio: 1 !important;
+}
+
+.enhanced-date-range .rdrDay:hover:not(.rdrDayPassive) {
+  border-color: #16a34a !important;
+  background: rgba(34, 197, 94, 0.1) !important;
+  transform: scale(1.05) !important;
+}
+
+.enhanced-date-range .rdrDayNumber {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  height: 100% !important;
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.enhanced-date-range .rdrDayNumber span {
+  color: #374151 !important;
+  transition: color 0.2s ease !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.enhanced-date-range .rdrDay:not(.rdrDayPassive) .rdrDayNumber span:after {
+  background: #16a34a !important;
+  border-radius: 8px !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: -1 !important;
+}
+
+.enhanced-date-range .rdrDayToday .rdrDayNumber span {
+  color: #16a34a !important;
+  font-weight: 700 !important;
+}
+
+.enhanced-date-range .rdrDayToday .rdrDayNumber span:after {
+  background: #059669 !important;
+  border-radius: 8px !important;
+}
+
+.enhanced-date-range .rdrDayPassive .rdrDayNumber span {
+  color: #d1d5db !important;
+  cursor: not-allowed !important;
+}
+
+.enhanced-date-range .rdrStartEdge,
+.enhanced-date-range .rdrEndEdge,
+.enhanced-date-range .rdrInRange {
+  background: rgba(34, 197, 94, 0.15) !important;
+  border-color: #16a34a !important;
+}
+
+.enhanced-date-range .rdrStartEdge .rdrDayNumber span,
+.enhanced-date-range .rdrEndEdge .rdrDayNumber span {
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+.enhanced-date-range .rdrInRange .rdrDayNumber span {
+  color: #16a34a !important;
+  font-weight: 500 !important;
+}
+
+.enhanced-date-range .rdrMonthAndYearWrapper {
+  height: 50px !important;
+  padding: 0 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  position: relative !important;
+}
+
+.enhanced-date-range .rdrMonthAndYearWrapper {
+    height: 45px !important;
+    padding: 0 8px !important;
+  }
+
+.enhanced-date-range .rdrNextButton,
+.enhanced-date-range .rdrPrevButton {
+  background: rgba(34, 197, 94, 0.1) !important;
+  border: 1px solid #16a34a !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  position: absolute !important;
+  z-index: 10 !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+
+.enhanced-date-range .rdrPrevButton {
+  left: 8px !important;
+}
+
+.enhanced-date-range .rdrNextButton {
+  right: 8px !important;
+}
+
+.enhanced-date-range .rdrNextButton:hover,
+.enhanced-date-range .rdrPrevButton:hover {
+  background: rgba(34, 197, 94, 0.2) !important;
+  transform: translateY(-50%) scale(1.1) !important;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3) !important;
+}
+
+/* Fix calendar rendering issues and ensure consistent sizing */
+.enhanced-date-range .rdrCalendarWrapper {
+  width: 280px !important;
+  min-width: 280px !important;
+  max-width: 280px !important;
+  will-change: auto !important;
+  transform: translateZ(0) !important;
+}
+
+.enhanced-date-range .rdrMonth {
+  width: 280px !important;
+  min-width: 280px !important;
+  max-width: 280px !important;
+  height: 320px !important;
+  min-height: 320px !important;
+  max-height: 320px !important;
+  will-change: auto !important;
+  transform: translateZ(0) !important;
+}
+
+.enhanced-date-range .rdrDays {
+  will-change: auto !important;
+  transform: translateZ(0) !important;
+}
+
+/* Optimize transitions for better performance */
+.enhanced-date-range * {
+  -webkit-backface-visibility: hidden !important;
+  backface-visibility: hidden !important;
+}
+
+/* Mobile specific calendar improvements */
+@media (max-width: 768px) {
+  .enhanced-date-range .rdrCalendarWrapper {
+    width: 100% !important;
+    min-width: 280px !important;
+    max-width: 340px !important;
+  }
+
+  .enhanced-date-range .rdrMonth {
+    width: 100% !important;
+    min-width: 280px !important;
+    max-width: 340px !important;
+  }
+
+  .enhanced-date-range .rdrDay {
+    height: 35px !important;
+    min-height: 35px !important;
+    min-width: 35px !important;
+    max-width: 35px !important;
+    max-height: 35px !important;
+  }
+
+  .enhanced-date-range .rdrDays {
+    min-height: 210px !important;
+    max-height: 210px !important;
+  }
+
+  .enhanced-date-range .rdrNextButton,
+  .enhanced-date-range .rdrPrevButton {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .enhanced-date-range .rdrPrevButton {
+    left: 6px !important;
+  }
+
+  .enhanced-date-range .rdrNextButton {
+    right: 6px !important;
+  }
+}
+
+/* Very small mobile screens */
+@media (max-width: 480px) {
+  .enhanced-date-range .rdrCalendarWrapper {
+    width: 100% !important;
+    min-width: 260px !important;
+    max-width: 300px !important;
+  }
+
+  .enhanced-date-range .rdrMonth {
+    width: 100% !important;
+    min-width: 260px !important;
+    max-width: 300px !important;
+  }
+
+  .enhanced-date-range .rdrDay {
+    height: 32px !important;
+    min-height: 32px !important;
+    min-width: 32px !important;
+    max-width: 32px !important;
+    max-height: 32px !important;
+  }
+
+  .enhanced-date-range .rdrDays {
+    min-height: 192px !important;
+    max-height: 192px !important;
+  }
+}
+
+/* Guest dropdown slide animation from left with enhanced boom effect */
+@keyframes slideFromLeft {
+  0% {
+    transform: translateX(-100%) scale(0.5);
+    opacity: 0;
+  }
+  60% {
+    transform: translateX(-10%) scale(1.15);
+    opacity: 0.9;
+  }
+  85% {
+    transform: translateX(5%) scale(0.95);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes slideToLeft {
+  0% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-100%) scale(0.5);
+    opacity: 0;
+  }
+}
+
+.guest-dropdown-enter {
+  animation: slideFromLeft 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.guest-dropdown-exit {
+  animation: slideToLeft 0.4s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards;
+}
+
+/* Desktop specific positioning for guest dropdown */
+@media (min-width: 1024px) {
+  .guest-dropdown-enter {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+    animation: fadeInScale 0.3s ease-out forwards;
+  }
+  
+  .guest-dropdown-exit {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+    animation: fadeOutScale 0.2s ease-in forwards;
+  }
+}
+
+/* Additional animations for desktop */
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeOutScale {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+/* Button ripple effect */
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.button-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.button-ripple::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.button-ripple:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .animate-slideInLeft {
+    animation: slideUp 0.6s ease-out;
+  }
+}
+
+/* Custom Calendar Styles */
+.custom-calendar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.custom-calendar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Sticky booking box positioning */
+.sticky-booking-box {
+  position: relative;
+  z-index: 30;
+}
+
+@media (min-width: 1024px) {
+  .sticky-booking-box {
+    position: sticky;
+    top: 5rem;
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .sticky-booking-box::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Custom calendar date hover effects */
+.custom-calendar .calendar-date {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.custom-calendar .calendar-date:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
+}
+
+/* Price badge animations */
+.price-badge {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Enhanced calendar grid responsiveness */
+@media (max-width: 640px) {
+  .custom-calendar {
+    padding: 12px;
+  }
+  
+  .custom-calendar .grid {
+    gap: 2px;
+  }
+}
+
+/* Remove all scrollbars globally within booking sidebar */
+.sticky-booking-box * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sticky-booking-box *::-webkit-scrollbar {
+  display: none;
+}
+
+/* Print Styles */
+@media print {
+  /* Hide navigation elements, footer and other non-essential elements */
+  nav, header, footer, .no-print, button, .whatsapp-button {
+    display: none !important;
+  }
+  
+  /* Hide specifically the footer component */
+  footer, .footer, [data-component="footer"] {
+    display: none !important;
+    height: 0 !important;
+    visibility: hidden !important;
+  }
+  
+  /* Show only the print container */
+  .print-only {
+    display: block !important;
+  }
+  
+  /* Full width for print content */
+  .print-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* Reset background colors for printing */
+  body {
+    background-color: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Add page margin */
+  @page {
+    size: auto;
+    margin: 1cm;
+  }
+  
+  /* Force background colors and images to print in some browsers */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  
+  /* Ensure page breaks don't happen in the middle of certain sections */
+  .page-break-inside-avoid {
+    page-break-inside: avoid !important;
+  }
+  
+  /* Remove paddings added for screen view */
+  .pt-28, .pb-16, .py-20 {
+    padding: 0 !important;
+  }
+  
+  /* Improve contrast for printing */
+  .text-gray-600 {
+    color: #444 !important;
+  }
+  
+  /* Force background color for status badges */
+  .bg-green-100 {
+    background-color: #d1fae5 !important;
+  }
+  
+  .bg-yellow-100 {
+    background-color: #fef3c7 !important;
+  }
+  
+  .bg-red-100 {
+    background-color: #fee2e2 !important;
+  }
+  
+  /* WhatsApp button hide */
+  .fixed.bottom-5.right-5 {
+    display: none !important;
+  }
+  
+  /* When body has print-mode class */
+  body.print-mode footer,
+  body.print-mode .footer,
+  body.print-mode [data-component="footer"],
+  body.print-mode .whatsapp-button,
+  body.print-mode nav {
+    display: none !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    z-index: -1 !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+}
+
+/* Component-specific theme styles */
+.navbar {
+    background-color: var(--color-dark) !important;
+    color: white !important;
+}
+
+.contact-page {
+    background: linear-gradient(to bottom, var(--color-dark) 80%, var(--color-secondary) 20%) !important;
+    color: white !important;
+}
+
+/* Light theme components */
+.featured-destinations,
+.room-details,
+.rooms-list,
+.villa-details,
+.about-page {
+    background-color: white !important;
+    color: var(--color-text) !important;
+}
+
+/* Override dark theme text for light sections */
+.featured-destinations *:not(.gold-text):not(.text-amber-300):not(.text-amber-400),
+.room-details *:not(.gold-text):not(.text-amber-300):not(.text-amber-400),
+.rooms-list *:not(.gold-text):not(.text-amber-300):not(.text-amber-400),
+.villa-details *:not(.gold-text):not(.text-amber-300):not(.text-amber-400) {
+    color: var(--color-text);
+}
+
+/* Custom responsive navigation */
+/* Custom responsive navigation with profile icon fix */
+@media screen and (max-width: 1185px) {
+    .nav-title {
+        font-size: 1rem !important;
+    }
+    
+    /* Hide desktop navigation and desktop profile at this breakpoint */
+    .desktop-nav,
+    .desktop-profile {
+        display: none !important;
+    }
+    
+    /* Show mobile navigation */
+    .mobile-nav-trigger {
+        display: flex !important;
+    }
+}
+
+/* Profile visibility control */
+@media screen and (min-width: 768px) and (max-width: 1185px) {
+    /* Hide duplicate profile in this range */
+    .mobile-profile {
+        display: none !important;
+    }
+    
+    .desktop-profile {
+        display: flex !important;
+    }
+}
+
+@media screen and (max-width: 767px) {
+    .desktop-profile {
+        display: none !important;
+    }
+    
+    .mobile-profile {
+        display: flex !important;
+    }
+}
+
+/* Photo Gallery Modal Positioning */
+.gallery-modal-open .modal-overlay {
+    /* Position below navbar */
+    top: 3rem !important;
+}
+
+@media (min-width: 768px) {
+    .gallery-modal-open .modal-overlay {
+        top: 4rem !important;
+    }
+}
+
+/* Make sure the modal container takes full remaining height */
+.gallery-modal-open .modal-overlay {
+    height: calc(100vh - 3rem) !important;
+}
+
+@media (min-width: 768px) {
+    .gallery-modal-open .modal-overlay {
+        height: calc(100vh - 4rem) !important;
+    }
+}
+
+/* Villa highlight animation when returning from photo gallery */
+@keyframes highlightVilla {
+  0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.7); }
+  70% { box-shadow: 0 0 0 15px rgba(212, 175, 55, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
+}
+
+.highlight-villa {
+  animation: highlightVilla 2s ease-in-out;
+  border: 2px solid #D4AF37 !important;
+  transition: all 0.3s ease-in-out;
+}
+
+

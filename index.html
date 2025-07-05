@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/src/index.css" as="style">
+    <link rel="preload" href="/logo.png" as="image" type="image/png">
+    
+    <!-- Inline Preloader Styles -->
+    <style>
+      #preloader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+      }
+      .preloader-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .preloader-logo {
+        width: 150px;
+        height: auto;
+        animation: pulse 2s infinite;
+      }
+      .loader-line {
+        width: 200px;
+        height: 3px;
+        position: relative;
+        overflow: hidden;
+        background-color: #f5f5f5;
+        margin: 20px auto;
+        border-radius: 20px;
+      }
+      .loader-line:before {
+        content: "";
+        position: absolute;
+        left: -50%;
+        height: 3px;
+        width: 40%;
+        background-color: #BFA181;
+        animation: lineAnim 1s linear infinite;
+        border-radius: 20px;
+      }
+      .preloader-content p {
+        font-family: serif;
+        font-weight: 500;
+        color: #BFA181;
+        animation: fadeIn 2s infinite alternate;
+        letter-spacing: 2px;
+      }
+      @keyframes pulse {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.05); opacity: 0.8; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      @keyframes lineAnim {
+        0% { left: -40%; }
+        50% { left: 20%; }
+        100% { left: 100%; }
+      }
+      @keyframes fadeIn {
+        from { opacity: 0.6; }
+        to { opacity: 1; }
+      }
+      .preloader-hide {
+        opacity: 0;
+        visibility: hidden;
+      }
+      .animate-line {
+        animation: lineAnim 1s linear infinite;
+      }
+    </style>
+    
+    <!-- Immediate preloader initialization -->
+    <script>
+      // Initialize preloader immediately
+      document.addEventListener('DOMContentLoaded', function() {
+        // Force preloader to be visible during the initial load
+        const preloader = document.getElementById('preloader');
+        if (preloader) {
+          preloader.style.display = 'flex';
+          preloader.style.opacity = '1';
+          preloader.style.visibility = 'visible';
+        }
+      });
+    </script>
+    
+    <!-- Primary Meta Tags -->
+    <title>Luxor Holiday Home Stays | Luxury Villas in Chennai & Pondicherry</title>
+    <meta name="title" content="Luxor Holiday Home Stays | Luxury Villas in Chennai & Pondicherry">
+    <meta name="description" content="Experience premium luxury villa stays in Chennai and Pondicherry with Luxor Holiday Home Stays. Book our exclusive villas with private pools, beachfront views and luxury amenities for an unforgettable vacation.">
+    <meta name="keywords" content="luxor, luxor holiday, luxor stay, luxor holiday homestays, luxury villas in chennai, luxury villas in pondicherry, beach villas, private pool villas, holiday homes">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://luxorholiday.com/">
+    <meta property="og:title" content="Luxor Holiday Home Stays | Luxury Villas in Chennai & Pondicherry">
+    <meta property="og:description" content="Experience premium luxury villa stays in Chennai and Pondicherry with Luxor Holiday Home Stays. Book our exclusive villas with private pools, beachfront views and luxury amenities.">
+    <meta property="og:image" content="/AmrithPalace/AP1.jpg">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://luxorholiday.com/">
+    <meta property="twitter:title" content="Luxor Holiday Home Stays | Luxury Villas in Chennai & Pondicherry">
+    <meta property="twitter:description" content="Experience premium luxury villa stays in Chennai and Pondicherry with Luxor Holiday Home Stays. Book our exclusive villas with private pools, beachfront views and luxury amenities.">
+    <meta property="twitter:image" content="/AmrithPalace/AP1.jpg">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://luxorholiday.com/">
+    
+    <!-- Geo Tags -->
+    <meta name="geo.region" content="IN">
+    <meta name="geo.position" content="13.0827;80.2707; 11.9416;79.8083">
+    <meta name="geo.placename" content="Chennai, Pondicherry">
+    
+    <!-- Additional SEO -->
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="English">
+    <meta name="revisit-after" content="7 days">
+    <meta name="author" content="Luxor Holiday Home Stays">
+    
+    <!-- JSON-LD Structured Data for Organization -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Luxor Holiday Home Stays",
+        "url": "https://luxorholiday.com",
+        "logo": "https://luxorholiday.com/logo.png",
+        "sameAs": [
+          "https://www.facebook.com/luxorholidaystays",
+          "https://www.instagram.com/luxorholiday",
+          "https://www.linkedin.com/company/luxorholiday"
+        ],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "telephone": "+91-XXXXXXXXXX",
+          "contactType": "customer service",
+          "availableLanguage": ["English", "Tamil"]
+        }
+      }
+    </script>
+
+    <!-- JSON-LD Structured Data for Local Business -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "LodgingBusiness",
+        "name": "Luxor Holiday Home Stays",
+        "image": "https://luxorholiday.com/AmrithPalace/AP1.jpg",
+        "priceRange": "₹₹₹",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Chennai & Pondicherry",
+          "addressRegion": "Tamil Nadu",
+          "addressCountry": "IN"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": "13.0827",
+          "longitude": "80.2707"
+        },
+        "telephone": "+91-XXXXXXXXXX",
+        "url": "https://luxorholiday.com",
+        "description": "Premium luxury villa stays in Chennai and Pondicherry with private pools, beachfront views, and luxury amenities.",
+        "amenityFeature": [
+          {
+            "@type": "LocationFeatureSpecification",
+            "name": "Private Pool",
+            "value": true
+          },
+          {
+            "@type": "LocationFeatureSpecification",
+            "name": "Beachfront Access",
+            "value": true
+          },
+          {
+            "@type": "LocationFeatureSpecification",
+            "name": "Luxury Amenities",
+            "value": true
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <!-- Preloader -->
+    <div id="preloader">
+      <div class="preloader-content">
+        <img src="/logo.png" alt="Luxor Holiday Home Stays" class="preloader-logo" />
+        <div class="loader-line"></div>
+        <p>Luxury Awaits...</p>
+      </div>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+    
+    <!-- Inline script to start preloader animation immediately -->
+    <script>
+      (function() {
+        // Start the animation immediately
+        const preloaderLine = document.querySelector('.loader-line:before');
+        
+        // Ensure preloader is visible while page loads
+        document.addEventListener('DOMContentLoaded', function() {
+          // Keep preloader visible for at least 1 second for better UX
+          setTimeout(function() {
+            const preloader = document.getElementById('preloader');
+            if (preloader) {
+              preloader.classList.add('preloader-hide');
+              setTimeout(function() {
+                preloader.style.display = 'none';
+              }, 500);
+            }
+          }, 1000);
+        });
+
+        // Fallback - if DOMContentLoaded doesn't fire after 3 seconds
+        setTimeout(function() {
+          const preloader = document.getElementById('preloader');
+          if (preloader && !preloader.classList.contains('preloader-hide')) {
+            preloader.classList.add('preloader-hide');
+            setTimeout(function() {
+              preloader.style.display = 'none';
+            }, 500);
+          }
+        }, 3000);
+      })();
+    </script>
+  </body>
+</html>
