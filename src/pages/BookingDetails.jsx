@@ -282,6 +282,7 @@ const BookingDetails = () => {
       setTimeout(() => {
         setShowCancelModal(false);
         setIsCancelling(false);
+        navigate('/my-bookings', { state: { refresh: true } });
       }, 2000);
       
     } catch (err) {
@@ -301,6 +302,7 @@ const BookingDetails = () => {
       setTimeout(() => {
         setShowCancelModal(false);
         setIsCancelling(false);
+        navigate('/my-bookings', { state: { refresh: true } });
       }, 2000);
     }
   };
@@ -746,6 +748,8 @@ const BookingDetails = () => {
                   onClick={() => {
                     setShowCancelModal(false);
                     setIsCancelling(false);
+                    // After cancellation success, instead of just closing the modal, navigate:
+                    navigate('/my-bookings', { state: { refresh: true } });
                   }}
                   className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded text-xs sm:text-sm hover:bg-gray-200 transition-colors"
                 >
