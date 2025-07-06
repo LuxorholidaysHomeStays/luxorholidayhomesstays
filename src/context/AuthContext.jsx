@@ -1,72 +1,101 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { API_BASE_URL } from '../config/api';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth } from '../utils/firebase';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [authToken, setAuthToken] = useState(localStorage.getItem('authToken') || null);
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [authToken, setAuthToken] = useState(localStorage.getItem('authToken'));
+  const [userData, setUserData] = useState(JSON.parse(localStorage.getItem('userData')));
+  const [loading, setLoading] = useState(false);
 
-  // Load user data on mount
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (!authToken) {
-        setLoading(false);
-        return;
+  const login = async (email, password) => {
+    try {
+      // Admin authentication - handle it locally without backend
+      if (email === 'admin@gmail.com' && password === 'admin321') {
+        const adminData = {
+          email: 'admin@gmail.com',
+          name: 'Admin',
+          isAdmin: true,
+          role: 'admin'
+        };
+        
+        const adminToken = 'admin-token-' + Date.now();
+        
+        // Save to localStorage
+        localStorage.setItem('authToken', adminToken);
+        localStorage.setItem('userData', JSON.stringify(adminData));
+        
+        // Update state
+        setAuthToken(adminToken);
+        setUserData(adminData);
+        return { success: true, isAdmin: true };
       }
 
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setUserData(data.user);
-        } else {
-          // Token might be invalid, clear it
-          localStorage.removeItem('authToken');
-          setAuthToken(null);
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, [authToken]);
-
-  // Logout function
-  const logout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userEmail');
-    setAuthToken(null);
-    setUserData(null);
+      // For regular users, continue with your existing logic
+      // ...existing login code...
+      
+      return { success: false, message: 'Invalid credentials' };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, message: 'Login failed' };
+    }
   };
 
-  // In the login function, add support for redirection
-  const login = async (email, password) => {
-    // ...existing login logic...
+  const handleGoogleSignIn = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      
+      // Check if the email is the admin email
+      if (result.user.email === 'luxorholidayhomestays@gmail.com') {
+        const adminData = {
+          email: result.user.email,
+          name: result.user.displayName,
+          isAdmin: true,
+          role: 'admin',
+          photoURL: result.user.photoURL
+        };
+        
+        const adminToken = result.user.accessToken;
+        
+        // Save to localStorage
+        localStorage.setItem('authToken', adminToken);
+        localStorage.setItem('userData', JSON.stringify(adminData));
+        
+        // Update state
+        setAuthToken(adminToken);
+        setUserData(adminData);
+        return { success: true, isAdmin: true };
+      }
 
-    // After successful login and setting userData/token
+      // For regular users
+      const userData = {
+        email: result.user.email,
+        name: result.user.displayName,
+        isAdmin: false,
+        role: 'user',
+        photoURL: result.user.photoURL
+      };
 
-    // Check if there's a pending booking to return to
-    const pendingBooking = localStorage.getItem('pendingBooking');
-    if (pendingBooking) {
-      // Don't remove it here - we'll let the VillaDetails component handle it
-      // This ensures the data is available when the component mounts
-      console.log("Found pending booking after login");
+      setUserData(userData);
+      setAuthToken(result.user.accessToken);
+      localStorage.setItem('authToken', result.user.accessToken);
+      localStorage.setItem('userData', JSON.stringify(userData));
+
+      return { success: true, isAdmin: false };
+    } catch (error) {
+      console.error('Google Sign-in error:', error);
+      return { success: false, message: 'Google Sign-in failed' };
     }
+  };
 
-    // ...rest of the function...
+  const logout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
+    setAuthToken(null);
+    setUserData(null);
+    auth.signOut();
   };
 
   const value = {
@@ -74,8 +103,11 @@ export const AuthProvider = ({ children }) => {
     setAuthToken,
     userData,
     setUserData,
-    loading,
+    user: userData,
+    login,
+    handleGoogleSignIn,
     logout,
+    loading,
     isAuthenticated: !!authToken,
   };
 
@@ -88,4 +120,32 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+};
+
+// In your SignIn component
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setError('');
+
+  try {
+    const result = await login(email, password);
+    
+    if (result.success) {
+      if (result.isAdmin) {
+        // Admin login successful
+        navigate('/dashboard');
+        return;
+      }
+      
+      // Regular user login success
+      handleSuccessfulLogin();
+    } else {
+      setError(result.message || 'Invalid email or password');
+    }
+  } catch (err) {
+    setError('An error occurred during login');
+  } finally {
+    setLoading(false);
+  }
 };

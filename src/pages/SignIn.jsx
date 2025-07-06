@@ -6,6 +6,7 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 import { signInWithGoogle } from '../utils/firebase';
 import { FcGoogle } from 'react-icons/fc';
+import { useToast } from '../context/ToastContext';
 
 const SignIn = () => {
   // Initialize AOS for animations
@@ -26,11 +27,12 @@ const SignIn = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
-  const { setAuthToken, setUserData } = useAuth();
+  const { setAuthToken, setUserData, handleGoogleSignIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const isRedirectFromBooking = searchParams.get('redirect') === 'booking';
+  const { addToast } = useToast();
   
   // Function to handle post-login navigation
   const handleSuccessfulLogin = () => {
@@ -128,62 +130,26 @@ const SignIn = () => {
   };
   
   // Google sign-in handler
-  const handleGoogleSignIn = async () => {
+  const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
     
     try {
-      // Get user info from Firebase
-      const googleUser = await signInWithGoogle();
+      const result = await handleGoogleSignIn();
       
-      console.log("Google auth successful, sending to backend:", googleUser);
-      
-      // Now send this data to your backend to create/login the user
-      const response = await fetch(`${API_BASE_URL}/api/auth/google-auth`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: googleUser.email,
-          name: googleUser.name,
-          imageUrl: googleUser.image,
-          uid: googleUser.uid
-        })
-      });
-      
-      // Check if response is valid JSON
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        console.error("Non-JSON response received:", await response.text());
-        throw new Error("Server returned an invalid response format");
+      if (result.success) {
+        if (result.isAdmin) {
+          addToast('Admin login successful!', 'success');
+          navigate('/dashboard');
+        } else {
+          addToast('Login successful!', 'success');
+          navigate('/');
+        }
+      } else {
+        addToast(result.message || 'Login failed', 'error');
       }
-      
-      const data = await response.json();
-      console.log("Backend auth response:", data);
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Google authentication failed');
-      }
-      
-      // Store auth token
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('userId', data.user._id);
-      localStorage.setItem('userEmail', data.user.email);
-      
-      // Update auth context
-      setAuthToken(data.token);
-      setUserData(data.user);
-      
-      // Show success message
-      setSuccess("Google sign-in successful!");
-      
-      // Navigate after a short delay
-      setTimeout(() => {
-        handleSuccessfulLogin();
-      }, 1000);
-      
     } catch (error) {
-      console.error("Google sign-in error:", error);
-      setError(error.message);
+      addToast('An error occurred during login', 'error');
     } finally {
       setLoading(false);
     }
@@ -412,7 +378,7 @@ const SignIn = () => {
             
             <div className="mt-6">
               <button
-                onClick={handleGoogleSignIn}
+                onClick={handleGoogleLogin}
                 className="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors items-center"
                 disabled={loading}
               >

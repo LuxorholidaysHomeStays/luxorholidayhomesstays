@@ -29,22 +29,17 @@ import PrivacyPolicy from './components/Footer/PrivacyPolicy';
 import TermsConditions from './components/Footer/TermsConditions';
 import ForgotPassword from './pages/ForgotPassword';
 import VerifyOTP from './pages/VerifyOTP';
-// Auth Guard Component
-const ProtectedRoute = ({ children }) => {
-  const { authToken, loading } = useAuth();
-  
-  if (loading) {
-    return <div className="h-screen flex items-center justify-center">Loading...</div>;
-  }
-  
-  if (!authToken) {
-    return <Navigate to="/sign-in" replace />;
-  }
-  
-  return children;
-};
+import AdminDashboard from './pages/Dashboard';
+import VillaManagement from './pages/VillaManagement';
+import BookingManagement from './pages/BookingManagement';
+import UserManagement from './pages/userManagement';
+import AdminLayout from './components/Adminpanel/Layout';
+import ProtectedRoute from './components/Adminpanel/Protected';
+import "./App.css";
+import { ToastProvider } from './context/ToastContext';
+import Toast from './components/Toast';
 
-const App = () => {
+function App() {
   const { pathname } = useLocation();
   
   useEffect(() => {
@@ -133,51 +128,87 @@ const App = () => {
 
   return (
     <AuthProvider>
-      <SEOHead {...getDefaultSEO()} />
-      <div>
-        {!isOwnerPath && <Navbar />}
-        <div className='min-h-[90vh] pt-[3rem] md:pt-[4rem]'>
-          <Routes>
-            <Route path='/' element={<Home/>} />
-            <Route path='/rooms' element={<AllRooms/>} />
-            <Route path='/rooms/:id' element={<RoomDetails/>} />
-            <Route path='/villa/:id' element={<VillaDetails/>} />
-            <Route path='/villas/:id' element={<VillaDetails/>} /> {/* Support both URL patterns */}
-            <Route path='/search-results' element={<SearchResults/>} />
-            <Route path='/my-bookings' element={
-              <ProtectedRoute>
-                <MyBookings/>
-              </ProtectedRoute>
-            } />
-            <Route path='/booking/:id' element={<BookingDetails/>} />
-            <Route path='/contact' element={<Contact />} />
-            <Route path='/partners' element={<Partners />} />
-            <Route path='/h' element={<HelpCenter />} />
-            <Route path='/si' element={<Safety/>} />
-            <Route path='/g' element={<NavbarGallery/>} />
-            <Route path='/gallery' element={<AboutGallery/>} />
-            <Route path='/about' element={<About />} />
-            <Route path="/sign-in" element={<SignIn />} />
-            <Route path="/verify-otp" element={<OTPVerification />} />
-            <Route path="/photogallery/:villaname" element={<PhotoGallery />} />
-            <Route path="/reviews" element={<GuestReviews />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/terms" element={<TermsConditions />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} /> {/* New route for forgot password */}
-            <Route path="/verify-otp" element={<VerifyOTP />} /> {/* New route for OTP verification */}
-          </Routes>
-        </div>
-        <Footer />
+      <ToastProvider>
+        <SEOHead {...getDefaultSEO()} />
+        <div>
+          {!isOwnerPath && <Navbar />}
+          <div className='min-h-[90vh] pt-[3rem] md:pt-[4rem]'>
+            <Routes>
+              <Route path='/' element={<Home/>} />
+              <Route path='/rooms' element={<AllRooms/>} />
+              <Route path='/rooms/:id' element={<RoomDetails/>} />
+              <Route path='/villa/:id' element={<VillaDetails/>} />
+              <Route path='/villas/:id' element={<VillaDetails/>} /> {/* Support both URL patterns */}
+              <Route path='/search-results' element={<SearchResults/>} />
+              <Route path='/my-bookings' element={
+                <ProtectedRoute>
+                  <MyBookings/>
+                </ProtectedRoute>
+              } />
+              <Route path='/booking/:id' element={<BookingDetails/>} />
+              <Route path='/contact' element={<Contact />} />
+              <Route path='/partners' element={<Partners />} />
+              <Route path='/h' element={<HelpCenter />} />
+              <Route path='/si' element={<Safety/>} />
+              <Route path='/g' element={<NavbarGallery/>} />
+              <Route path='/gallery' element={<AboutGallery/>} />
+              <Route path='/about' element={<About />} />
+              <Route path="/sign-in" element={<SignIn />} />
+              <Route path="/verify-otp" element={<OTPVerification />} />
+              <Route path="/photogallery/:villaname" element={<PhotoGallery />} />
+              <Route path="/reviews" element={<GuestReviews />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsConditions />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} /> {/* New route for forgot password */}
+              <Route path="/verify-otp" element={<VerifyOTP />} /> {/* New route for OTP verification */}
 
-        <a
-          href="https://wa.me/7904040739?text=Hi%2C%20I%20am%20interested%20in%20booking%20a%20villas."
-          target="_blank"
-          rel="noopener noreferrer"
-          className="fixed bottom-5 right-5 bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition duration-300 z-50 text-2xl whatsapp-button"
-        >
-          <FaWhatsapp />
-        </a>
-      </div>
+              {/* Admin routes */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <AdminDashboard />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/villas" element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <VillaManagement />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/bookings" element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <BookingManagement />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/users" element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <UserManagement />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+
+              {/* Catch all route */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </div>
+          <Footer />
+
+          <a
+            href="https://wa.me/7904040739?text=Hi%2C%20I%20am%20interested%20in%20booking%20a%20villas."
+            target="_blank"
+            rel="noopener noreferrer"
+            className="fixed bottom-5 right-5 bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition duration-300 z-50 text-2xl whatsapp-button"
+          >
+            <FaWhatsapp />
+          </a>
+        </div>
+        <Toast />
+      </ToastProvider>
     </AuthProvider>
   )
 }
