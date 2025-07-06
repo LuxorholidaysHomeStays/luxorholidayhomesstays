@@ -1,30 +1,76 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth } from '../utils/firebase';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { auth } from "../utils/firebase";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [authToken, setAuthToken] = useState(localStorage.getItem('authToken'));
-  const [userData, setUserData] = useState(JSON.parse(localStorage.getItem('userData')));
-  const [loading, setLoading] = useState(false);
+  const [authToken, setAuthToken] = useState(localStorage.getItem("authToken"));
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Add this state
 
+  // This effect runs once on component mount and when auth token changes
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        // Check if we have a token
+        const token = localStorage.getItem("authToken");
+        const userDataStr = localStorage.getItem("userData");
+        
+        let isValid = false;
+        let parsedUserData = null;
+        
+        if (token && token !== "null" && token !== "undefined") {
+          // Try to parse user data
+          if (userDataStr) {
+            try {
+              parsedUserData = JSON.parse(userDataStr);
+              setUserData(parsedUserData);
+            } catch (err) {
+              console.error("Error parsing user data:", err);
+            }
+          }
+          
+          // If we have a token and either user data or userId, consider auth valid
+          isValid = !!token && (!!parsedUserData || localStorage.getItem("userId"));
+        }
+        
+        // Update authentication state
+        setIsAuthenticated(isValid);
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    initAuth();
+  }, [authToken]); // Only depend on authToken
+
+  // Define checkAuthStatus as a function that returns the current state
+  // but DOESN'T update state (to avoid infinite loops)
+  const checkAuthStatus = () => {
+    return isAuthenticated;
+  };
+  
   const login = async (email, password) => {
     try {
       // Admin authentication - handle it locally without backend
-      if (email === 'admin@gmail.com' && password === 'admin321') {
+      if (email === "admin@gmail.com" && password === "admin321") {
         const adminData = {
-          email: 'admin@gmail.com',
-          name: 'Admin',
+          email: "admin@gmail.com",
+          name: "Admin",
           isAdmin: true,
-          role: 'admin'
+          role: "admin"
         };
         
-        const adminToken = 'admin-token-' + Date.now();
+        const adminToken = "admin-token-" + Date.now();
         
         // Save to localStorage
-        localStorage.setItem('authToken', adminToken);
-        localStorage.setItem('userData', JSON.stringify(adminData));
+        localStorage.setItem("authToken", adminToken);
+        localStorage.setItem("userData", JSON.stringify(adminData));
         
         // Update state
         setAuthToken(adminToken);
@@ -35,89 +81,117 @@ export const AuthProvider = ({ children }) => {
       // For regular users, continue with your existing logic
       // ...existing login code...
       
-      return { success: false, message: 'Invalid credentials' };
+      return { success: false, message: "Invalid credentials" };
     } catch (error) {
-      console.error('Login error:', error);
-      return { success: false, message: 'Login failed' };
+      console.error("Login error:", error);
+      return { success: false, message: "Login failed" };
     }
   };
 
+  // Update the Google sign-in handler
   const handleGoogleSignIn = async () => {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       
       // Check if the email is the admin email
-      if (result.user.email === 'luxorholidayhomestays@gmail.com') {
+      // Using exact match for admin email
+      if (result.user.email === "luxorholidayhomestays@gmail.com") {
+        console.log("Admin user detected:", result.user.email);
+        
         const adminData = {
           email: result.user.email,
           name: result.user.displayName,
           isAdmin: true,
-          role: 'admin',
+          role: "admin",
           photoURL: result.user.photoURL
         };
         
         const adminToken = result.user.accessToken;
         
         // Save to localStorage
-        localStorage.setItem('authToken', adminToken);
-        localStorage.setItem('userData', JSON.stringify(adminData));
+        localStorage.setItem("authToken", adminToken);
+        localStorage.setItem("userData", JSON.stringify(adminData));
+        localStorage.setItem("userId", result.user.uid);
+        localStorage.setItem("userEmail", result.user.email);
         
         // Update state
         setAuthToken(adminToken);
         setUserData(adminData);
+        
         return { success: true, isAdmin: true };
       }
-
-      // For regular users
+      
+      // For regular users, continue with the normal flow
       const userData = {
         email: result.user.email,
         name: result.user.displayName,
         isAdmin: false,
-        role: 'user',
+        role: "user",
         photoURL: result.user.photoURL
       };
 
       setUserData(userData);
       setAuthToken(result.user.accessToken);
-      localStorage.setItem('authToken', result.user.accessToken);
-      localStorage.setItem('userData', JSON.stringify(userData));
+      localStorage.setItem("authToken", result.user.accessToken);
+      localStorage.setItem("userData", JSON.stringify(userData));
 
       return { success: true, isAdmin: false };
     } catch (error) {
-      console.error('Google Sign-in error:', error);
-      return { success: false, message: 'Google Sign-in failed' };
+      console.error("Google sign-in error:", error);
+      return { success: false, message: error.message };
     }
   };
 
   const logout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userData');
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("userData");
     setAuthToken(null);
     setUserData(null);
     auth.signOut();
   };
 
+  // When setting auth token, also update localStorage
+  const updateAuthToken = (token) => {
+    localStorage.setItem("authToken", token);
+    setAuthToken(token);
+  };
+  
+  // When updating user data, also update localStorage
+  const updateUserData = (data) => {
+    if (data) {
+      localStorage.setItem("userData", JSON.stringify(data));
+    } else {
+      localStorage.removeItem("userData");
+    }
+    setUserData(data);
+  };
+  
+  // Now provide the value object with our state and functions
   const value = {
     authToken,
-    setAuthToken,
+    setAuthToken: updateAuthToken, // Use our wrapped function
     userData,
-    setUserData,
+    setUserData: updateUserData, // Use our wrapped function
     user: userData,
-    login,
     handleGoogleSignIn,
     logout,
     loading,
-    isAuthenticated: !!authToken,
+    isAuthenticated, // Just use the state
+    checkAuthStatus // Provide the function for compatibility
   };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -126,7 +200,7 @@ export const useAuth = () => {
 const handleSubmit = async (e) => {
   e.preventDefault();
   setLoading(true);
-  setError('');
+  setError("");
 
   try {
     const result = await login(email, password);
@@ -134,17 +208,17 @@ const handleSubmit = async (e) => {
     if (result.success) {
       if (result.isAdmin) {
         // Admin login successful
-        navigate('/dashboard');
+        navigate("/dashboard");
         return;
       }
       
       // Regular user login success
       handleSuccessfulLogin();
     } else {
-      setError(result.message || 'Invalid email or password');
+      setError(result.message || "Invalid email or password");
     }
   } catch (err) {
-    setError('An error occurred during login');
+    setError("An error occurred during login");
   } finally {
     setLoading(false);
   }

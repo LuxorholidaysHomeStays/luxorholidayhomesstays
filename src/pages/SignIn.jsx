@@ -36,7 +36,22 @@ const SignIn = () => {
   
   // Function to handle post-login navigation
   const handleSuccessfulLogin = () => {
-    // Check if there's a pending booking
+    // First check for auth redirect URL
+    const redirectUrl = localStorage.getItem("authRedirectUrl");
+    if (redirectUrl) {
+      localStorage.removeItem("authRedirectUrl");
+      navigate(redirectUrl);
+      return;
+    }
+    
+    // Then check for location state redirect
+    const fromLocation = location.state?.from;
+    if (fromLocation) {
+      navigate(fromLocation);
+      return;
+    }
+    
+    // Then check for pending booking redirect
     const pendingBooking = localStorage.getItem('pendingBooking');
     
     if (pendingBooking && isRedirectFromBooking) {
@@ -136,19 +151,28 @@ const SignIn = () => {
     
     try {
       const result = await handleGoogleSignIn();
+      console.log("Google sign-in result:", result); // Debug log
       
       if (result.success) {
+        // Add a success toast message
+        addToast(result.isAdmin ? 'Admin login successful!' : 'Login successful!', 'success');
+        
+        // Special handling for admin users
         if (result.isAdmin) {
-          addToast('Admin login successful!', 'success');
-          navigate('/dashboard');
+          console.log("Admin detected, navigating to admin dashboard");
+          // Use /owner instead of /dashboard (adjust this to match your actual admin route)
+          setTimeout(() => {
+            navigate('/owner');
+          }, 500);
         } else {
-          addToast('Login successful!', 'success');
-          navigate('/');
+          // Regular user flow
+          handleSuccessfulLogin();
         }
       } else {
         addToast(result.message || 'Login failed', 'error');
       }
     } catch (error) {
+      console.error("Google sign-in error:", error);
       addToast('An error occurred during login', 'error');
     } finally {
       setLoading(false);
@@ -163,9 +187,9 @@ const SignIn = () => {
   };
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-emerald-50 px-4 py-20">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-yellow-50 px-4 py-20">
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-10 left-10 w-72 h-72 bg-emerald-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-float"></div>
+        <div className="absolute top-10 left-10 w-72 h-72 bg-yellow-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-float"></div>
         <div className="absolute top-40 right-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-float" style={{animationDelay: '2s'}}></div>
         <div className="absolute -bottom-8 left-40 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-float" style={{animationDelay: '4s'}}></div>
       </div>
@@ -182,7 +206,7 @@ const SignIn = () => {
         <div className="bg-white w-full md:w-1/2 p-8 lg:p-12" data-aos="fade-right">
           <div className="mb-8">
             <Link to="/" className="flex items-center">
-              <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               <span className="ml-2 text-gray-600 hover:text-gray-800">Back to Home</span>
@@ -228,7 +252,7 @@ const SignIn = () => {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300"
+                    className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
                     placeholder="John Smith"
                     required={!isLogin}
                   />
@@ -251,7 +275,7 @@ const SignIn = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300"
+                  className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
                   placeholder="example@email.com"
                   required
                 />
@@ -273,7 +297,7 @@ const SignIn = () => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300"
+                  className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
                   placeholder="••••••••"
                   required
                 />
@@ -296,7 +320,7 @@ const SignIn = () => {
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300"
+                    className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
                     placeholder="••••••••"
                     required={!isLogin}
                   />
@@ -311,14 +335,14 @@ const SignIn = () => {
                     id="remember-me"
                     name="remember-me"
                     type="checkbox"
-                    className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
                   />
                   <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
                     Remember me
                   </label>
                 </div>
                 <div className="text-sm">
-                  <Link to="/forgot-password" className="font-medium text-emerald-600 hover:text-emerald-500 transition-colors">
+                  <Link to="/forgot-password" className="font-medium text-yellow-600 hover:text-yellow-500 transition-colors">
                     Forgot password?
                   </Link>
                 </div>
@@ -331,7 +355,7 @@ const SignIn = () => {
                 className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-all duration-300 ${
                   loading 
                   ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 shadow-lg hover:shadow-xl'
+                  : 'bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 shadow-lg hover:shadow-xl'
                 }`}
                 disabled={loading}
               >
@@ -356,7 +380,7 @@ const SignIn = () => {
               <button
                 type="button"
                 onClick={toggleAuthMode}
-                className="ml-1 font-medium text-emerald-600 hover:text-emerald-500 transition-colors"
+                className="ml-1 font-medium text-yellow-600 hover:text-yellow-500 transition-colors"
               >
                 {isLogin ? 'Sign Up' : 'Sign In'}
               </button>

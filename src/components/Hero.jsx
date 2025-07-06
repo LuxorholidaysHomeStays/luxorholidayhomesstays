@@ -274,7 +274,8 @@ const BookingFormSection = ({
               <button
                 type="button"
                 onClick={() => setShowLocationDropdown(!showLocationDropdown)}
-                className="w-full p-2 bg-black/40 text-white border border-[#D4AF37]/30 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent flex justify-between items-center hero-gold-focus"
+                className="w-full p-2 bg-black/40 text-white border border-[#D4AF37]/30 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent flex justify-between items-center hero-gold-focus touch-manipulation"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
                 <span>{searchParams.destination || "Select location"}</span>
                 <FiChevronDown className={`transition-transform ${showLocationDropdown ? "rotate-180" : ""}`} />
@@ -282,15 +283,31 @@ const BookingFormSection = ({
               
               {showLocationDropdown && (
                 <div
-                  className="absolute z-20 mt-1 w-full rounded-md bg-gray-900 shadow-lg border border-[#D4AF37]/30 overflow-hidden hero-location-option"
+                  className="absolute z-30 mt-1 w-full rounded-md bg-gray-900 shadow-lg border border-[#D4AF37]/30 overflow-hidden hero-location-option"
+                  style={{ 
+                    WebkitTapHighlightColor: 'transparent',
+                    touchAction: 'manipulation'
+                  }}
                 >
                   <div className="max-h-60 overflow-auto py-1">
                     {locations.map((location) => (
                       <button
                         key={location}
                         type="button"
-                        onClick={() => handleLocationSelect(location)}
-                        className={`w-full px-4 py-2 text-left hover:bg-[#D4AF37]/20 transition-colors ${searchParams.destination === location ? 'bg-[#D4AF37]/30 text-[#D4AF37]' : 'text-gray-300'}`}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          handleLocationSelect(location)
+                        }}
+                        onTouchStart={(e) => {
+                          e.preventDefault()
+                          handleLocationSelect(location)
+                        }}
+                        className={`w-full px-4 py-3 text-left hover:bg-[#D4AF37]/20 transition-colors touch-manipulation ${searchParams.destination === location ? 'bg-[#D4AF37]/30 text-[#D4AF37]' : 'text-gray-300'}`}
+                        style={{ 
+                          WebkitTapHighlightColor: 'transparent',
+                          minHeight: '44px' // Better touch target size for mobile
+                        }}
                       >
                         {location}
                       </button>
@@ -442,8 +459,9 @@ const Hero = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [showTableReservation, setShowTableReservation] = useState(false)
-  const [videoLoaded, setVideoLoaded] = useState(false)
+  const [videoLoaded, setVideoLoaded] = useState(true) // Set to true to skip video loading
   const [showLocationDropdown, setShowLocationDropdown] = useState(false)
+  const [loadingTimeout, setLoadingTimeout] = useState(false)
 
   // Add local state for guests
   const [adults, setAdults] = useState(1)
@@ -539,7 +557,7 @@ const Hero = () => {
         searchParams.destination.slice(1).toLowerCase()
 
       navigate(
-        `/search-results?location=${formattedDestination}&checkIn=${searchParams.checkIn}&checkOut=${searchParams.checkOut}&adults=${searchParams.adults}&children=${searchParams.children}`,
+        `/search-results?location=${formattedDestination}&checkIn=${searchParams.checkIn}&checkOut=${searchParams.checkOut}&adults=${searchParams.adults}&children=${searchParams.children}`
       )
     } catch (err) {
       console.error("Search error:", err)
@@ -552,11 +570,26 @@ const Hero = () => {
   // Handle video loaded event
   const handleVideoLoaded = () => {
     setVideoLoaded(true)
+    setLoadingTimeout(false)
+    // Hide the HTML preloader when video is ready
+    if (window.hideAppPreloader) {
+      window.hideAppPreloader()
+    }
   }
 
-  // Handle mobile devices better
+  // Handle mobile devices and call preloader hide
   useEffect(() => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    
+    // Set a timeout to hide loading if video takes too long
+    const loadingTimer = setTimeout(() => {
+      setLoadingTimeout(true)
+      setVideoLoaded(true)
+      // Force hide preloader even if video not loaded
+      if (window.hideAppPreloader) {
+        window.hideAppPreloader()
+      }
+    }, 2000) // 2 second timeout
     
     if (videoRef.current) {
       if (isMobile) {
@@ -564,10 +597,24 @@ const Hero = () => {
         videoRef.current.setAttribute('playsinline', '')
         videoRef.current.setAttribute('muted', '')
         videoRef.current.setAttribute('loop', '')
-        videoRef.current.play().catch(err => console.log('Auto-play prevented:', err))
-        setVideoLoaded(true)
+        videoRef.current.play().catch(err => {
+          console.log('Auto-play prevented:', err)
+          setVideoLoaded(true)
+          if (window.hideAppPreloader) {
+            window.hideAppPreloader()
+          }
+        })
       }
     }
+
+    // Always hide preloader after component mounts
+    setTimeout(() => {
+      if (window.hideAppPreloader) {
+        window.hideAppPreloader()
+      }
+    }, 1000)
+
+    return () => clearTimeout(loadingTimer)
   }, [])
 
   // Amenities for the left side
@@ -652,11 +699,28 @@ const Hero = () => {
       }
     }
     
-    /* Location dropdown options */
+    /* Location dropdown options - Enhanced for mobile */
     .hero-location-option {
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
       background-color: #111 !important;
+      z-index: 999999 !important;
+    }
+    
+    .hero-location-option button {
+      -webkit-tap-highlight-color: transparent !important;
+      tap-highlight-color: transparent !important;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    
+    /* Better mobile touch targets */
+    @media (max-width: 768px) {
+      .hero-location-option button {
+        min-height: 48px;
+        font-size: 16px; /* Prevents zoom on iOS */
+      }
     }
     
     /* Hero container - ensure it doesn't affect navbar */
@@ -682,16 +746,16 @@ const Hero = () => {
       padding-bottom: 8px !important;
     }
     
-    .react-datepicker__day-name, .react-datepicker__day, .react-datepicker__time-name {
+    .react-datepicker_day-name, .react-datepickerday, .react-datepicker_time-name {
       color: #fff !important;
     }
     
-    .react-datepicker__day:hover, .react-datepicker__month-text:hover, 
-    .react-datepicker__quarter-text:hover, .react-datepicker__year-text:hover {
+    .react-datepicker_day:hover, .react-datepicker_month-text:hover, 
+    .react-datepicker_quarter-text:hover, .react-datepicker_year-text:hover {
       background-color: rgba(212, 175, 55, 0.2) !important;
     }
     
-    .react-datepicker__day--selected, .react-datepicker__day--in-selecting-range, .react-datepicker__day--in-range {
+    .react-datepicker_day--selected, .react-datepickerday--in-selecting-range, .react-datepicker_day--in-range {
       background-color: #D4AF37 !important;
       color: #000 !important;
     }
@@ -726,14 +790,12 @@ const Hero = () => {
       {/* Video Background */}
       <motion.div 
         className="absolute inset-0 z-0"
-        initial={{ scale: 1.2, opacity: 0 }}
-        animate={{ scale: 1, opacity: videoLoaded ? 1 : 0 }}
-        transition={{ duration: 1.8, ease: "easeOut" }}
+        initial={{ scale: 1.1, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 1.2, ease: "easeOut" }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/40 z-10" />
-        <motion.div
-          className="w-full h-full"
-        >
+        <motion.div className="w-full h-full">
           <video
             ref={videoRef}
             autoPlay
@@ -742,6 +804,8 @@ const Hero = () => {
             playsInline
             className="w-full h-full object-cover"
             onLoadedData={handleVideoLoaded}
+            onCanPlay={handleVideoLoaded}
+            onLoadedMetadata={handleVideoLoaded}
             poster="/placeholder-luxury-villa.jpg"
           >
             <source src={backgroundVideo} type="video/mp4" />
@@ -750,41 +814,9 @@ const Hero = () => {
         </motion.div>
       </motion.div>
 
-      {/* Loading overlay that fades out when video is ready */}
-      {!videoLoaded && (
-        <motion.div
-          className="absolute inset-0 z-50 flex flex-col items-center justify-center"
-          initial={{ opacity: 1 }}
-          animate={{ opacity: videoLoaded ? 0 : 1 }}
-          transition={{ duration: 1 }}
-        >
-          <motion.div 
-            className="text-[#D4AF37] text-xl mb-6 font-light tracking-wider"
-            animate={{ 
-              opacity: [0.5, 1, 0.5],
-              scale: [0.98, 1, 0.98]
-            }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          >
-            Loading Luxury Experience...
-          </motion.div>
-          
-          <motion.div
-            className="w-24 h-1 bg-[#D4AF37]/30 rounded-full overflow-hidden"
-          >
-            <motion.div
-              className="h-full bg-gradient-to-r from-[#D4AF37] to-[#BFA181]"
-              initial={{ width: "0%" }}
-              animate={{ width: "100%" }}
-              transition={{ duration: 2, repeat: Infinity }}
-            />
-          </motion.div>
-        </motion.div>
-      )}
-
       {/* Hero Content */}
       <div className="relative z-10 flex items-center h-full w-full">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 pt-20 sm:pt-24 lg:pt-12">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-8 lg:gap-16">
             {/* Left side - Text Content */}
             <motion.div

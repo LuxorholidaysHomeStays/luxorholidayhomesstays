@@ -33,11 +33,13 @@ import AdminDashboard from './pages/Dashboard';
 import VillaManagement from './pages/VillaManagement';
 import BookingManagement from './pages/BookingManagement';
 import UserManagement from './pages/userManagement';
-import AdminLayout from './components/Adminpanel/Layout';
+import Layout from './components/Adminpanel/Layout';
 import ProtectedRoute from './components/Adminpanel/Protected';
 import "./App.css";
 import { ToastProvider } from './context/ToastContext';
 import Toast from './components/Toast';
+import AuthGuard from './components/AuthGuard';
+import Profile from './pages/Profile';
 
 function App() {
   const { pathname } = useLocation();
@@ -134,22 +136,18 @@ function App() {
           {!isOwnerPath && <Navbar />}
           <div className='min-h-[90vh] pt-[3rem] md:pt-[4rem]'>
             <Routes>
+              {/* Public routes */}
               <Route path='/' element={<Home/>} />
               <Route path='/rooms' element={<AllRooms/>} />
               <Route path='/rooms/:id' element={<RoomDetails/>} />
               <Route path='/villa/:id' element={<VillaDetails/>} />
               <Route path='/villas/:id' element={<VillaDetails/>} /> {/* Support both URL patterns */}
               <Route path='/search-results' element={<SearchResults/>} />
-              <Route path='/my-bookings' element={
-                <ProtectedRoute>
-                  <MyBookings/>
-                </ProtectedRoute>
-              } />
-              <Route path='/booking/:id' element={<BookingDetails/>} />
               <Route path='/contact' element={<Contact />} />
               <Route path='/partners' element={<Partners />} />
               <Route path='/h' element={<HelpCenter />} />
               <Route path='/si' element={<Safety/>} />
+                   <Route path='/profile' element={<Profile/>} />
               <Route path='/g' element={<NavbarGallery/>} />
               <Route path='/gallery' element={<AboutGallery/>} />
               <Route path='/about' element={<About />} />
@@ -162,33 +160,54 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} /> {/* New route for forgot password */}
               <Route path="/verify-otp" element={<VerifyOTP />} /> {/* New route for OTP verification */}
 
-              {/* Admin routes */}
+              {/* User protected routes */}
+              <Route path="/my-bookings" element={
+                <AuthGuard>
+                  <MyBookings />
+                </AuthGuard>
+              } />
+              <Route path="/booking/:id" element={
+                <AuthGuard>
+                  <BookingDetails />
+                </AuthGuard>
+              } />
+              
+              {/* Admin protected routes */}
               <Route path="/dashboard" element={
+  <ProtectedRoute>
+    <Layout>
+      <AdminDashboard />
+    </Layout>
+  </ProtectedRoute>
+} />
+
+<Route path="/bookings" element={
+  <ProtectedRoute>
+    <Layout>
+      <BookingManagement />
+    </Layout>
+  </ProtectedRoute>
+} />
+
+<Route path="/villas" element={
+  <ProtectedRoute>
+    <Layout>
+      <VillaManagement />
+    </Layout>
+  </ProtectedRoute>
+} />
+
+<Route path="/users" element={
+  <ProtectedRoute>
+    <Layout>
+      <UserManagement />
+    </Layout>
+  </ProtectedRoute>
+} />
+              {/* If you still want to support /Dashboard directly */}
+              <Route path="/Dashboard" element={
                 <ProtectedRoute>
-                  <AdminLayout>
-                    <AdminDashboard />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/villas" element={
-                <ProtectedRoute>
-                  <AdminLayout>
-                    <VillaManagement />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/bookings" element={
-                <ProtectedRoute>
-                  <AdminLayout>
-                    <BookingManagement />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/users" element={
-                <ProtectedRoute>
-                  <AdminLayout>
-                    <UserManagement />
-                  </AdminLayout>
+                  <Navigate to="/owner/dashboard" replace />
                 </ProtectedRoute>
               } />
 

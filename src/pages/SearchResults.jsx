@@ -79,11 +79,11 @@ const itemVariants = {
 
 // Random amenities for each villa to enhance UI
 const amenities = [
-  { icon: <FaSwimmingPool className="text-blue-400" />, label: "Private Pool" },
-  { icon: <FaWifi className="text-gray-500" />, label: "Free WiFi" },
+  { icon: <FaSwimmingPool className="text-blue-500" />, label: "Private Pool" },
+  { icon: <FaWifi className="text-yellow-600" />, label: "Free WiFi" },
   { icon: <MdOutlineBeachAccess className="text-yellow-600" />, label: "Beach Access" },
-  { icon: <MdHotTub className="text-cyan-400" />, label: "Hot Tub" },
-  { icon: <LuChefHat className="text-amber-700" />, label: "Chef Service" },
+  { icon: <MdHotTub className="text-cyan-500" />, label: "Hot Tub" },
+  { icon: <LuChefHat className="text-yellow-700" />, label: "Chef Service" },
 ]
 
 const getRandomAmenities = () => {
@@ -290,7 +290,7 @@ const SearchResults = () => {
   return (
     <div className="pt-16 sm:pt-20 min-h-screen bg-white">
       {/* Hero Banner */}
-      <div className="bg-gradient-to-r from-amber-50 via-amber-100/50 to-amber-50 py-8 sm:py-10 md:py-12 border-b border-amber-100">
+      <div className=" py-8 sm:py-10 md:py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <motion.div 
             initial={{ opacity: 0, y: -20 }}
@@ -298,15 +298,15 @@ const SearchResults = () => {
             transition={{ duration: 0.5 }}
           >
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-light mb-4 sm:mb-6 text-gray-900">
-              Luxury Villas in <span className="font-semibold">{destination || "All Locations"}</span>
+              Luxury Villas in <span className="font-semibold text-yellow-600">{destination || "All Locations"}</span>
             </h1>              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-gray-600">
               <div className="flex items-center text-sm sm:text-base">
-                <FaRegCalendar className="mr-2 text-amber-500" />
+                <FaRegCalendar className="mr-2 text-yellow-600" />
                 <span>
                   {checkIn && checkOut ? (
                     <>
                       {formatDate(checkIn)} — {formatDate(checkOut)}
-                      <span className="ml-2 bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full text-xs sm:text-sm font-medium">
+                      <span className="ml-2 bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full text-xs sm:text-sm font-medium">
                         {nights} Night{nights !== 1 ? "s" : ""}
                       </span>
                     </>
@@ -335,8 +335,8 @@ const SearchResults = () => {
         {loading ? (
           <div className="flex flex-col justify-center items-center py-20 sm:py-32">
             <div className="relative">
-              <div className="animate-spin rounded-full h-16 w-16 sm:h-20 sm:w-20 border-4 border-amber-100"></div>
-              <div className="absolute top-0 left-0 h-16 w-16 sm:h-20 sm:w-20 border-t-4 border-amber-500 rounded-full animate-spin"></div>
+              <div className="animate-spin rounded-full h-16 w-16 sm:h-20 sm:w-20 border-4 border-yellow-100"></div>
+              <div className="absolute top-0 left-0 h-16 w-16 sm:h-20 sm:w-20 border-t-4 border-yellow-600 rounded-full animate-spin"></div>
             </div>
             <p className="mt-6 text-gray-600 font-light text-base sm:text-lg">Discovering your perfect villa...</p>
           </div>
@@ -359,15 +359,15 @@ const SearchResults = () => {
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center py-24 bg-white rounded-xl shadow-sm border border-amber-100"
+            className="text-center py-24 bg-white rounded-xl shadow-sm border border-yellow-100"
           >
-            <h2 className="text-3xl font-serif font-light mb-4 text-amber-900">No Villas Available</h2>
+            <h2 className="text-3xl font-serif font-light mb-4 text-yellow-700">No Villas Available</h2>
             <p className="text-gray-600 mb-8 max-w-lg mx-auto text-lg">
               We couldn't find any available villas matching your search criteria. Try adjusting your dates or location.
             </p>
             <Link 
               to="/" 
-              className="inline-block px-8 py-3 bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-all shadow-md hover:shadow-lg"
+              className="inline-block px-8 py-3 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-all shadow-md hover:shadow-lg"
             >
               Return to Search
             </Link>
@@ -376,7 +376,7 @@ const SearchResults = () => {
           <>
             {/* Controls */}
             <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-              <div className="text-xl font-serif text-amber-900 mb-4 md:mb-0">
+              <div className="text-xl font-serif text-yellow-700 mb-4 md:mb-0">
                 Found <span className="font-semibold">{villas.length}</span> luxury villas
               </div>
               
@@ -385,24 +385,24 @@ const SearchResults = () => {
                   <select 
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="appearance-none bg-white border border-amber-100 text-sm sm:text-base rounded-lg px-3 sm:px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-200 text-gray-700"
+                    className="appearance-none bg-white border border-yellow-100 text-sm sm:text-base rounded-lg px-3 sm:px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:border-yellow-200 text-gray-700"
                   >
                     <option value="recommended">Recommended</option>
                     <option value="price-low">Price: Low to High</option>
                     <option value="price-high">Price: High to Low</option>
                     <option value="rating">Top Rated</option>
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-amber-700">
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-yellow-700">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                     </svg>
                   </div>
                 </div>
                 
-                <div className="flex border border-amber-200 rounded-md overflow-hidden">
+                <div className="flex border border-yellow-200 rounded-md overflow-hidden">
                   <button 
                     onClick={() => setViewType('grid')} 
-                    className={`px-3 py-2 flex items-center ${viewType === 'grid' ? 'bg-amber-100 text-amber-900' : 'bg-white text-gray-600'}`}
+                    className={`px-3 py-2 flex items-center ${viewType === 'grid' ? 'bg-yellow-100 text-yellow-700' : 'bg-white text-gray-600'}`}
                   >
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                       <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
@@ -410,7 +410,7 @@ const SearchResults = () => {
                   </button>
                   <button 
                     onClick={() => setViewType('list')} 
-                    className={`px-3 py-2 flex items-center ${viewType === 'list' ? 'bg-amber-100 text-amber-900' : 'bg-white text-gray-600'}`}
+                    className={`px-3 py-2 flex items-center ${viewType === 'list' ? 'bg-yellow-100 text-yellow-700' : 'bg-white text-gray-600'}`}
                   >
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                       <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd"></path>
@@ -434,7 +434,7 @@ const SearchResults = () => {
                 <motion.div 
                   key={villa._id} 
                   variants={itemVariants}
-                  className={`group bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 border border-amber-50 flex ${viewType === 'list' ? 'flex-row' : 'flex-col'}`}
+                  className={`group bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 border border-yellow-50 flex ${viewType === 'list' ? 'flex-row' : 'flex-col'}`}
                 >
                   {/* Image Container */}
                   <div 
@@ -483,7 +483,7 @@ const SearchResults = () => {
                     
                     {/* Rating Badge */}
                     <div className="absolute top-3 right-3 bg-white/90 rounded-full px-2 py-1 flex items-center shadow-md">
-                      <FaStar className="text-amber-500 mr-1" />
+                      <FaStar className="text-yellow-600 mr-1" />
                       <span className="font-medium text-sm">{villa.rating}</span>
                       <span className="text-gray-500 text-xs ml-1">({villa.reviews})</span>
                     </div>
@@ -505,17 +505,17 @@ const SearchResults = () => {
                     </div>
                     
                     <div className="flex items-center text-gray-500 mb-3 sm:mb-4 text-sm sm:text-base">
-                      <FaMapMarkerAlt className="mr-1 text-amber-500" />
+                      <FaMapMarkerAlt className="mr-1 text-yellow-600" />
                       <span>{villa.location}</span>
                     </div>
                     
                     <div className={`flex gap-2 sm:gap-3 mb-3 sm:mb-4 flex-wrap ${viewType === 'list' ? 'mb-auto' : ''}`}>
-                      <div className="flex items-center bg-amber-50/50 px-2 py-1 rounded-md border border-amber-100/50">
-                        <FaBed className="mr-1 text-amber-500" />
+                      <div className="flex items-center bg-yellow-50/50 px-2 py-1 rounded-md border border-yellow-100/50">
+                        <FaBed className="mr-1 text-yellow-600" />
                         <span className="text-xs sm:text-sm text-gray-700">{villa.bedrooms} Bedrooms</span>
                       </div>
-                      <div className="flex items-center bg-amber-50/50 px-2 py-1 rounded-md border border-amber-100/50">
-                        <FaBath className="mr-1 text-amber-500" />
+                      <div className="flex items-center bg-yellow-50/50 px-2 py-1 rounded-md border border-yellow-100/50">
+                        <FaBath className="mr-1 text-yellow-600" />
                         <span className="text-xs sm:text-sm text-gray-700">{villa.bathrooms} Bathrooms</span>
                       </div>
                     </div>
@@ -528,7 +528,7 @@ const SearchResults = () => {
                     <div className="flex flex-wrap gap-2 sm:gap-3 mb-3 sm:mb-4">
                       {villa.amenities.map((amenity, index) => (
                         <div key={index} className="flex items-center text-xs sm:text-sm text-gray-600">
-                          <span className="text-amber-500">{amenity.icon}</span>
+                          <span className="text-yellow-600">{amenity.icon}</span>
                           <span className="ml-1">{amenity.label}</span>
                         </div>
                       ))}
@@ -536,7 +536,7 @@ const SearchResults = () => {
                     
                     <div className="mt-auto flex items-center justify-between">
                       <div>
-                        <span className="text-xl sm:text-2xl font-semibold text-amber-600">₹{villa.price}</span>
+                        <span className="text-xl sm:text-2xl font-semibold text-yellow-600">₹{villa.price}</span>
                         <span className="text-gray-500 text-xs sm:text-sm"> / night</span>
                       </div>
                       
@@ -545,7 +545,7 @@ const SearchResults = () => {
                         className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-all text-sm sm:text-base ${
                           villa.isBooked
                             ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                            : "bg-amber-500 hover:bg-amber-600 text-white shadow hover:shadow-md hover:shadow-amber-100"
+                            : "bg-yellow-600 hover:bg-yellow-700 text-white shadow hover:shadow-md hover:shadow-yellow-100"
                         }`}
                         onClick={(e) => villa.isBooked && e.preventDefault()}
                       >

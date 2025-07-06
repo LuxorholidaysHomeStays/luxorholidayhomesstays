@@ -93,7 +93,7 @@ import RW18 from "/ramwatervilla/RW18.jpg"
 import RW19 from "/ramwatervilla/RW19.jpg"
 
 // LavishVilla 1 (22 images)
-import lvone1 from "/LavishVilla 1/lvone8.jpg";
+import lvone1 from "/LavishVilla 1/lvone1.jpg";
 import lvone2 from "/LavishVilla 1/lvone2.jpg";
 import lvone3 from "/LavishVilla 1/lvone3.jpg";
 import lvone4 from "/LavishVilla 1/lvone4.jpg";
@@ -151,7 +151,7 @@ import lvthree7 from "/LavishVilla 3/lvthree7.jpg";
 import lvthree8 from "/LavishVilla 3/lvthree8.jpg";
 import lvthree9 from "/LavishVilla 3/lvthree9.jpg";
 import lvthree10 from "/LavishVilla 3/lvthree10.jpg";
-import lvthree11 from "/LavishVilla 3/lvthree10.jpg";
+import lvthree11 from "/LavishVilla 3/llvthree11.jpg";
 import lvthree12 from "/LavishVilla 3/lvthree12.jpg";
 import lvthree13 from "/LavishVilla 3/lvthree13.jpg";
 import lvthree14 from "/LavishVilla 3/lvthree14.jpg";
@@ -191,7 +191,7 @@ const villaImageCollections = {
   ],
   "Lavish Villa III": [
     lvthree1, lvthree2, lvthree3, lvthree4, lvthree5, lvthree6, lvthree7, lvthree8, lvthree9, lvthree10,
-    lvthree12, lvthree13, lvthree14, lvthree15, lvthree16, lvthree17, lvthree18
+    lvthree11, lvthree12, lvthree13, lvthree14, lvthree15, lvthree16, lvthree17, lvthree18
   ]
 };
 
@@ -456,20 +456,21 @@ export const FeaturedDestination = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto relative">
-      {/* Title with animation */}
+    <section className="bg-white py-16">
+      <div className="max-w-7xl mx-auto relative golden-luxury-featured px-4">
+        {/* Title with animation */}
       <motion.div 
         className="mb-10 text-center"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center justify-center">
+        <h1 className="text-3xl font-bold text-amber-800 mb-2 flex items-center justify-center">
           Featured Properties
         </h1>
         <div className="flex justify-center">
           <motion.div 
-            className="h-1.5 bg-gradient-to-r from-blue-600 to-blue-400 rounded-full"
+            className="h-1.5 bg-gradient-to-r from-yellow-600 to-yellow-400 rounded-full"
             initial={{ width: 0 }}
             animate={{ width: "5rem" }}
             transition={{ duration: 0.8, delay: 0.3 }}
@@ -480,12 +481,12 @@ export const FeaturedDestination = () => {
       {/* Loading and error states */}
       {loading && (
         <div className="flex justify-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-600"></div>
         </div>
       )}
       
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 text-center">
+        <div className="bg-amber-50 text-amber-800 p-4 rounded-lg mb-6 text-center border border-amber-200">
           {error}
         </div>
       )}
@@ -509,7 +510,7 @@ export const FeaturedDestination = () => {
                 transition={{ duration: 0.5 }}
               >
                 <motion.div 
-                  className="bg-black/70 text-white px-4 py-2 rounded-full flex items-center gap-2"
+                  className="bg-gradient-to-r from-amber-900/80 to-yellow-900/80 text-amber-100 px-4 py-2 rounded-full flex items-center gap-2 shadow-lg border border-amber-600"
                   animate={{ 
                     x: [0, -50, 0], 
                     opacity: [0.9, 0.6, 0.9] 
@@ -531,17 +532,17 @@ export const FeaturedDestination = () => {
           <button
             onClick={prevSlide}
             disabled={isTransitioning}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg border border-gray-100 disabled:opacity-50"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-gradient-to-r from-amber-50 to-yellow-50 backdrop-blur-sm p-3 rounded-full shadow-lg border border-amber-200 disabled:opacity-50 hover:from-amber-100 hover:to-yellow-100 transition-all"
           >
-            <ChevronLeft className="w-5 h-5 text-gray-700" />
+            <ChevronLeft className="w-5 h-5 text-amber-700" />
           </button>
           
           <button
             onClick={nextSlide}
             disabled={isTransitioning}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg border border-gray-100 disabled:opacity-50"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-gradient-to-r from-amber-50 to-yellow-50 backdrop-blur-sm p-3 rounded-full shadow-lg border border-amber-200 disabled:opacity-50 hover:from-amber-100 hover:to-yellow-100 transition-all"
           >
-            <ChevronRight className="w-5 h-5 text-gray-700" />
+            <ChevronRight className="w-5 h-5 text-amber-700" />
           </button>
 
           {/* Crossfade Carousel */}
@@ -570,40 +571,40 @@ export const FeaturedDestination = () => {
                           e.target.src = getRandomUnsplash();
                         }}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-amber-900/70 via-amber-800/30 to-transparent" />
 
                       {/* Rating Badge */}
                       <motion.div 
-                        className="absolute top-5 left-5 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1.5 flex items-center gap-1 shadow-lg"
+                        className="absolute top-5 left-5 bg-gradient-to-r from-amber-50 to-yellow-50 backdrop-blur-sm rounded-full px-3 py-1.5 flex items-center gap-1 shadow-lg border border-amber-200"
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
                       >
-                        <span className="font-semibold text-sm">{property.rating}</span>
-                        <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                        <span className="font-semibold text-sm text-amber-800">{property.rating}</span>
+                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                       </motion.div>
                       
                       {/* Heart Button */}
                       <motion.button 
-                        className="absolute top-5 right-5 bg-white/80 backdrop-blur-sm rounded-full p-2 shadow-sm"
+                        className="absolute top-5 right-5 bg-gradient-to-r from-amber-50 to-yellow-50 backdrop-blur-sm rounded-full p-2 shadow-lg border border-amber-200"
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3 }}
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                       >
-                        <Heart className="w-4 h-4 text-gray-600 hover:text-red-500 transition-colors" />
+                        <Heart className="w-4 h-4 text-amber-600 hover:text-red-500 transition-colors" />
                       </motion.button>
 
                       {/* Property details - animated from bottom */}
                       <motion.div 
-                        className="absolute bottom-0 left-0 right-0 p-6 text-white"
+                        className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-amber-900/90 via-amber-800/70 to-transparent backdrop-blur-sm text-white"
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.4, duration: 0.5 }}
                       >
                         <motion.h3 
-                          className="text-2xl font-bold mb-2"
+                          className="text-2xl font-bold mb-2 text-amber-50"
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.5 }}
@@ -612,17 +613,17 @@ export const FeaturedDestination = () => {
                         </motion.h3>
                         
                         <motion.div 
-                          className="flex items-center gap-1.5 mb-3"
+                          className="flex items-center gap-1.5 mb-3 text-amber-100"
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.6 }}
                         >
-                          <MapPin className="w-4 h-4" />
+                          <MapPin className="w-4 h-4 text-amber-300" />
                           <span className="text-sm">{property.location}</span>
                         </motion.div>
                         
                         <motion.p 
-                          className="text-sm text-gray-200 mb-4"
+                          className="text-sm text-amber-200 mb-4"
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.7 }}
@@ -638,16 +639,16 @@ export const FeaturedDestination = () => {
                         >
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="text-2xl font-bold">
+                              <span className="text-2xl font-bold text-amber-100">
                                 ₹{property.price.toLocaleString()}
                               </span>
                             </div>
-                            <p className="text-xs text-gray-300 mt-0.5">Per Night + Taxes</p>
+                            <p className="text-xs text-amber-300 mt-0.5">Per Night + Taxes</p>
                           </div>
                           
                           <motion.button 
-                            className="bg-white text-blue-600 font-medium px-4 py-2 rounded-lg shadow-md"
-                            whileHover={{ scale: 1.05, backgroundColor: "#f8fafc" }}
+                            className="bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-900 font-semibold px-6 py-2.5 rounded-lg shadow-lg border border-amber-300 hover:from-amber-300 hover:to-yellow-400 transition-all duration-300"
+                            whileHover={{ scale: 1.05, boxShadow: "0 10px 25px rgba(251, 191, 36, 0.3)" }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => handleViewDetails(property)}
                           >
@@ -658,12 +659,12 @@ export const FeaturedDestination = () => {
                         {/* Best Rated Badge */}
                         {property.bestRated && (
                           <motion.div 
-                            className="absolute top-[-60px] right-0 bg-black/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-full flex items-center gap-1.5"
+                            className="absolute top-[-60px] right-0 bg-gradient-to-r from-amber-600 to-yellow-600 backdrop-blur-sm text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-amber-400"
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.4 }}
                           >
-                            <Star className="w-3.5 h-3.5 fill-yellow-400" />
+                            <Star className="w-3.5 h-3.5 fill-amber-200 text-amber-200" />
                             <span className="text-xs font-medium">Best Rated</span>
                           </motion.div>
                         )}
@@ -686,17 +687,17 @@ export const FeaturedDestination = () => {
             className="relative h-2 rounded-full transition-all"
             animate={{ 
               width: activeIndex === index ? "1.5rem" : "0.5rem",
-              backgroundColor: activeIndex === index ? "#2563eb" : "#d1d5db" 
+              backgroundColor: activeIndex === index ? "#d97706" : "#fbbf24" 
             }}
             transition={{ duration: 0.3 }}
             whileHover={{ 
               scale: 1.1,
-              backgroundColor: activeIndex === index ? "#2563eb" : "#9ca3af"
+              backgroundColor: activeIndex === index ? "#d97706" : "#f59e0b"
             }}
           >
             {activeIndex === index && (
               <motion.div 
-                className="absolute inset-0 rounded-full bg-blue-400"
+                className="absolute inset-0 rounded-full bg-amber-400"
                 initial={{ opacity: 0, scale: 1 }}
                 animate={{ 
                   opacity: [0, 0.5, 0],
@@ -711,7 +712,8 @@ export const FeaturedDestination = () => {
           </motion.button>
         ))}
       </div>
-    </div>
+      </div>
+    </section>
   )
 }
 

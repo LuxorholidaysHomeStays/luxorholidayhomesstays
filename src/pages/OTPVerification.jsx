@@ -27,13 +27,12 @@ const OTPVerification = () => {
 
   // Alert and redirect if no email is provided
   useEffect(() => {
-    if (!email) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'No email provided for verification',
-        confirmButtonColor: '#10b981'
-      }).then(() => {
+    if (!email) {        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No email provided for verification',
+          confirmButtonColor: '#ca8a04'
+        }).then(() => {
         navigate('/sign-in');
       });
     }
@@ -207,7 +206,7 @@ const OTPVerification = () => {
           icon: 'success',
           title: 'Password Reset Successful',
           text: 'Your password has been reset successfully. Please sign in with your new password.',
-          confirmButtonColor: '#10b981'
+          confirmButtonColor: '#ca8a04'
         }).then(() => {
           sessionStorage.removeItem('verificationEmail');
           navigate('/sign-in');
@@ -230,7 +229,7 @@ const OTPVerification = () => {
           text: isRegistration 
             ? 'Your account has been successfully created and verified.' 
             : 'Your account has been verified successfully.',
-          confirmButtonColor: '#10b981'
+          confirmButtonColor: '#ca8a04'
         }).then(() => {
           sessionStorage.removeItem('verificationEmail');
           navigate('/');
@@ -245,7 +244,7 @@ const OTPVerification = () => {
         icon: 'error',
         title: 'Verification Failed',
         text: error.message || 'Invalid verification code. Please try again.',
-        confirmButtonColor: '#10b981'
+        confirmButtonColor: '#ca8a04'
       });
     } finally {
       setLoading(false);
@@ -287,7 +286,7 @@ const OTPVerification = () => {
         icon: 'success',
         title: 'Verification Code Sent',
         text: 'A new verification code has been sent to your email.',
-        confirmButtonColor: '#10b981',
+        confirmButtonColor: '#ca8a04',
         timer: 3000,
         timerProgressBar: true
       });
@@ -305,17 +304,15 @@ const OTPVerification = () => {
         icon: 'error',
         title: 'Error',
         text: error.message || 'Failed to resend verification code',
-        confirmButtonColor: '#10b981'
+        confirmButtonColor: '#ca8a04'
       });
     } finally {
       setResendLoading(false);
     }
-  };
-  
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-emerald-50 px-4 py-16">
+  };    return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-yellow-50 px-4 py-16">
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-10 left-10 w-72 h-72 bg-emerald-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-float"></div>
+        <div className="absolute top-10 left-10 w-72 h-72 bg-yellow-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-float"></div>
         <div className="absolute top-40 right-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-float" style={{animationDelay: '2s'}}></div>
         <div className="absolute -bottom-8 left-40 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-float" style={{animationDelay: '4s'}}></div>
       </div>
@@ -332,7 +329,7 @@ const OTPVerification = () => {
           </div>
           
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-100 text-yellow-700 mb-4">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
@@ -345,7 +342,7 @@ const OTPVerification = () => {
                 ? 'Enter the verification code sent to your email and create a new password' 
                 : 'Enter the verification code sent to your email to complete your ' + (isRegistration ? 'registration' : 'login')}
             </p>
-            <p className="text-sm font-medium text-emerald-600 mt-2">{email}</p>
+            <p className="text-sm font-medium text-yellow-700 mt-2">{email}</p>
           </div>
           
           {error && (
@@ -372,7 +369,7 @@ const OTPVerification = () => {
                     onPaste={index === 0 ? handlePaste : null}
                     maxLength={1}
                     aria-label={`Digit ${index + 1} of verification code`}
-                    className="w-12 h-14 text-center text-xl font-bold border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300"
+                    className="w-12 h-14 text-center text-xl font-bold border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
                     required
                   />
                 ))}
@@ -390,7 +387,7 @@ const OTPVerification = () => {
                       type="button"
                       onClick={handleResendOTP}
                       disabled={resendLoading}
-                      className="font-medium text-emerald-600 hover:text-emerald-500 transition-colors"
+                      className="font-medium text-yellow-700 hover:text-yellow-600 transition-colors"
                     >
                       {resendLoading ? 'Sending...' : 'Resend Code'}
                     </button>
@@ -416,7 +413,7 @@ const OTPVerification = () => {
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300"
+                      className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
                       placeholder="••••••••"
                       required={isPasswordReset}
                       minLength={8}
@@ -442,7 +439,7 @@ const OTPVerification = () => {
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300"
+                      className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
                       placeholder="••••••••"
                       required={isPasswordReset}
                     />
@@ -457,7 +454,7 @@ const OTPVerification = () => {
                 className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-all duration-300 ${
                   loading 
                   ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 shadow-lg hover:shadow-xl'
+                  : 'bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 shadow-lg hover:shadow-xl'
                 }`}
                 disabled={loading}
               >

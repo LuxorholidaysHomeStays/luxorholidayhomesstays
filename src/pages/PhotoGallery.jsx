@@ -4,6 +4,14 @@ import { useState, useEffect } from "react"
 import { ChevronLeft, X, ArrowDown } from "lucide-react"
 import { useNavigate, useParams, useLocation } from "react-router-dom"
 
+// Props are documented here for reference:
+// images?: string[]
+// villaName?: string
+// isOpen?: boolean
+// onClose?: () => void
+// backTo?: string
+// villa?: any
+
 // Villa image collections (same as VillaDetail)
 import AP1 from "/AmrithPalace/AP1.jpg"
 import AP2 from "/AmrithPalace/AP2.jpg"
@@ -298,7 +306,7 @@ lvthree18,
 ],
 }
 
-const PhotoGallery = () => {
+const PhotoGallery = ({ images: propImages, villaName: propVillaName, isOpen, onClose, backTo, villa }) => {
 const navigate = useNavigate()
 const { villaname } = useParams()
 const location = useLocation()
@@ -308,22 +316,35 @@ const [selectedImageIndex, setSelectedImageIndex] = useState(0)
 const [viewMode, setViewMode] = useState("gallery")
 const [sourceRoute, setSourceRoute] = useState("")
 
+// If component is used as modal (with props), use those, otherwise use URL params
+const isModal = propImages && propVillaName && isOpen !== undefined
+
 // Decode villa name from URL
 const decodedVillaName = decodeURIComponent(villaname || "")
 
 // Store source route when component mounts
 useEffect(() => {
-  // Extract the referring path from location state if available
-  if (location.state?.from) {
-    setSourceRoute(location.state.from)
+  if (isModal) {
+    // For modal usage, set source route from backTo prop or default to rooms
+    setSourceRoute(backTo || "/rooms")
   } else {
-    // Default to allrooms route with the villa name as parameter if no specific source
-    setSourceRoute(`/rooms/${villaname}`)
+    // For URL-based usage, extract the referring path from location state if available
+    if (location.state?.from) {
+      setSourceRoute(location.state.from)
+    } else {
+      // Default to allrooms route with the villa name as parameter if no specific source
+      setSourceRoute(`/rooms/${villaname}`)
+    }
   }
-}, [location.state, villaname])
+}, [location.state, villaname, isModal, backTo])
 
-// Get images from location state or villa collections
+// Get images from props (modal) or location state or villa collections
 const getVillaImages = () => {
+  // If modal usage, use prop images
+  if (isModal && propImages) {
+    return propImages
+  }
+
   // First check if we have images passed directly via location state
   if (location.state?.images) {
     return location.state.images
@@ -345,7 +366,7 @@ const getVillaImages = () => {
 }
 
 const images = getVillaImages()
-const villaName = location.state?.villaName || decodedVillaName
+const villaName = isModal ? propVillaName : (location.state?.villaName || decodedVillaName)
 
 useEffect(() => {
 setSelectedImageIndex(0)
@@ -382,12 +403,17 @@ const handleBackClick = () => {
   document.body.style.top = '';
   document.body.style.width = '';
   
-  // Navigate to the specific villa in allrooms if sourceRoute is available
-  if (sourceRoute) {
-    navigate(sourceRoute)
+  if (isModal && onClose) {
+    // For modal usage, call the onClose callback
+    onClose()
   } else {
-    // Fallback to previous page if no specific source route is known
-    navigate(-1)
+    // For URL-based usage, navigate to the source route
+    if (sourceRoute) {
+      navigate(sourceRoute)
+    } else {
+      // Fallback to previous page if no specific source route is known
+      navigate(-1)
+    }
   }
 }
 
@@ -416,7 +442,12 @@ return rows
 
 const galleryRows = getGalleryRows(images)
 
-return (
+// If not open (modal usage), don't render
+if (isModal && !isOpen) {
+  return null
+}
+
+const content = (
 <div className={`fixed top-[3rem] md:top-[4rem] left-0 right-0 bottom-0 bg-white z-50 flex flex-col ${viewMode === "split" ? "h-[50vh]" : ""}`}>
 {/* Header */}
 <div className="w-full bg-white border-b border-gray-200">
@@ -463,24 +494,21 @@ className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-
 <div key={rowIdx} className={`flex gap-6 ${row.length === 1 ? "" : "justify-between"}`}>
 {row.length === 1 ? (
 // Big image
-<div
-className={`flex-1 relative cursor-pointer bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-200 group ${
-selectedImageIndex === rowIdx * 4 ? "ring-4 ring-green-500" : ""
-}`}
+<div                className={`flex-1 relative cursor-pointer bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-200 group ${
+                selectedImageIndex === rowIdx * 4 ? "ring-4 ring-[#D4AF37]" : ""
+                }`}
 style={{ minHeight: "420px", maxHeight: "500px" }}
 onClick={() => setSelectedImageIndex(rowIdx * 4)}
 >
 <img
 src={row[0] || "/placeholder.svg"}
-alt={`${villaName} ${rowIdx * 4 + 1}`}
-className="w-full h-[480px] object-cover group-hover:scale-105 transition-transform duration-200"
-onError={(e) => {
-const target = e.target
-target.onerror = null
-target.src = "/placeholder.svg"
-}}
-/>
-{selectedImageIndex === rowIdx * 4 && <div className="absolute inset-0 bg-green-500/10"></div>}
+alt={`${villaName} ${rowIdx * 4 + 1}`}                className="w-full h-[480px] object-cover group-hover:scale-105 transition-transform duration-200"
+                onError={(e) => {
+                const target = e.target
+                target.onerror = null
+                target.src = "/placeholder.svg"
+                }}
+/>                {selectedImageIndex === rowIdx * 4 && <div className="absolute inset-0 bg-[#D4AF37]/10"></div>}
 </div>
 ) : (
 // Three small images
@@ -488,10 +516,9 @@ row.map((img, idx) => {
 const imgIdx = rowIdx * 4 - 3 + idx
 return (
 <div
-key={imgIdx}
-className={`flex-1 relative cursor-pointer bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-200 group ${
-selectedImageIndex === imgIdx ? "ring-4 ring-green-500" : ""
-}`}
+key={imgIdx}                className={`flex-1 relative cursor-pointer bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-200 group ${
+                selectedImageIndex === imgIdx ? "ring-4 ring-[#D4AF37]" : ""
+                }`}
 style={{ minHeight: "180px", maxHeight: "220px" }}
 onClick={() => setSelectedImageIndex(imgIdx)}
 >
@@ -504,8 +531,7 @@ const target = e.target
 target.onerror = null
 target.src = "/placeholder.svg"
 }}
-/>
-{selectedImageIndex === imgIdx && <div className="absolute inset-0 bg-green-500/10"></div>}
+/>                {selectedImageIndex === imgIdx && <div className="absolute inset-0 bg-[#D4AF37]/10"></div>}
 </div>
 )
 })
@@ -541,7 +567,7 @@ Scroll down to see villa details
 <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
   <button 
     onClick={() => navigate(sourceRoute)}
-    className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-full shadow-lg transition-all duration-300 flex items-center gap-2"
+    className="bg-[#D4AF37] hover:bg-[#E5C048] text-black font-semibold py-2 px-6 rounded-full shadow-lg transition-all duration-300 flex items-center gap-2"
   >
     <span>View Villa Details</span>
   </button>
@@ -549,7 +575,16 @@ Scroll down to see villa details
 )}
 </div>
 )
+
+// Return content wrapped in modal overlay if used as modal, otherwise return as-is
+return isModal ? (
+  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div className="w-full h-full bg-white overflow-hidden">
+      {content}
+    </div>
+  </div>
+) : content
+
 }
 
 export default PhotoGallery
-
