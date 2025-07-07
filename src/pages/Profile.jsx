@@ -175,7 +175,11 @@ const Profile = () => {
     setUpdating(true);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/profile`, {
+      // Log for debugging
+      console.log("Auth token:", authToken);
+      console.log("Profile data to update:", profileData);
+      
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -184,24 +188,25 @@ const Profile = () => {
         body: JSON.stringify(profileData)
       });
       
+      // Log the response status
+      console.log("Update response status:", response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to update profile');
+        const errorData = await response.json();
+        console.error("Error response:", errorData);
+        throw new Error(errorData.error || 'Failed to update profile');
       }
       
-      // Show success toast
-      setEditMode(false);
+      const data = await response.json();
+      console.log("Update successful:", data);
       
-      // Update user data in context if name changed
-      if (userData && profileData.name !== userData.name) {
-        setUserData({
-          ...userData,
-          name: profileData.name
-        });
-      }
+      // Show success toast or message
+      // ...
       
     } catch (error) {
       console.error('Error updating profile:', error);
-      // Show error toast
+      // Show error toast or message
+      // ...
     } finally {
       setUpdating(false);
     }
@@ -326,6 +331,9 @@ const Profile = () => {
     );
   }
 
+  // Try multiple sources for email
+  const displayEmail = profileData.email || userData?.email || '';
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-yellow-50">
       {/* Profile Header with Golden Theme */}
@@ -403,7 +411,7 @@ const Profile = () => {
                     )}
                   </div>
                   <h3 className="text-lg font-semibold">{profileData.name || 'User'}</h3>
-                  <p className="text-yellow-100 text-sm">{profileData.email}</p>
+                  <p className="text-yellow-100 text-sm">{displayEmail}</p>
                   {editMode && (
                     <p className="text-yellow-200 text-xs mt-1">Click camera icon to change photo</p>
                   )}
@@ -494,17 +502,15 @@ const Profile = () => {
 
                       {/* Email */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-400 mb-1">
                           Email Address
                         </label>
                         <input
                           type="email"
-                          name="email"
-                          value={profileData.email}
-                          onChange={handleInputChange}
-                          disabled={true} // Email should not be editable
-                          className="w-full px-4 py-3 border border-gray-200 bg-gray-50 rounded-lg"
-                          placeholder="Email address"
+                          id="email"
+                          className="w-full px-4 py-2 rounded-md bg-gray-800/20 text-gray-400 border border-gray-700"
+                          value={displayEmail}
+                          disabled
                         />
                         <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
                       </div>

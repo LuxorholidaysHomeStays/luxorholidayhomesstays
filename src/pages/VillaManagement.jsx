@@ -1,11 +1,9 @@
 "use client"
 
-// import type React from "react"
-import React, { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { API_BASE_URL } from "../config/api"
 import { useAuth } from "../context/AuthContext"
 import { useToast } from "../context/ToastContext"
-// Replace the getVillaImage import with the direct villa image imports
 import {
   PencilIcon,
   TrashIcon,
@@ -18,31 +16,62 @@ import {
   HomeIcon,
 } from "@heroicons/react/24/outline"
 
-// Import villa images
-import AP1 from "/AmrithPalace/AP8.jpg"
-import EC1 from "/eastcoastvilla/EC1.jpg"
-import anandvilla1 from "/empireanandvillasamudra/anandvilla1.jpg"
-import RW1 from "/ramwatervilla/RW1.jpg"
-import LAV1 from "/LavishVilla 1/lvone18.jpg"
-import LAV2 from "/LavishVilla 2/lvtwo22.jpg"
-import LAV3 from "/LavishVilla 3/lvthree5.jpg"
+// Import villa images properly
+import Amrith from "/AmrithPalace/AP8.jpg"
+import EastCoast from "/eastcoastvilla/EC1.jpg"
+import EmpireAnand from "/empireanandvillasamudra/anandvilla1.jpg"
+import RamWater from "/ramwatervilla/RW1.jpg"
+import LavishOne from "/LavishVilla 1/lvone18.jpg"
+import LavishTwo from "/LavishVilla 2/lvtwo22.jpg"
+import LavishThree from "/LavishVilla 3/lvthree5.jpg"
 
-// Villa image mapping for each villa type
-const villaImageMap = {
-  "Amrith Palace": AP1,
-  "East Coast Villa": EC1,
-  "Empire Anand Villa Samudra": anandvilla1,
-  "Ram Water Villa": RW1,
-  "Lavish Villa I": LAV1,
-  "Lavish Villa II": LAV2,
-  "Lavish Villa III": LAV3,
-  "default": AP1  // Default image if no match found
-};
+// Create a proper villa images mapping
+const villaImages = {
+  "Amrith Palace": Amrith,
+  "East Coast Villa": EastCoast,
+  "Empire Anand Villa Samudra": EmpireAnand,
+  "Ram Water Villa": RamWater,
+  "Lavish Villa I": LavishOne,
+  "Lavish Villa II": LavishTwo,
+  "Lavish Villa III": LavishThree,
+}
 
-// Helper function to get villa image based on villa name
+// Helper function to get villa image based on villa name with better matching
 const getVillaImage = (villaName) => {
-  return villaImageMap[villaName] || villaImageMap["default"];
-};
+  if (!villaName) return Amrith
+
+  // Direct match first
+  if (villaImages[villaName]) {
+    return villaImages[villaName]
+  }
+
+  // Case insensitive partial matching
+  const lowerName = villaName.toLowerCase()
+
+  if (lowerName.includes("amrith") || lowerName.includes("palace")) {
+    return villaImages["Amrith Palace"]
+  } else if (lowerName.includes("east") || lowerName.includes("coast")) {
+    return villaImages["East Coast Villa"]
+  } else if (lowerName.includes("empire") || lowerName.includes("anand") || lowerName.includes("samudra")) {
+    return villaImages["Empire Anand Villa Samudra"]
+  } else if (lowerName.includes("ram") || lowerName.includes("water")) {
+    return villaImages["Ram Water Villa"]
+  } else if (
+    lowerName.includes("lavish") &&
+    lowerName.includes("i") &&
+    !lowerName.includes("ii") &&
+    !lowerName.includes("iii")
+  ) {
+    return villaImages["Lavish Villa I"]
+  } else if (lowerName.includes("lavish") && lowerName.includes("ii")) {
+    return villaImages["Lavish Villa II"]
+  } else if (lowerName.includes("lavish") && lowerName.includes("iii")) {
+    return villaImages["Lavish Villa III"]
+  }
+
+  // Default fallback
+  return Amrith
+}
 
 const VillaManagement = () => {
   const [villas, setVillas] = useState([])
@@ -59,10 +88,9 @@ const VillaManagement = () => {
     bedrooms: 1,
     bathrooms: 1,
     amenities: [],
-    images: []
+    images: [],
   })
   const [deleteConfirmation, setDeleteConfirmation] = useState(null)
-  
   const { authToken } = useAuth()
   const { addToast } = useToast()
 
@@ -124,9 +152,7 @@ const VillaManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const url = editingVilla
-        ? `${API_BASE_URL}/api/villas/${editingVilla._id}`
-        : `${API_BASE_URL}/api/villas`
+      const url = editingVilla ? `${API_BASE_URL}/api/villas/${editingVilla._id}` : `${API_BASE_URL}/api/villas`
       const method = editingVilla ? "PUT" : "POST"
 
       const response = await fetch(url, {
@@ -139,10 +165,7 @@ const VillaManagement = () => {
       })
 
       if (response.ok) {
-        addToast(
-          `Villa ${editingVilla ? "updated" : "created"} successfully`,
-          "success"
-        )
+        addToast(`Villa ${editingVilla ? "updated" : "created"} successfully`, "success")
         setShowModal(false)
         setEditingVilla(null)
         setFormData({
@@ -154,7 +177,7 @@ const VillaManagement = () => {
           bedrooms: 1,
           bathrooms: 1,
           amenities: [],
-          images: []
+          images: [],
         })
         fetchVillas()
       } else {
@@ -177,7 +200,7 @@ const VillaManagement = () => {
       bedrooms: villa.bedrooms,
       bathrooms: villa.bathrooms,
       amenities: villa.amenities || [],
-      images: villa.images || []
+      images: villa.images || [],
     })
     setShowModal(true)
   }
@@ -214,14 +237,21 @@ const VillaManagement = () => {
     }
   }
 
-  const filteredVillas = villas.filter((villa) =>
-    villa.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    villa.location.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredVillas = villas.filter(
+    (villa) =>
+      villa.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      villa.location.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const amenitiesList = [
-    "WiFi", "Swimming Pool", "Air Conditioning", "Kitchen",
-    "TV", "Parking", "Washing Machine", "BBQ"
+    "WiFi",
+    "Swimming Pool",
+    "Air Conditioning",
+    "Kitchen",
+    "TV",
+    "Parking",
+    "Washing Machine",
+    "BBQ",
   ]
 
   if (loading) {
@@ -259,7 +289,7 @@ const VillaManagement = () => {
                 bedrooms: 1,
                 bathrooms: 1,
                 amenities: [],
-                images: []
+                images: [],
               })
               setShowModal(true)
             }}
@@ -271,58 +301,73 @@ const VillaManagement = () => {
         </div>
       </div>
 
-      {/* Villas Grid - Fix image mapping */}
+      {/* Villas Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredVillas.map((villa) => (
           <div
             key={villa._id}
             className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow duration-300"
           >
-            <div className="h-64 relative">
-              {/* Fixed image source mapping */}
+            <div className="h-64 relative overflow-hidden">
               <img
-                src={getVillaImage(villa.name)}
+                src={getVillaImage(villa.name) || "/placeholder.svg"}
                 alt={villa.name}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
                 onError={(e) => {
-                  console.log(`Failed to load image for ${villa.name}, using default`);
-                  e.target.src = villaImageMap["default"];
+                  console.log(`Failed to load image for ${villa.name}, using fallback`)
+                  e.target.src = Amrith
+                }}
+                onLoad={() => {
+                  console.log(`Successfully loaded image for ${villa.name}`)
+                }}
+                style={{
+                  backgroundColor: "#f3f4f6", // Light gray background while loading
+                  minHeight: "256px",
                 }}
               />
-              <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-            </div>
-            <div className="p-5">
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">{villa.name}</h3>
-              <div className="flex items-center text-gray-600 mb-3">
-                <MapPinIcon className="h-4 w-4 mr-1" />
-                {villa.location}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+              <div className="absolute bottom-3 left-3 right-3">
+                <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2">
+                  <h3 className="text-lg font-semibold text-gray-800 truncate">{villa.name}</h3>
+                </div>
               </div>
+            </div>
+
+            <div className="p-5">
+              <div className="flex items-center text-gray-600 mb-3">
+                <MapPinIcon className="h-4 w-4 mr-1 flex-shrink-0" />
+                <span className="truncate">{villa.location}</span>
+              </div>
+
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="bg-gray-50 p-2 rounded-md flex items-center">
-                  <UsersIcon className="h-4 w-4 text-blue-500 mr-2" />
+                  <UsersIcon className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0" />
                   <span className="text-sm">{villa.maxGuests || villa.guests} guests</span>
                 </div>
                 <div className="bg-gray-50 p-2 rounded-md flex items-center">
-                  <HomeIcon className="h-4 w-4 text-blue-500 mr-2" />
+                  <HomeIcon className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0" />
                   <span className="text-sm">{villa.bedrooms} bedrooms</span>
                 </div>
               </div>
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <BanknotesIcon className="h-5 w-5 text-green-600 mr-1" />
+                  <BanknotesIcon className="h-5 w-5 text-green-600 mr-1 flex-shrink-0" />
                   <span className="text-lg font-semibold text-green-600">₹{villa.price.toLocaleString()}</span>
                   <span className="text-gray-500 text-sm ml-1">/night</span>
                 </div>
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handleEdit(villa)}
-                    className="p-2 rounded-md text-blue-600 hover:bg-blue-50"
+                    className="p-2 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
+                    title="Edit Villa"
                   >
                     <PencilIcon className="h-5 w-5" />
                   </button>
                   <button
                     onClick={() => confirmDelete(villa)}
-                    className="p-2 rounded-md text-red-600 hover:bg-red-50"
+                    className="p-2 rounded-md text-red-600 hover:bg-red-50 transition-colors"
+                    title="Delete Villa"
                   >
                     <TrashIcon className="h-5 w-5" />
                   </button>
@@ -362,13 +407,8 @@ const VillaManagement = () => {
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-800">
-                {editingVilla ? "Edit Villa" : "Add New Villa"}
-              </h2>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-gray-500"
-              >
+              <h2 className="text-xl font-semibold text-gray-800">{editingVilla ? "Edit Villa" : "Add New Villa"}</h2>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-500">
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
@@ -377,9 +417,7 @@ const VillaManagement = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Villa Name
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Villa Name</label>
                     <input
                       type="text"
                       name="name"
@@ -391,9 +429,7 @@ const VillaManagement = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Location
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
                     <input
                       type="text"
                       name="location"
@@ -405,9 +441,7 @@ const VillaManagement = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Price per Night (₹)
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Price per Night (₹)</label>
                     <input
                       type="number"
                       name="price"
@@ -420,9 +454,7 @@ const VillaManagement = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Max Guests
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Max Guests</label>
                     <input
                       type="number"
                       name="maxGuests"
@@ -435,9 +467,7 @@ const VillaManagement = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Bedrooms
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Bedrooms</label>
                     <input
                       type="number"
                       name="bedrooms"
@@ -450,9 +480,7 @@ const VillaManagement = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Bathrooms
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Bathrooms</label>
                     <input
                       type="number"
                       name="bathrooms"
@@ -466,9 +494,7 @@ const VillaManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                   <textarea
                     name="description"
                     value={formData.description}
@@ -480,9 +506,7 @@ const VillaManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Amenities
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Amenities</label>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {amenitiesList.map((amenity) => (
                       <div key={amenity} className="flex items-center">
@@ -494,10 +518,7 @@ const VillaManagement = () => {
                           onChange={handleAmenitiesChange}
                           className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
-                        <label
-                          htmlFor={`amenity-${amenity}`}
-                          className="ml-2 text-sm text-gray-700"
-                        >
+                        <label htmlFor={`amenity-${amenity}`} className="ml-2 text-sm text-gray-700">
                           {amenity}
                         </label>
                       </div>
@@ -506,9 +527,7 @@ const VillaManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Images
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Images</label>
                   <div className="mt-1 border-2 border-gray-300 border-dashed rounded-md p-6 flex justify-center">
                     <div className="space-y-1 text-center">
                       <PhotoIcon className="mx-auto h-12 w-12 text-gray-400" />
@@ -529,9 +548,7 @@ const VillaManagement = () => {
                         </label>
                         <p className="pl-1">or drag and drop</p>
                       </div>
-                      <p className="text-xs text-gray-500">
-                        PNG, JPG, GIF up to 10MB
-                      </p>
+                      <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
                     </div>
                   </div>
                 </div>
@@ -544,10 +561,7 @@ const VillaManagement = () => {
                   >
                     Cancel
                   </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  >
+                  <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                     {editingVilla ? "Update Villa" : "Create Villa"}
                   </button>
                 </div>
@@ -565,11 +579,10 @@ const VillaManagement = () => {
               <div className="w-12 h-12 mx-auto bg-red-100 rounded-full flex items-center justify-center mb-4">
                 <TrashIcon className="h-6 w-6 text-red-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Delete Villa
-              </h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Delete Villa</h3>
               <p className="text-gray-500">
-                Are you sure you want to delete <span className="font-medium">{deleteConfirmation.name}</span>? This action cannot be undone.
+                Are you sure you want to delete <span className="font-medium">{deleteConfirmation.name}</span>? This
+                action cannot be undone.
               </p>
             </div>
             <div className="mt-6 flex justify-center space-x-3">
