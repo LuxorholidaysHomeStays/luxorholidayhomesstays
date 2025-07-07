@@ -91,55 +91,50 @@ export const AuthProvider = ({ children }) => {
   // Update the Google sign-in handler
   const handleGoogleSignIn = async () => {
     try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
+      // Get Google user info (using Firebase or whatever library you're using)
+      const googleUserInfo = await signInWithPopup(auth, new GoogleAuthProvider());
       
-      // Check if the email is the admin email
-      // Using exact match for admin email
-      if (result.user.email === "luxorholidayhomestays@gmail.com") {
-        console.log("Admin user detected:", result.user.email);
-        
-        const adminData = {
-          email: result.user.email,
-          name: result.user.displayName,
-          isAdmin: true,
-          role: "admin",
-          photoURL: result.user.photoURL
-        };
-        
-        const adminToken = result.user.accessToken;
-        
-        // Save to localStorage
-        localStorage.setItem("authToken", adminToken);
-        localStorage.setItem("userData", JSON.stringify(adminData));
-        localStorage.setItem("userId", result.user.uid);
-        localStorage.setItem("userEmail", result.user.email);
-        
-        // Update state
-        setAuthToken(adminToken);
-        setUserData(adminData);
-        
-        return { success: true, isAdmin: true };
+      if (!googleUserInfo || !googleUserInfo.user.email) {
+        console.error("Failed to get user info from Google");
+        return { success: false, message: "Google authentication failed" };
       }
       
-      // For regular users, continue with the normal flow
-      const userData = {
-        email: result.user.email,
-        name: result.user.displayName,
-        isAdmin: false,
-        role: "user",
-        photoURL: result.user.photoURL
-      };
-
-      setUserData(userData);
-      setAuthToken(result.user.accessToken);
-      localStorage.setItem("authToken", result.user.accessToken);
-      localStorage.setItem("userData", JSON.stringify(userData));
-
-      return { success: true, isAdmin: false };
+      // Call your backend's syncUser endpoint instead of google-auth
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/users/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: googleUserInfo.user.email,
+          name: googleUserInfo.user.displayName || googleUserInfo.user.email.split('@')[0]
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Store authentication data
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userData', JSON.stringify(data.user));
+        
+        // Update auth context
+        setAuthToken(data.token);
+        setUserData(data.user);
+        
+        return {
+          success: true,
+          isAdmin: data.user.role === 'admin',
+          message: 'Successfully logged in with Google'
+        };
+      } else {
+        console.error("Backend authentication failed:", data.error);
+        return { success: false, message: data.error || "Authentication failed" };
+      }
+      
     } catch (error) {
       console.error("Google sign-in error:", error);
-      return { success: false, message: error.message };
+      return { success: false, message: "An error occurred during authentication" };
     }
   };
 
@@ -167,6 +162,53 @@ export const AuthProvider = ({ children }) => {
     setUserData(data);
   };
   
+  // Add a refreshAuthStatus function to your AuthContext
+  const refreshAuthStatus = async () => {
+    const token = localStorage.getItem('authToken');
+    
+    if (!token) {
+      setAuthToken(null);
+      setUserData(null);
+      setLoading(false);
+      return false;
+    }
+    
+    try {
+      // Verify token is valid with backend
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/verify-token`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUserData(data.user);
+        setAuthToken(token);
+        setLoading(false);
+        return true;
+      } else {
+        // Token invalid, clear it
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
+        setAuthToken(null);
+        setUserData(null);
+        setLoading(false);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error refreshing auth status:', error);
+      setLoading(false);
+      return false;
+    }
+  };
+
+  // Use this in the useEffect of your AuthProvider
+  useEffect(() => {
+    refreshAuthStatus();
+  }, []);
+
   // Now provide the value object with our state and functions
   const value = {
     authToken,
@@ -178,7 +220,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     loading,
     isAuthenticated, // Just use the state
-    checkAuthStatus // Provide the function for compatibility
+    checkAuthStatus, // Provide the function for compatibility
+    refreshAuthStatus, // Add this
   };
   
   return (

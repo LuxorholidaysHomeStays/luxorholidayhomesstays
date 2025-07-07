@@ -7,27 +7,35 @@ import { useAuth } from "../context/AuthContext";
  * Redirects to login if user is not authenticated
  */
 const AuthGuard = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, refreshAuthStatus } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isChecking, setIsChecking] = useState(true);
   
   useEffect(() => {
-    // Only check once loading is complete
-    if (!loading) {
-      if (!isAuthenticated) {
-        // Save current location for redirect after login
-        localStorage.setItem("authRedirectUrl", location.pathname);
-        // Redirect to login
-        navigate("/sign-in", { 
-          state: { from: location.pathname },
-          replace: true
-        });
+    const checkAuth = async () => {
+      if (!loading) {
+        if (!isAuthenticated) {
+          // Try refreshing auth status first
+          const isValid = await refreshAuthStatus();
+          
+          if (!isValid) {
+            // Save current location for redirect after login
+            localStorage.setItem("authRedirectUrl", location.pathname);
+            // Redirect to login
+            navigate("/sign-in", { 
+              state: { from: location.pathname },
+              replace: true
+            });
+          }
+        }
+        // Checking complete
+        setIsChecking(false);
       }
-      // Checking complete
-      setIsChecking(false);
-    }
-  }, [isAuthenticated, loading, navigate, location.pathname]);
+    };
+    
+    checkAuth();
+  }, [isAuthenticated, loading, navigate, location.pathname, refreshAuthStatus]);
   
   // Show loading spinner while checking
   if (loading || isChecking) {

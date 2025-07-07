@@ -76,23 +76,25 @@ const MyBookings = () => {
     fetchBookings();
   }, [authToken, navigate]);
 
+  // Update your fetchBookings function:
   const fetchBookings = async () => {
+    setLoading(true);
+    setError(null);
+    
     try {
-      setLoading(true);
-      console.log("Attempting to fetch bookings for user:", userData?.email);
+      // Get fresh token from localStorage
+      const token = localStorage.getItem('authToken');
       
-      if (!userData?.email) {
-        console.warn("User email not found in auth context");
+      if (!token) {
+        throw new Error('No authentication token found. Please log in again.');
       }
       
-      // Add detailed logging for debugging
-      console.log("Using auth token:", authToken ? `${authToken.substring(0, 15)}...` : "No token");
+      console.log("Using auth token:", token.substring(0, 15) + "..."); // Debug token
       
-      // Try the endpoint specifically for user bookings
-      const response = await fetch(`${API_BASE_URL}/api/bookings/user-bookings`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/bookings/user-bookings`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${authToken}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -100,61 +102,27 @@ const MyBookings = () => {
       console.log("API Response status:", response.status);
       
       if (!response.ok) {
-        // Log detailed error information
-        const errorText = await response.text();
-        console.error("Error response:", errorText);
+        const errorData = await response.json();
+        console.log("Error response:", errorData);
         
+        // Handle token expiration
         if (response.status === 401) {
-          // Handle unauthorized error specifically
-          throw new Error("Session expired. Please log in again.");
+          // Clear invalid auth data
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('userData');
+          
+          // Force re-login
+          throw new Error('Session expired. Please log in again.');
         } else {
-          throw new Error(`Failed to fetch bookings (${response.status}): ${response.statusText}`);
+          throw new Error(errorData.error || 'Failed to fetch bookings');
         }
       }
       
       const data = await response.json();
-      console.log("Bookings data received:", data);
-      
-      // Check if data is an array or has a bookings property
-      const bookingsArray = Array.isArray(data) ? data : (data.bookings || []);
-      
-      if (bookingsArray.length === 0) {
-        console.log("No bookings found for user");
-      }
-      
-      // Transform the booking data to match the expected structure for rendering
-      const transformedBookings = bookingsArray.map(booking => ({
-        _id: booking._id || booking.id || 'unknown-id',
-        status: booking.status || 'confirmed',
-        checkInDate: booking.checkIn,
-        checkOutDate: booking.checkOut,
-        guests: booking.guests || 0,
-        totalPrice: booking.totalAmount || 0,
-        isPaid: booking.isPaid || false,
-        paymentMethod: booking.paymentMethod || 'Online Payment',
-        room: {
-          _id: booking.villaId || 'unknown-villa',
-          roomType: booking.villaName || 'Luxury Villa'
-        },
-        hotel: {
-          name: booking.villaName || 'Luxor Villa',
-          city: booking.location || 'Premium Location',
-          image: getVillaImage(booking.villaName) // Add image to each booking
-        }
-      }));
-      
-      console.log("Transformed bookings:", transformedBookings);
-      setBookings(transformedBookings);
-    } catch (error) {
-      console.error('Error fetching bookings:', error);
-      setError(error.message || "Failed to load your bookings");
-      
-      if (error.message?.includes("Session expired")) {
-        // Handle auth errors with a friendlier message
-        setTimeout(() => {
-          navigate('/sign-in');
-        }, 3000);
-      }
+      setBookings(data.bookings || []);
+    } catch (err) {
+      console.log("Error fetching bookings:", err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -203,8 +171,8 @@ const MyBookings = () => {
   if (loading) {
     return (
       <div className="min-h-screen pt-28 flex flex-col items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-emerald-500 border-t-transparent mb-4"></div>
-        <p className="text-emerald-600">Loading your booking details...</p>
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-500 border-t-transparent mb-4"></div>
+        <p className="text-yellow-600">Loading your booking details...</p>
       </div>
     );
   }
@@ -219,13 +187,13 @@ const MyBookings = () => {
           <div className="flex flex-col sm:flex-row gap-4">
             <button 
               onClick={fetchBookings} 
-              className="bg-emerald-600 text-white px-6 py-2 rounded hover:bg-emerald-700 transition-colors duration-300"
+              className="bg-yellow-600 text-white px-6 py-2 rounded hover:bg-yellow-700 transition-colors duration-300"
             >
               Retry
             </button>
             <button 
               onClick={() => navigate('/')} 
-              className="bg-transparent border border-emerald-500 text-emerald-600 px-6 py-2 rounded hover:bg-emerald-50 transition-colors duration-300"
+              className="bg-transparent border border-yellow-500 text-yellow-600 px-6 py-2 rounded hover:bg-yellow-50 transition-colors duration-300"
             >
               Go to Home
             </button>
@@ -249,13 +217,13 @@ const MyBookings = () => {
       {bookings.length === 0 && !loading ? (
         <div className="bg-white border border-gray-200 p-8 rounded-xl shadow-lg text-center">
           <div className="w-20 h-20 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-6">
-            <Calendar className="h-10 w-10 text-emerald-600" />
+            <Calendar className="h-10 w-10 text-yellow-600" />
           </div>
           <h2 className="text-2xl font-medium mb-4 text-gray-800">No bookings found</h2>
           <p className="text-gray-600 mb-6">You haven't made any bookings yet.</p>
           <button 
             onClick={() => navigate('/rooms')} 
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg transition duration-300"
+            className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg transition duration-300"
           >
             Browse Villas
           </button>
@@ -288,7 +256,7 @@ const MyBookings = () => {
                     <div>
                       <h2 className="font-playfair text-2xl md:text-3xl font-bold mb-2 text-gray-800">{booking.room.roomType}</h2>
                       <p className="text-gray-600 flex items-center mb-3">
-                        <MapPin className="h-4 w-4 mr-1 text-emerald-600" />
+                        <MapPin className="h-4 w-4 mr-1 text-yellow-600" />
                         {booking.hotel.city}
                       </p>
                     </div>
@@ -307,8 +275,8 @@ const MyBookings = () => {
                   {/* Booking Information Cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
                     <div className="bg-gray-50 p-4 rounded-lg flex items-center gap-3 border border-gray-100">
-                      <div className="bg-emerald-100 p-2 rounded-lg">
-                        <Calendar className="h-5 w-5 text-emerald-600" />
+                      <div className="bg-yellow-100 p-2 rounded-lg">
+                        <Calendar className="h-5 w-5 text-yellow-600" />
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Check-in</p>
@@ -317,8 +285,8 @@ const MyBookings = () => {
                     </div>
                     
                     <div className="bg-gray-50 p-4 rounded-lg flex items-center gap-3 border border-gray-100">
-                      <div className="bg-emerald-100 p-2 rounded-lg">
-                        <Calendar className="h-5 w-5 text-emerald-600" />
+                      <div className="bg-yellow-100 p-2 rounded-lg">
+                        <Calendar className="h-5 w-5 text-yellow-600" />
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Check-out</p>
@@ -327,8 +295,8 @@ const MyBookings = () => {
                     </div>
                     
                     <div className="bg-gray-50 p-4 rounded-lg flex items-center gap-3 border border-gray-100 sm:col-span-2 lg:col-span-1">
-                      <div className="bg-emerald-100 p-2 rounded-lg">
-                        <Users className="h-5 w-5 text-emerald-600" />
+                      <div className="bg-yellow-100 p-2 rounded-lg">
+                        <Users className="h-5 w-5 text-yellow-600" />
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Guests</p>
@@ -340,7 +308,7 @@ const MyBookings = () => {
                   {/* Payment Info & Actions */}
                   <div className="mt-6 pt-5 border-t border-gray-200 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4">
                     <div className="flex items-center gap-2">
-                      <CreditCard className="h-5 w-5 text-emerald-600" />
+                      <CreditCard className="h-5 w-5 text-yellow-600" />
                       <span className="text-gray-600">{booking.paymentMethod}</span>
                     </div>
                     
@@ -353,7 +321,7 @@ const MyBookings = () => {
                             villaImage: booking.hotel.image || getVillaImage(booking.hotel.name) 
                           }
                         })} 
-                        className="flex-1 sm:flex-none bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition-colors duration-300 flex items-center justify-center gap-2 font-medium"
+                        className="flex-1 sm:flex-none bg-yellow-600 text-white px-6 py-3 rounded-lg hover:bg-yellow-700 transition-colors duration-300 flex items-center justify-center gap-2 font-medium"
                       >
                         View Details
                       </button>

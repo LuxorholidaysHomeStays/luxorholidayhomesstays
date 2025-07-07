@@ -99,6 +99,14 @@ const SignIn = () => {
       const data = await response.json();
       
       if (!response.ok) {
+        // Add special handling for user not found
+        if (data.code === 'USER_NOT_FOUND') {
+          addToast('User does not exist. Please sign up instead.', 'error');
+          // Optional: Switch to sign up mode
+          setIsLogin(false);
+          return;
+        }
+        
         throw new Error(data.error || 'Authentication failed');
       }
       
