@@ -88,10 +88,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Update the Google sign-in handler
+  // Update handleGoogleSignIn in AuthContext.jsx to better handle admin detection
   const handleGoogleSignIn = async () => {
     try {
-      // Get Google user info (using Firebase or whatever library you're using)
+      // Get Google user info
       const googleUserInfo = await signInWithPopup(auth, new GoogleAuthProvider());
       
       if (!googleUserInfo || !googleUserInfo.user.email) {
@@ -99,7 +99,9 @@ export const AuthProvider = ({ children }) => {
         return { success: false, message: "Google authentication failed" };
       }
       
-      // Call your backend's syncUser endpoint instead of google-auth
+      console.log("Google auth success for email:", googleUserInfo.user.email);
+      
+      // Call your backend's syncUser endpoint
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/users/sync`, {
         method: 'POST',
         headers: {
@@ -122,10 +124,14 @@ export const AuthProvider = ({ children }) => {
         setAuthToken(data.token);
         setUserData(data.user);
         
+        // Check if admin
+        const isAdmin = data.isAdmin || data.user.role === 'admin';
+        console.log("Is admin user:", isAdmin);
+        
         return {
           success: true,
-          isAdmin: data.user.role === 'admin',
-          message: 'Successfully logged in with Google'
+          isAdmin: isAdmin,
+          message: isAdmin ? 'Admin login successful' : 'Login successful'
         };
       } else {
         console.error("Backend authentication failed:", data.error);
