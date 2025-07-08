@@ -896,3 +896,33 @@ const SignIn = () => {
 };
 
 export default SignIn;
+
+// Add this to your auth context or utility file
+export const storePhoneUserLocally = (firebaseUser, name) => {
+  const phoneUserData = {
+    _id: firebaseUser.uid,
+    name: name || firebaseUser.displayName || `User_${firebaseUser.phoneNumber.slice(-4)}`,
+    phoneNumber: firebaseUser.phoneNumber,
+    email: `${firebaseUser.uid}@phone.local`,
+    isVerified: true,
+    isPhoneVerified: true,
+    userType: 'phone',
+    createdAt: new Date().toISOString(),
+    firebaseUid: firebaseUser.uid
+  };
+  
+  // Store in localStorage
+  const existingPhoneUsers = JSON.parse(localStorage.getItem('phoneUsers') || '[]');
+  const existingUserIndex = existingPhoneUsers.findIndex(u => u.phoneNumber === firebaseUser.phoneNumber);
+  
+  if (existingUserIndex >= 0) {
+    existingPhoneUsers[existingUserIndex] = phoneUserData;
+  } else {
+    existingPhoneUsers.push(phoneUserData);
+  }
+  
+  localStorage.setItem('phoneUsers', JSON.stringify(existingPhoneUsers));
+  localStorage.setItem('currentPhoneUser', JSON.stringify(phoneUserData));
+  
+  return phoneUserData;
+};
