@@ -271,7 +271,7 @@ import { useState, useEffect } from "react"
 import { ChevronLeft, ChevronRight, X } from "lucide-react"
 import { getPriceForDate, formatPrice } from "../../data/villa-pricing.jsx"
 
-export default function UnifiedCalendar({ isVisible, onClose, checkInDate, checkOutDate, onDateSelect, villa }) {
+export default function UnifiedCalendar({ isVisible, onClose, checkInDate, checkOutDate, onDateSelect, villa, blockedDates = [] }) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectionMode, setSelectionMode] = useState("checkin")
   const [tempCheckIn, setTempCheckIn] = useState(checkInDate)
@@ -292,12 +292,40 @@ export default function UnifiedCalendar({ isVisible, onClose, checkInDate, check
     return `${year}-${month}-${day}`
   }
 
+  // Helper function to check if a date is blocked
+  const isDateBlocked = (date) => {
+    const dateStr = formatDateToYYYYMMDD(date)
+    return blockedDates.some((blockedRange) => {
+      const checkIn = new Date(blockedRange.checkIn)
+      const checkOut = new Date(blockedRange.checkOut)
+      const currentDate = new Date(date)
+      
+      // Check if the date falls within any blocked range (inclusive)
+      return currentDate >= checkIn && currentDate <= checkOut
+    })
+  }
+
+  // Helper function to check if a date range overlaps with any blocked dates
+  const doesRangeOverlapBlocked = (startDate, endDate) => {
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+    
+    return blockedDates.some((blockedRange) => {
+      const blockedStart = new Date(blockedRange.checkIn)
+      const blockedEnd = new Date(blockedRange.checkOut)
+      
+      // Check if any part of the range overlaps with blocked dates
+      return (start <= blockedEnd && end >= blockedStart)
+    })
+  }
+
   const handleDateClick = (date) => {
     const dateStr = formatDateToYYYYMMDD(date)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    if (date < today) return
+    // Prevent selection of past dates or blocked dates
+    if (date < today || isDateBlocked(date)) return
 
     if (selectionMode === "checkin") {
       setTempCheckIn(dateStr)
@@ -311,9 +339,19 @@ export default function UnifiedCalendar({ isVisible, onClose, checkInDate, check
         setTempCheckOut(dateStr)
       }
 
+      // Check if the selected range overlaps with any blocked dates
+      const finalCheckIn = dateStr <= tempCheckIn ? dateStr : tempCheckIn
+      const finalCheckOut = dateStr <= tempCheckIn ? tempCheckIn : dateStr
+      
+      if (doesRangeOverlapBlocked(finalCheckIn, finalCheckOut)) {
+        // Reset selection if range overlaps with blocked dates
+        setTempCheckIn("")
+        setTempCheckOut("")
+        setSelectionMode("checkin")
+        return
+      }
+
       setTimeout(() => {
-        const finalCheckIn = dateStr <= tempCheckIn ? dateStr : tempCheckIn
-        const finalCheckOut = dateStr <= tempCheckIn ? tempCheckIn : dateStr
         onDateSelect(finalCheckIn, finalCheckOut)
         onClose()
       }, 300)
@@ -366,6 +404,7 @@ export default function UnifiedCalendar({ isVisible, onClose, checkInDate, check
             const isCurrentMonth = date.getMonth() === month
             const isToday = date.toDateString() === today.toDateString()
             const isPast = date < today && !isToday
+            const isBlocked = isDateBlocked(date)
             const dateStr = formatDateToYYYYMMDD(date)
             const isCheckIn = tempCheckIn === dateStr
             const isCheckOut = tempCheckOut === dateStr
@@ -386,8 +425,8 @@ export default function UnifiedCalendar({ isVisible, onClose, checkInDate, check
                   min-h-[50px] transition-all duration-200 select-none border-2
                   ${!isCurrentMonth ? "opacity-40" : ""}
                   ${
-                    isPast
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed border-transparent"
+                    isPast || isBlocked
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed border-transparent opacity-60"
                       : isCheckIn
                         ? "bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-white font-bold border-[#D4AF37] shadow-lg scale-105"
                         : isCheckOut
@@ -402,12 +441,18 @@ export default function UnifiedCalendar({ isVisible, onClose, checkInDate, check
                 onClick={() => handleDateClick(date)}
               >
                 <div className="text-sm font-medium">{date.getDate()}</div>
-                {isCurrentMonth && !isPast && (
+                {isCurrentMonth && !isPast && !isBlocked && (
                   <div className={`text-xs mt-1 ${isCheckIn || isCheckOut ? "text-white" : "text-gray-600"}`}>
                     {formatPrice(price)}
                   </div>
                 )}
-                {isToday && !isCheckIn && !isCheckOut && (
+                {isBlocked && isCurrentMonth && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-6 h-0.5 bg-red-500 rotate-45"></div>
+                    <div className="w-6 h-0.5 bg-red-500 -rotate-45 absolute"></div>
+                  </div>
+                )}
+                {isToday && !isCheckIn && !isCheckOut && !isBlocked && (
                   <div className="absolute -bottom-1 w-2 h-2 rounded-full bg-[#D4AF37]" />
                 )}
               </div>

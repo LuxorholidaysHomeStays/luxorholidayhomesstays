@@ -4,6 +4,30 @@ import { API_BASE_URL } from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { Calendar, MapPin, Users, CheckCircle, Clock, AlertCircle, CreditCard, Home } from 'lucide-react';
 
+// Helper function to format time from 24-hour to 12-hour format
+const formatTimeFor12Hour = (time24) => {
+  if (!time24) return null; // Return null if no time
+  
+  try {
+    const [hours, minutes] = time24.split(':');
+    const hour = parseInt(hours);
+    const minute = minutes || '00';
+    
+    if (hour === 0) {
+      return `12:${minute} AM`;
+    } else if (hour < 12) {
+      return `${hour}:${minute} AM`;
+    } else if (hour === 12) {
+      return `12:${minute} PM`;
+    } else {
+      return `${hour - 12}:${minute} PM`;
+    }
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return null;
+  }
+};
+
 // Import villa images - same imports as in AllRooms.jsx
 // Amrith Palace Images
 import AP1 from "/AmrithPalace/AP8.jpg"
@@ -119,6 +143,7 @@ const MyBookings = () => {
       }
       
       const data = await response.json();
+      console.log("Fetched bookings data:", data); // Debug log to see the actual structure
       setBookings(data.bookings || []);
     } catch (err) {
       console.log("Error fetching bookings:", err);
@@ -236,8 +261,8 @@ const MyBookings = () => {
                 {/* Villa Image */}
                 <div className="md:w-1/3 h-72 md:h-auto relative overflow-hidden">
                   <img 
-                    src={booking.hotel.image || getVillaImage(booking.hotel.name)} 
-                    alt={booking.hotel.name} 
+                    src={getVillaImage(booking.villaName)} 
+                    alt={booking.villaName || 'Villa'} 
                     className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
                   />
                   <div className="absolute top-0 left-0 m-4">
@@ -254,19 +279,19 @@ const MyBookings = () => {
                 <div className="md:w-2/3 p-6">
                   <div className="md:flex justify-between items-start">
                     <div>
-                      <h2 className="font-playfair text-2xl md:text-3xl font-bold mb-2 text-gray-800">{booking.room.roomType}</h2>
+                      <h2 className="font-playfair text-2xl md:text-3xl font-bold mb-2 text-gray-800">{booking.villaName || 'Villa'}</h2>
                       <p className="text-gray-600 flex items-center mb-3">
                         <MapPin className="h-4 w-4 mr-1 text-yellow-600" />
-                        {booking.hotel.city}
+                        {booking.location || 'Location not specified'}
                       </p>
                     </div>
                     
                     {/* Price Display */}
-                    {booking.totalPrice > 0 && (
+                    {booking.totalAmount > 0 && (
                       <div className="mt-2 md:mt-0 bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-lg">
                         <div className="text-sm text-emerald-700 mb-1">Total</div>
                         <div className="text-lg font-bold text-gray-800">
-                          ₹{booking.totalPrice.toLocaleString('en-IN')}
+                          ₹{booking.totalAmount.toLocaleString('en-IN')}
                         </div>
                       </div>
                     )}
@@ -280,7 +305,12 @@ const MyBookings = () => {
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Check-in</p>
-                        <p className="font-medium text-gray-800">{formatDate(booking.checkInDate)}</p>
+                        <p className="font-medium text-gray-800">{formatDate(booking.checkIn)}</p>
+                        {booking.checkInTime && (
+                          <p className="text-xs text-gray-500">
+                            {booking.checkInTime} ({formatTimeFor12Hour(booking.checkInTime)})
+                          </p>
+                        )}
                       </div>
                     </div>
                     
@@ -290,7 +320,12 @@ const MyBookings = () => {
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Check-out</p>
-                        <p className="font-medium text-gray-800">{formatDate(booking.checkOutDate)}</p>
+                        <p className="font-medium text-gray-800">{formatDate(booking.checkOut)}</p>
+                        {booking.checkOutTime && (
+                          <p className="text-xs text-gray-500">
+                            {booking.checkOutTime} ({formatTimeFor12Hour(booking.checkOutTime)})
+                          </p>
+                        )}
                       </div>
                     </div>
                     
@@ -301,7 +336,23 @@ const MyBookings = () => {
                       <div>
                         <p className="text-sm text-gray-500">Guests</p>
                         <p className="font-medium text-gray-800">{booking.guests} {booking.guests === 1 ? 'Guest' : 'Guests'}</p>
+                        {booking.infants > 0 && (
+                          <p className="text-xs text-gray-500">+ {booking.infants} infant{booking.infants > 1 ? 's' : ''}</p>
+                        )}
                       </div>
+                    </div>
+                  </div>
+                  
+                  {/* Additional Booking Info */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                      <p className="text-sm text-gray-500">Guest Name</p>
+                      <p className="font-medium text-gray-800">{booking.guestName || 'Not specified'}</p>
+                    </div>
+                    
+                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                      <p className="text-sm text-gray-500">Duration</p>
+                      <p className="font-medium text-gray-800">{booking.totalDays} {booking.totalDays === 1 ? 'Day' : 'Days'}</p>
                     </div>
                   </div>
                   
@@ -309,7 +360,12 @@ const MyBookings = () => {
                   <div className="mt-6 pt-5 border-t border-gray-200 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4">
                     <div className="flex items-center gap-2">
                       <CreditCard className="h-5 w-5 text-yellow-600" />
-                      <span className="text-gray-600">{booking.paymentMethod}</span>
+                      <span className="text-gray-600">{booking.paymentMethod || 'Payment method not specified'}</span>
+                      {booking.isPaid && (
+                        <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Paid
+                        </span>
+                      )}
                     </div>
                     
                     <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
@@ -317,8 +373,8 @@ const MyBookings = () => {
                         onClick={() => navigate(`/booking/${booking._id}`, { 
                           state: { 
                             bookingId: booking._id,
-                            villaName: booking.hotel.name,
-                            villaImage: booking.hotel.image || getVillaImage(booking.hotel.name) 
+                            villaName: booking.villaName,
+                            villaImage: getVillaImage(booking.villaName) 
                           }
                         })} 
                         className="flex-1 sm:flex-none bg-yellow-600 text-white px-6 py-3 rounded-lg hover:bg-yellow-700 transition-colors duration-300 flex items-center justify-center gap-2 font-medium"
@@ -326,8 +382,14 @@ const MyBookings = () => {
                         View Details
                       </button>
                       
-                      {booking.status === 'pending' && (
-                        <button className="flex-1 sm:flex-none bg-transparent text-red-600 border border-red-200 px-6 py-3 rounded-lg hover:bg-red-50 transition-colors duration-300">
+                      {booking.status === 'confirmed' && (
+                        <button 
+                          onClick={() => {
+                            // Add cancel booking functionality here
+                            console.log('Cancel booking:', booking._id);
+                          }}
+                          className="flex-1 sm:flex-none bg-transparent text-red-600 border border-red-200 px-6 py-3 rounded-lg hover:bg-red-50 transition-colors duration-300"
+                        >
                           Cancel Booking
                         </button>
                       )}

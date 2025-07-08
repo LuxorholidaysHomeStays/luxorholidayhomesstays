@@ -19,53 +19,30 @@ export default function EnhancedBookingForm({
   isSignedIn,
   userData,
   isModal = false,
+  blockedDates = [],
 }) {
   const [bookingStep, setBookingStep] = useState(1)
   const [showCalendar, setShowCalendar] = useState(false)
-  const [showTimeSelector, setShowTimeSelector] = useState(false)
-  const [timeSelectionType, setTimeSelectionType] = useState("") // 'checkin' or 'checkout'
-  const [checkInTime, setCheckInTime] = useState("15:00") // Default check-in time
-  const [checkOutTime, setCheckOutTime] = useState("11:00") // Default check-out time
-  const [tempDate, setTempDate] = useState(null)
+
+  // Fixed times - no longer changeable by users
+  const checkInTime = "14:00 (2:00 PM)" // Fixed check-in time
+  const checkOutTime = "12:00 (12:00 PM)" // Fixed check-out time
 
   const villaPricing = getVillaPricing(villa?.name || "")
 
-  // Time options for selection
-  const timeOptions = [
-    "06:00",
-    "06:30",
-    "07:00",
-    "07:30",
-    "08:00",
-    "08:30",
-    "09:00",
-    "09:30",
-    "10:00",
-    "10:30",
-    "11:00",
-    "11:30",
-    "12:00",
-    "12:30",
-    "13:00",
-    "13:30",
-    "14:00",
-    "14:30",
-    "15:00",
-    "15:30",
-    "16:00",
-    "16:30",
-    "17:00",
-    "17:30",
-    "18:00",
-    "18:30",
-    "19:00",
-    "19:30",
-    "20:00",
-    "20:30",
-    "21:00",
-    "21:30",
-    "22:00",
-  ]
+  // Helper function to format time display
+  const formatTimeDisplay = (timeString) => {
+    return timeString // Already formatted
+  }
+
+  // Helper function to extract 24-hour time for backend
+  const extractRailwayTime = (timeString) => {
+    // Extract the railway time part from "14:00 (2:00 PM)" format
+    if (timeString.includes("(")) {
+      return timeString.split(" ")[0] // Returns "14:00"
+    }
+    return timeString // Fallback for old format
+  }
 
   const calculateTotalAmount = () => {
     if (!checkInDate || !checkOutDate || !villa?.name) return 0
@@ -110,7 +87,7 @@ export default function EnhancedBookingForm({
     }
   }
 
-  // Enhanced date change handler with time selection
+  // Enhanced date change handler
   const handleDateChangeWithTime = (checkIn, checkOut) => {
     if (checkIn && checkOut) {
       // Both dates selected at once - save immediately and close calendar
@@ -132,31 +109,11 @@ export default function EnhancedBookingForm({
     }
   }
 
-  // Handle time selection confirmation
-  const handleTimeConfirm = (selectedTime) => {
-    if (timeSelectionType === "checkin") {
-      setCheckInTime(selectedTime)
-    } else if (timeSelectionType === "checkout") {
-      setCheckOutTime(selectedTime)
-    }
-
-    setShowTimeSelector(false)
-    setTempDate(null)
-    setTimeSelectionType("")
-  }
-
-  // Handle time selection trigger
-  const handleTimeSelection = (type) => {
-    setTimeSelectionType(type)
-    setShowTimeSelector(true)
-  }
-
-  // Enhanced booking handler with time data
+  // Enhanced booking handler with fixed time data
   const handleBookNowWithTime = () => {
     const bookingData = {
-      checkInTime,
-      checkOutTime,
-      // Pass other booking data
+      checkInTime: extractRailwayTime(checkInTime), // Send "14:00" format to backend
+      checkOutTime: extractRailwayTime(checkOutTime), // Send "12:00" format to backend
     }
     onBookNow(bookingData)
   }
@@ -218,7 +175,7 @@ export default function EnhancedBookingForm({
         {/* Step Title */}
         <div className="text-center mb-6">
           <h3 className="text-lg font-bold text-gray-900">
-            {bookingStep === 1 && "📅 Select Dates & Times"}
+            {bookingStep === 1 && "📅 Select Dates"}
             {bookingStep === 2 && "👥 Choose Guests"}
             {bookingStep === 3 && "💳 Confirm & Pay"}
           </h3>
@@ -246,7 +203,7 @@ export default function EnhancedBookingForm({
 
         {/* Step Content */}
         <div className="space-y-4">
-          {/* Step 1: Date & Time Selection */}
+          {/* Step 1: Date Selection */}
           {bookingStep === 1 && (
             <div className="space-y-3">
               <button
@@ -271,13 +228,10 @@ export default function EnhancedBookingForm({
                 </div>
               </button>
 
-              {/* Time Display */}
+              {/* Fixed Time Display - No interaction */}
               {checkInDate && checkOutDate && (
                 <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => handleTimeSelection("checkin")}
-                    className="bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 rounded-xl p-3 border border-[#D4AF37]/20 hover:border-[#D4AF37] transition-all duration-200 text-left"
-                  >
+                  <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 rounded-xl p-3 border border-[#D4AF37]/20">
                     <div className="flex items-center gap-2 mb-2">
                       <Clock className="h-4 w-4 text-[#D4AF37]" />
                       <span className="text-sm font-semibold text-gray-900">Check-in</span>
@@ -289,12 +243,9 @@ export default function EnhancedBookingForm({
                         day: "numeric",
                       })}
                     </div>
-                    <div className="text-lg font-bold text-[#D4AF37]">{checkInTime}</div>
-                  </button>
-                  <button
-                    onClick={() => handleTimeSelection("checkout")}
-                    className="bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 rounded-xl p-3 border border-[#D4AF37]/20 hover:border-[#D4AF37] transition-all duration-200 text-left"
-                  >
+                    <div className="text-lg font-bold text-[#D4AF37]">{formatTimeDisplay(checkInTime)}</div>
+                  </div>
+                  <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 rounded-xl p-3 border border-[#D4AF37]/20">
                     <div className="flex items-center gap-2 mb-2">
                       <Clock className="h-4 w-4 text-[#D4AF37]" />
                       <span className="text-sm font-semibold text-gray-900">Check-out</span>
@@ -306,10 +257,22 @@ export default function EnhancedBookingForm({
                         day: "numeric",
                       })}
                     </div>
-                    <div className="text-lg font-bold text-[#D4AF37]">{checkOutTime}</div>
-                  </button>
+                    <div className="text-lg font-bold text-[#D4AF37]">{formatTimeDisplay(checkOutTime)}</div>
+                  </div>
                 </div>
               )}
+
+              {/* Fixed Time Info Note */}
+              <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="text-xs text-blue-700 text-center">
+                  <div className="font-medium mb-1">⏰ Standard Check-in/Check-out Times</div>
+                  <div className="space-y-1">
+                    <div><span className="font-medium">Check-in:</span> 14:00 (2:00 PM) - Fixed</div>
+                    <div><span className="font-medium">Check-out:</span> 12:00 (12:00 PM) - Fixed</div>
+                    <div>These times are standard for all bookings</div>
+                  </div>
+                </div>
+              </div>
 
               {checkInDate && checkOutDate && (
                 <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 rounded-xl p-3 border border-[#D4AF37]/20">
@@ -449,11 +412,11 @@ export default function EnhancedBookingForm({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Check-in:</span>
-                    <span className="font-medium text-xs">{checkInTime}</span>
+                    <span className="font-medium text-xs">{formatTimeDisplay(checkInTime)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Check-out:</span>
-                    <span className="font-medium text-xs">{checkOutTime}</span>
+                    <span className="font-medium text-xs">{formatTimeDisplay(checkOutTime)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Guests:</span>
@@ -629,68 +592,8 @@ export default function EnhancedBookingForm({
               checkOutDate={checkOutDate}
               onDateSelect={handleDateChangeWithTime}
               villa={villa}
+              blockedDates={blockedDates}
             />
-          </div>
-        </div>
-      )}
-
-      {/* Time Selector Modal */}
-      {showTimeSelector && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-          style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999 }}
-        >
-          <div 
-            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" 
-            style={{ zIndex: 99999 }}
-          >
-            <div className="p-4 sm:p-6">
-              <div className="text-center mb-4 sm:mb-6">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                  <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                </div>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
-                  Select {timeSelectionType === "checkin" ? "Check-in" : "Check-out"} Time
-                </h3>
-                <p className="text-gray-600 text-sm">
-                  {timeSelectionType === "checkin"
-                    ? "What time would you like to check in?"
-                    : "What time would you like to check out?"}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 max-h-48 sm:max-h-60 overflow-y-auto mb-4 sm:mb-6">
-                {timeOptions.map((time) => (
-                  <button
-                    key={time}
-                    onClick={() => handleTimeConfirm(time)}
-                    className={`p-2 sm:p-3 rounded-lg border-2 transition-all duration-200 text-xs sm:text-sm font-medium ${
-                      (timeSelectionType === "checkin" && time === checkInTime) ||
-                      (timeSelectionType === "checkout" && time === checkOutTime)
-                        ? "border-[#D4AF37] bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 text-[#D4AF37]"
-                        : "border-gray-200 hover:border-[#D4AF37] hover:bg-gray-50"
-                    }`}
-                  >
-                    {time}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowTimeSelector(false)}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 sm:py-3 px-3 sm:px-4 rounded-xl transition-all duration-300 text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleTimeConfirm(timeSelectionType === "checkin" ? checkInTime : checkOutTime)}
-                  className="flex-1 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] hover:from-[#BFA181] hover:to-[#D4AF37] text-white font-bold py-2 sm:py-3 px-3 sm:px-4 rounded-xl transition-all duration-300 text-sm"
-                >
-                  Confirm
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       )}

@@ -153,13 +153,12 @@ export default function VillaDetails() {
   const { userData, authToken } = useAuth()
   const isSignedIn = !!authToken && !!userData
 
-  // State management
   const [villa, setVilla] = useState(location.state?.villa || null)
   const [loading, setLoading] = useState(!location.state?.villa)
   const [error, setError] = useState(null)
   const [isSaved, setIsSaved] = useState(false)
+  const [blockedDates, setBlockedDates] = useState([])
 
-  // Booking states
   const [checkInDate, setCheckInDate] = useState("")
   const [checkOutDate, setCheckOutDate] = useState("")
   const [adults, setAdults] = useState(1)
@@ -170,11 +169,11 @@ export default function VillaDetails() {
   const [showBookingModal, setShowBookingModal] = useState(false)
   const isBookingInProgress = useRef(false)
 
-  // Enhanced UI states
+  
   const [activeSection, setActiveSection] = useState("overview")
   const [showAllAmenities, setShowAllAmenities] = useState(false)
 
-  // Fetch villa details
+  
   const fetchVillaDetails = async () => {
     try {
       setLoading(true)
@@ -192,7 +191,7 @@ export default function VillaDetails() {
 
       const data = await response.json()
 
-      // Process villa data with image mapping
+   
       const villaName = data.name?.toLowerCase() || ""
       let images = []
       if (villaName.includes("amrith") || villaName.includes("palace")) {
@@ -280,7 +279,38 @@ export default function VillaDetails() {
     }
   }
 
-  // Enhanced booking handler with time data
+  // Fetch blocked dates for the villa
+  const fetchBlockedDates = async (villaId) => {
+    try {
+      console.log("[VILLA DETAILS] Fetching blocked dates for villa:", villaId)
+      const response = await fetch(`${API_BASE_URL}/api/bookings/blocked-dates/${villaId}`)
+      if (response.ok) {
+        const data = await response.json()
+        console.log("[VILLA DETAILS] Received blocked dates:", data.blockedDates)
+        setBlockedDates(data.blockedDates || [])
+      } else {
+        console.error("Failed to fetch blocked dates")
+        setBlockedDates([])
+      }
+    } catch (error) {
+      console.error("Error fetching blocked dates:", error)
+      setBlockedDates([])
+    }
+  }
+
+  // Utility function to convert date ranges to individual dates (if needed in future)
+  const getDatesBetween = (start, end) => {
+    const dates = []
+    const current = new Date(start)
+    const endDate = new Date(end)
+    while (current <= endDate) {
+      dates.push(new Date(current))
+      current.setDate(current.getDate() + 1)
+    }
+    return dates
+  }
+
+ 
   const handleBookNow = async (bookingData = {}) => {
     if (!isSignedIn) {
       const bookingState = {
@@ -288,8 +318,8 @@ export default function VillaDetails() {
         villaName: villa.name,
         checkInDate,
         checkOutDate,
-        checkInTime: bookingData.checkInTime || "15:00",
-        checkOutTime: bookingData.checkOutTime || "11:00",
+        checkInTime: bookingData.checkInTime || "14:00",
+        checkOutTime: bookingData.checkOutTime || "12:00",
         adults,
         children,
         infants,
@@ -332,7 +362,7 @@ export default function VillaDetails() {
     isBookingInProgress.current = true
 
     try {
-      // Calculate total amount with safe pricing
+    
       const startDate = new Date(checkInDate)
       const endDate = new Date(checkOutDate)
       const nights = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24))
@@ -352,13 +382,13 @@ export default function VillaDetails() {
         throw new Error("Invalid booking amount calculated. Please try again.")
       }
 
-      // Load Razorpay and create order
+     
       const isScriptLoaded = await loadRazorpayScript()
       if (!isScriptLoaded) {
         throw new Error("Failed to load payment gateway. Please refresh and try again.")
       }
 
-      // Create order on server
+     
       const orderResponse = await fetch(`${API_BASE_URL}/api/payments/create-order`, {
         method: "POST",
         headers: {
@@ -374,8 +404,8 @@ export default function VillaDetails() {
           email: userData?.email,
           checkIn: checkInDate,
           checkOut: checkOutDate,
-          checkInTime: bookingData.checkInTime || "15:00",
-          checkOutTime: bookingData.checkOutTime || "11:00",
+          checkInTime: bookingData.checkInTime || "14:00",
+          checkOutTime: bookingData.checkOutTime || "12:00",
           guests: adults + children,
           infants,
           totalDays: nights + 1,
@@ -397,7 +427,7 @@ export default function VillaDetails() {
         throw new Error(orderData.message || "Unable to create payment order. Please try again.")
       }
 
-      // Razorpay payment options
+    
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY || "rzp_live_quNHH9YfEhaAru",
         amount: orderData.order.amount,
@@ -424,8 +454,8 @@ export default function VillaDetails() {
                   guestName: userData?.name || userData?.firstName || "Guest",
                   checkIn: checkInDate,
                   checkOut: checkOutDate,
-                  checkInTime: bookingData.checkInTime || "15:00",
-                  checkOutTime: bookingData.checkOutTime || "11:00",
+                  checkInTime: bookingData.checkInTime || "14:00",
+                  checkOutTime: bookingData.checkOutTime || "12:00",
                   guests: adults + children,
                   infants,
                   totalAmount: calculatedTotalAmount,
@@ -445,7 +475,7 @@ export default function VillaDetails() {
             }
 
             if (verifyResponse.ok && verifyData.success) {
-              // Reset form and show success
+           
               setCheckInDate("")
               setCheckOutDate("")
               setAdults(1)
@@ -507,20 +537,20 @@ export default function VillaDetails() {
     }
   }
 
-  // Handle date changes
+
   const handleDateChange = (checkIn, checkOut) => {
     setCheckInDate(checkIn)
     setCheckOutDate(checkOut)
   }
 
-  // Handle guest changes
+
   const handleGuestChange = (newAdults, newChildren, newInfants) => {
     setAdults(newAdults)
     setChildren(newChildren)
     setInfants(newInfants)
   }
 
-  // Load villa data on mount
+
   useEffect(() => {
     if (location.state?.villa) {
       const navigationVilla = location.state.villa
@@ -538,10 +568,21 @@ export default function VillaDetails() {
       }
       setVilla({ ...navigationVilla, images: processedImages })
       setLoading(false)
+      // Fetch blocked dates for this villa
+      if (navigationVilla._id || navigationVilla.id) {
+        fetchBlockedDates(navigationVilla._id || navigationVilla.id)
+      }
     } else if (id) {
       fetchVillaDetails()
     }
   }, [id, location.state])
+
+  // Fetch blocked dates when villa is loaded
+  useEffect(() => {
+    if (villa && (villa._id || villa.id)) {
+      fetchBlockedDates(villa._id || villa.id)
+    }
+  }, [villa])
 
   // Loading state
   if (loading) {
@@ -751,6 +792,7 @@ export default function VillaDetails() {
                 paymentProcessing={paymentProcessing}
                 isSignedIn={isSignedIn}
                 userData={userData}
+                blockedDates={blockedDates}
               />
             </div>
           </div>
@@ -770,6 +812,7 @@ export default function VillaDetails() {
               paymentProcessing={paymentProcessing}
               isSignedIn={isSignedIn}
               userData={userData}
+              blockedDates={blockedDates}
             />
           </div>
         </div>
@@ -807,6 +850,7 @@ export default function VillaDetails() {
                   paymentProcessing={paymentProcessing}
                   isSignedIn={isSignedIn}
                   userData={userData}
+                  blockedDates={blockedDates}
                   isModal={true}
                 />
               </div>

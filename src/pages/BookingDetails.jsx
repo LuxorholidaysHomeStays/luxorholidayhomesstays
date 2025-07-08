@@ -352,6 +352,30 @@ const BookingDetails = () => {
     return new Date(dateString).toLocaleDateString(undefined, options)
   }
 
+  // Helper function to format time from 24-hour to 12-hour format
+  const formatTimeFor12Hour = (time24) => {
+    if (!time24) return null // Return null if no time
+
+    try {
+      const [hours, minutes] = time24.split(":")
+      const hour = parseInt(hours)
+      const minute = minutes || "00"
+
+      if (hour === 0) {
+        return `12:${minute} AM`
+      } else if (hour < 12) {
+        return `${hour}:${minute} AM`
+      } else if (hour === 12) {
+        return `12:${minute} PM`
+      } else {
+        return `${hour - 12}:${minute} PM`
+      }
+    } catch (error) {
+      console.error("Error formatting time:", error)
+      return null
+    }
+  }
+
   const getStatusIcon = (status) => {
     switch (status) {
       case "confirmed":
@@ -569,14 +593,28 @@ const BookingDetails = () => {
                   <div className="text-xs sm:text-sm text-gray-500 mb-1">Check-in</div>
                   <div className="flex items-center gap-1 sm:gap-2">
                     <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
-                    <span className="font-medium text-gray-700 text-xs sm:text-sm">{formatDate(booking.checkIn)}</span>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-gray-700 text-xs sm:text-sm">{formatDate(booking.checkIn)}</span>
+                      {booking.checkInTime && (
+                        <span className="text-xs text-gray-500">
+                          {booking.checkInTime} ({formatTimeFor12Hour(booking.checkInTime)})
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div>
                   <div className="text-xs sm:text-sm text-gray-500 mb-1">Check-out</div>
                   <div className="flex items-center gap-1 sm:gap-2">
                     <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
-                    <span className="font-medium text-gray-700 text-xs sm:text-sm">{formatDate(booking.checkOut)}</span>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-gray-700 text-xs sm:text-sm">{formatDate(booking.checkOut)}</span>
+                      {booking.checkOutTime && (
+                        <span className="text-xs text-gray-500">
+                          {booking.checkOutTime} ({formatTimeFor12Hour(booking.checkOutTime)})
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -691,7 +729,7 @@ const BookingDetails = () => {
                 </div>
               </div>
               <div className="bg-gray-50 p-3 sm:p-4 rounded-lg mt-3 sm:mt-4 border border-gray-200">
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center mb-3">
                   <div className="flex items-center gap-1 sm:gap-2">
                     <div className={booking.isPaid ? "text-emerald-600" : "text-amber-600"}>
                       {booking.isPaid ? (
@@ -708,6 +746,30 @@ const BookingDetails = () => {
                     {booking.isPaid ? "Paid" : "Payment Due at Hotel"}
                   </div>
                 </div>
+                
+                {/* Payment Method */}
+                <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                    <span className="font-medium text-gray-700 text-xs sm:text-sm">Payment Method</span>
+                  </div>
+                  <div className="font-semibold text-xs sm:text-sm text-gray-700">
+                    {booking.paymentMethod || "Not specified"}
+                  </div>
+                </div>
+                
+                {/* Transaction ID for paid bookings */}
+                {booking.isPaid && booking.paymentId && (
+                  <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                      <span className="font-medium text-gray-700 text-xs sm:text-sm">Transaction ID</span>
+                    </div>
+                    <div className="font-mono text-xs sm:text-sm text-gray-600">
+                      {booking.paymentId}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
