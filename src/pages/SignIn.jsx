@@ -7,6 +7,7 @@ import 'aos/dist/aos.css';
 import { signInWithGoogle } from '../utils/firebase';
 import { FcGoogle } from 'react-icons/fc';
 import { useToast } from '../context/ToastContext';
+import { setupRecaptcha, sendOTP, verifyOTP } from '../utils/otp';
 
 const SignIn = () => {
   // Initialize AOS for animations
@@ -19,10 +20,16 @@ const SignIn = () => {
   }, []);
 
   const [isLogin, setIsLogin] = useState(true);
+  const [authMethod, setAuthMethod] = useState('email'); // 'email' or 'phone'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [countryCode, setCountryCode] = useState('+91'); // Default to India
+  const [otp, setOtp] = useState('');
+  const [showOtpInput, setShowOtpInput] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -33,6 +40,61 @@ const SignIn = () => {
   const [searchParams] = useSearchParams();
   const isRedirectFromBooking = searchParams.get('redirect') === 'booking';
   const { addToast } = useToast();
+
+  // Country codes list
+  const countryCodes = [
+    { code: '+1', name: 'United States', flag: '🇺🇸' },
+    { code: '+44', name: 'United Kingdom', flag: '🇬🇧' },
+    { code: '+91', name: 'India', flag: '🇮🇳' },
+    { code: '+86', name: 'China', flag: '🇨🇳' },
+    { code: '+81', name: 'Japan', flag: '🇯🇵' },
+    { code: '+49', name: 'Germany', flag: '🇩🇪' },
+    { code: '+33', name: 'France', flag: '🇫🇷' },
+    { code: '+39', name: 'Italy', flag: '🇮🇹' },
+    { code: '+7', name: 'Russia', flag: '🇷🇺' },
+    { code: '+55', name: 'Brazil', flag: '🇧🇷' },
+    { code: '+61', name: 'Australia', flag: '🇦🇺' },
+    { code: '+34', name: 'Spain', flag: '🇪🇸' },
+    { code: '+82', name: 'South Korea', flag: '🇰🇷' },
+    { code: '+65', name: 'Singapore', flag: '🇸🇬' },
+    { code: '+971', name: 'UAE', flag: '🇦🇪' },
+    { code: '+966', name: 'Saudi Arabia', flag: '🇸🇦' },
+    { code: '+60', name: 'Malaysia', flag: '🇲🇾' },
+    { code: '+66', name: 'Thailand', flag: '🇹🇭' },
+    { code: '+84', name: 'Vietnam', flag: '🇻🇳' },
+    { code: '+62', name: 'Indonesia', flag: '🇮🇩' },
+    { code: '+63', name: 'Philippines', flag: '🇵🇭' },
+    { code: '+880', name: 'Bangladesh', flag: '🇧🇩' },
+    { code: '+94', name: 'Sri Lanka', flag: '🇱🇰' },
+    { code: '+977', name: 'Nepal', flag: '🇳🇵' },
+    { code: '+92', name: 'Pakistan', flag: '🇵🇰' },
+    { code: '+27', name: 'South Africa', flag: '🇿🇦' },
+    { code: '+20', name: 'Egypt', flag: '🇪🇬' },
+    { code: '+234', name: 'Nigeria', flag: '🇳🇬' },
+    { code: '+254', name: 'Kenya', flag: '🇰🇪' },
+    { code: '+52', name: 'Mexico', flag: '🇲🇽' },
+    { code: '+54', name: 'Argentina', flag: '🇦🇷' },
+    { code: '+56', name: 'Chile', flag: '🇨🇱' },
+    { code: '+57', name: 'Colombia', flag: '🇨🇴' },
+    { code: '+51', name: 'Peru', flag: '🇵🇪' },
+    { code: '+90', name: 'Turkey', flag: '🇹🇷' },
+    { code: '+98', name: 'Iran', flag: '🇮🇷' },
+    { code: '+964', name: 'Iraq', flag: '🇮🇶' },
+    { code: '+972', name: 'Israel', flag: '🇮🇱' },
+    { code: '+31', name: 'Netherlands', flag: '🇳🇱' },
+    { code: '+46', name: 'Sweden', flag: '🇸🇪' },
+    { code: '+47', name: 'Norway', flag: '🇳🇴' },
+    { code: '+45', name: 'Denmark', flag: '🇩🇰' },
+    { code: '+358', name: 'Finland', flag: '🇫🇮' },
+    { code: '+41', name: 'Switzerland', flag: '🇨🇭' },
+    { code: '+43', name: 'Austria', flag: '🇦🇹' },
+    { code: '+32', name: 'Belgium', flag: '🇧🇪' },
+    { code: '+351', name: 'Portugal', flag: '🇵🇹' },
+    { code: '+48', name: 'Poland', flag: '🇵🇱' },
+    { code: '+420', name: 'Czech Republic', flag: '🇨🇿' },
+    { code: '+36', name: 'Hungary', flag: '🇭🇺' },
+    { code: '+30', name: 'Greece', flag: '🇬🇷' },
+  ];
   
   // Function to handle post-login navigation
   const handleSuccessfulLogin = () => {
@@ -192,6 +254,189 @@ const SignIn = () => {
     setIsLogin(!isLogin);
     setError('');
     setSuccess('');
+    setEmail('');
+    setPassword('');
+    setName('');
+    setConfirmPassword('');
+    setPhoneNumber('');
+    setCountryCode('+91'); // Reset to default
+    setOtp('');
+    setShowOtpInput(false);
+    setConfirmationResult(null);
+  };
+
+  // Toggle between email and phone authentication
+  const toggleAuthMethod = () => {
+    setAuthMethod(authMethod === 'email' ? 'phone' : 'email');
+    setError('');
+    setSuccess('');
+    setPhoneNumber('');
+    setCountryCode('+91'); // Reset to default
+    setShowOtpInput(false);
+    setConfirmationResult(null);
+  };
+
+  // Handle phone number submission and OTP sending
+  const handlePhoneSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      // Validate phone number
+      const expectedLength = getExpectedPhoneLength();
+      if (!phoneNumber || phoneNumber.replace(/\D/g, '').length < expectedLength) {
+        throw new Error(`Please enter a valid ${expectedLength}-digit phone number for ${countryCodes.find(c => c.code === countryCode)?.name || 'selected country'}`);
+      }
+
+      // Clean phone number (remove spaces, dashes, etc.)
+      const cleanPhone = phoneNumber.replace(/\D/g, '');
+      
+      // Create full phone number with country code
+      const fullPhoneNumber = `${countryCode}${cleanPhone}`;
+      
+      console.log('Sending OTP to:', fullPhoneNumber);
+
+      // Setup reCAPTCHA
+      const recaptchaVerifier = setupRecaptcha('recaptcha-container');
+      
+      // Send OTP with full phone number
+      const confirmationResult = await sendOTP(fullPhoneNumber, recaptchaVerifier);
+      setConfirmationResult(confirmationResult);
+      setShowOtpInput(true);
+      setSuccess('OTP sent successfully! Please check your phone.');
+      
+    } catch (error) {
+      console.error('Phone auth error:', error);
+      setError(error.message || 'Failed to send OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle OTP verification
+  const handleOtpVerification = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      if (!otp || otp.length !== 6) {
+        throw new Error('Please enter a valid 6-digit OTP');
+      }
+
+      // Verify OTP with Firebase
+      const result = await verifyOTP(confirmationResult, otp);
+      const firebaseUser = result.user;
+
+      // Get ID token from Firebase
+      const idToken = await firebaseUser.getIdToken();
+
+      // Send to backend for verification and user creation/login
+      const response = await fetch(`${API_BASE_URL}/api/auth/phone-verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          idToken,
+          phoneNumber: firebaseUser.phoneNumber,
+          name: name || firebaseUser.displayName || `User_${firebaseUser.phoneNumber.slice(-4)}`
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Phone authentication failed');
+      }
+
+      // Store auth token
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('userId', data.user._id || data.user.id);
+      localStorage.setItem('userEmail', data.user.email || '');
+
+      // Update auth context
+      setAuthToken(data.token);
+      setUserData(data.user);
+
+      // Show success message
+      setSuccess('Phone authentication successful!');
+      addToast('Login successful!', 'success');
+
+      // Navigate after success
+      setTimeout(() => {
+        handleSuccessfulLogin();
+      }, 1000);
+
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      setError(error.message || 'OTP verification failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get placeholder text based on country code
+  const getPhoneNumberPlaceholder = () => {
+    switch (countryCode) {
+      case '+1': return '(555) 123-4567';
+      case '+44': return '7700 900123';
+      case '+91': return '9876543210';
+      case '+86': return '138 0013 8000';
+      case '+81': return '90 1234 5678';
+      case '+49': return '30 12345678';
+      case '+33': return '6 12 34 56 78';
+      case '+39': return '312 345 6789';
+      case '+7': return '912 345 67 89';
+      case '+55': return '11 99999 9999';
+      case '+61': return '412 345 678';
+      case '+34': return '612 34 56 78';
+      case '+82': return '10 1234 5678';
+      case '+65': return '8123 4567';
+      case '+971': return '50 123 4567';
+      case '+966': return '50 123 4567';
+      case '+60': return '12 345 6789';
+      case '+66': return '81 234 5678';
+      case '+84': return '912 345 678';
+      case '+62': return '812 3456 789';
+      case '+63': return '917 123 4567';
+      case '+880': return '1712 345678';
+      case '+94': return '71 234 5678';
+      case '+977': return '981 234 5678';
+      case '+92': return '301 234 5678';
+      default: return 'Phone number';
+    }
+  };
+
+  // Get expected phone number length based on country code
+  const getExpectedPhoneLength = () => {
+    switch (countryCode) {
+      case '+1': return 10;
+      case '+44': return 10;
+      case '+91': return 10;
+      case '+86': return 11;
+      case '+81': return 10;
+      case '+49': return 10;
+      case '+33': return 9;
+      case '+39': return 10;
+      case '+7': return 10;
+      case '+55': return 11;
+      case '+61': return 9;
+      case '+34': return 9;
+      case '+82': return 10;
+      case '+65': return 8;
+      case '+971': return 9;
+      case '+966': return 9;
+      case '+60': return 9;
+      case '+66': return 9;
+      case '+84': return 9;
+      case '+62': return 10;
+      case '+63': return 10;
+      case '+880': return 10;
+      case '+94': return 9;
+      case '+977': return 10;
+      case '+92': return 10;
+      default: return 10;
+    }
   };
   
   return (
@@ -242,80 +487,255 @@ const SignIn = () => {
             </div>
           )}
           
+          {/* Auth Method Toggle */}
+          <div className="mb-6" data-aos="fade-up">
+            <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+              <button
+                type="button"
+                onClick={() => setAuthMethod('email')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                  authMethod === 'email'
+                    ? 'bg-white text-yellow-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                Email
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuthMethod('phone')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                  authMethod === 'phone'
+                    ? 'bg-white text-yellow-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                Phone
+              </button>
+            </div>
+          </div>
+
+          {/* Phone Authentication Form */}
+          {authMethod === 'phone' && (
+            <div className="space-y-4">
+              {!showOtpInput ? (
+                <form onSubmit={handlePhoneSubmit} className="space-y-4">
+                  {!isLogin && (
+                    <div data-aos="fade-up" data-aos-delay="100">
+                      <label htmlFor="phone-name" className="block text-sm font-medium text-gray-700 mb-1">
+                        Full Name
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                        </div>
+                        <input
+                          id="phone-name"
+                          type="text"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
+                          placeholder="John Smith"
+                          required={!isLogin}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div data-aos="fade-up" data-aos-delay="200">
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone Number
+                    </label>
+                    <div className="flex space-x-2">
+                      {/* Country Code Selector */}
+                      <div className="relative">
+                        <select
+                          value={countryCode}
+                          onChange={(e) => setCountryCode(e.target.value)}
+                          className="appearance-none bg-white border border-gray-300 rounded-lg px-3 py-3 pr-8 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300 text-sm font-medium"
+                        >
+                          {countryCodes.map((country) => (
+                            <option key={country.code} value={country.code}>
+                              {country.flag} {country.code}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                      
+                      {/* Phone Number Input */}
+                      <div className="relative flex-1">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                          </svg>
+                        </div>
+                        <input
+                          id="phone"
+                          type="tel"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
+                          placeholder={getPhoneNumberPlaceholder()}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter your phone number (format: {getPhoneNumberPlaceholder()})
+                    </p>
+                  </div>
+                  
+                  <div data-aos="fade-up" data-aos-delay="300">
+                    {/* reCAPTCHA container */}
+                    <div id="recaptcha-container" className="flex justify-center mb-4"></div>
+                    
+                    <button
+                      type="submit"
+                      className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-all duration-300 ${
+                        loading 
+                        ? 'bg-gray-400 cursor-not-allowed' 
+                        : 'bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 shadow-lg hover:shadow-xl'
+                      }`}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <div className="flex items-center justify-center">
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                          </svg>
+                          Sending OTP...
+                        </div>
+                      ) : (
+                        'Send OTP'
+                      )}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleOtpVerification} className="space-y-4">
+                  <div data-aos="fade-up" data-aos-delay="100">
+                    <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
+                      Enter OTP
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      </div>
+                      <input
+                        id="otp"
+                        type="text"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value)}
+                        className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300 text-center text-lg tracking-widest"
+                        placeholder="000000"
+                        maxLength="6"
+                        required
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Enter the 6-digit OTP sent to {countryCode} {phoneNumber}</p>
+                  </div>
+                  
+                  <div className="flex space-x-3" data-aos="fade-up" data-aos-delay="200">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowOtpInput(false);
+                        setOtp('');
+                        setConfirmationResult(null);
+                      }}
+                      className="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-all duration-300"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="submit"
+                      className={`flex-1 py-3 px-4 rounded-lg text-white font-medium transition-all duration-300 ${
+                        loading 
+                        ? 'bg-gray-400 cursor-not-allowed' 
+                        : 'bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 shadow-lg hover:shadow-xl'
+                      }`}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <div className="flex items-center justify-center">
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                          </svg>
+                          Verifying...
+                        </div>
+                      ) : (
+                        'Verify OTP'
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
+
           {/* Email Authentication Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div data-aos="fade-up" data-aos-delay="100">
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Name
+          {authMethod === 'email' && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {!isLogin && (
+                <div data-aos="fade-up" data-aos-delay="100">
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <input
+                      id="name"
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
+                      placeholder="John Smith"
+                      required={!isLogin}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              <div data-aos="fade-up" data-aos-delay={isLogin ? "100" : "200"}>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email Address
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
                   <input
-                    id="name"
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
-                    placeholder="John Smith"
-                    required={!isLogin}
+                    placeholder="example@email.com"
+                    required
                   />
                 </div>
               </div>
-            )}
-            
-            <div data-aos="fade-up" data-aos-delay={isLogin ? "100" : "200"}>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
-                  placeholder="example@email.com"
-                  required
-                />
-              </div>
-            </div>
-            
-            <div data-aos="fade-up" data-aos-delay={isLogin ? "200" : "300"}>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-            </div>
-            
-            {!isLogin && (
-              <div data-aos="fade-up" data-aos-delay="400">
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirm Password
+              
+              <div data-aos="fade-up" data-aos-delay={isLogin ? "200" : "300"}>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -324,63 +744,87 @@ const SignIn = () => {
                     </svg>
                   </div>
                   <input
-                    id="confirmPassword"
+                    id="password"
                     type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
                     placeholder="••••••••"
-                    required={!isLogin}
+                    required
                   />
                 </div>
               </div>
-            )}
-            
-            {isLogin && (
-              <div className="flex items-center justify-between" data-aos="fade-up" data-aos-delay="300">
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                    Remember me
+              
+              {!isLogin && (
+                <div data-aos="fade-up" data-aos-delay="400">
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                    Confirm Password
                   </label>
-                </div>
-                <div className="text-sm">
-                  <Link to="/forgot-password" className="font-medium text-yellow-600 hover:text-yellow-500 transition-colors">
-                    Forgot password?
-                  </Link>
-                </div>
-              </div>
-            )}
-            
-            <div data-aos="fade-up" data-aos-delay={isLogin ? "400" : "500"}>
-              <button
-                type="submit"
-                className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-all duration-300 ${
-                  loading 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 shadow-lg hover:shadow-xl'
-                }`}
-                disabled={loading}
-              >
-                {loading ? (
-                  <div className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                    </svg>
-                    Processing...
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    </div>
+                    <input
+                      id="confirmPassword"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
+                      placeholder="••••••••"
+                      required={!isLogin}
+                    />
                   </div>
-                ) : (
-                  isLogin ? 'Sign In' : 'Create Account'
-                )}
-              </button>
-            </div>
-          </form>
+                </div>
+              )}
+              
+              {isLogin && (
+                <div className="flex items-center justify-between" data-aos="fade-up" data-aos-delay="300">
+                  <div className="flex items-center">
+                    <input
+                      id="remember-me"
+                      name="remember-me"
+                      type="checkbox"
+                      className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                      Remember me
+                    </label>
+                  </div>
+                  <div className="text-sm">
+                    <Link to="/forgot-password" className="font-medium text-yellow-600 hover:text-yellow-500 transition-colors">
+                      Forgot password?
+                    </Link>
+                  </div>
+                </div>
+              )}
+              
+              <div data-aos="fade-up" data-aos-delay={isLogin ? "400" : "500"}>
+                <button
+                  type="submit"
+                  className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-all duration-300 ${
+                    loading 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 shadow-lg hover:shadow-xl'
+                  }`}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                      </svg>
+                      Processing...
+                    </div>
+                  ) : (
+                    isLogin ? 'Sign In' : 'Create Account'
+                  )}
+                </button>
+              </div>
+            </form>
+          )}
           
           <div className="mt-8 text-center" data-aos="fade-up" data-aos-delay={isLogin ? "500" : "600"}>
             <p className="text-gray-600">

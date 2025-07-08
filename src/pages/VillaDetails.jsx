@@ -711,15 +711,14 @@ export default function VillaDetails() {
         </div>
       </div>
 
-      {/* Spacer to prevent content from hiding under fixed header */}
+ 
       <div className="h-[140px] md:h-[130px]"></div>
 
-      {/* Gallery Component - Positioned Below Fixed Header */}
       <div className="bg-white z-40 shadow-md">
         <VillaGallery villa={villa} />
       </div>
 
-      {/* Quick Stats Bar - Mobile/Desktop Responsive */}
+    
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
         <div className="bg-white rounded-2xl shadow-lg p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="flex items-center gap-3">
@@ -763,7 +762,7 @@ export default function VillaDetails() {
 
       {/* Main Content Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8 min-h-[calc(100vh-4rem)]">
-        {/* Villa Info Component */}
+ 
         <div className="lg:col-span-2 order-2 lg:order-1">
           <VillaInfo
             villa={villa}
