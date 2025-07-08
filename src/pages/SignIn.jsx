@@ -342,7 +342,7 @@ const SignIn = () => {
           name: name || firebaseUser.displayName || `User_${firebaseUser.phoneNumber.slice(-4)}`
         }),
       });
-
+      
       const data = await response.json();
 
       if (!response.ok) {
