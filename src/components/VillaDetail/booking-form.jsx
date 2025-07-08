@@ -41,7 +41,7 @@ export default function EnhancedBookingForm({
     if (timeString.includes("(")) {
       return timeString.split(" ")[0] // Returns "14:00"
     }
-    return timeString // Fallback for old format
+    return timeString 
   }
 
   const calculateTotalAmount = () => {
