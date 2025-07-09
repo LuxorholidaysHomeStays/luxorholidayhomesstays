@@ -103,8 +103,14 @@ const CompleteProfile = () => {
         throw new Error(data.error || 'Verification failed');
       }
       
-      // Update user data in context and localStorage
-      if (authToken) {
+      // Update auth token if a new one is returned
+      if (data.token) {
+        localStorage.setItem('authToken', data.token);
+        setAuthToken(data.token);
+      }
+      
+      // Update user data in context
+      if (data.user) {
         setUserData({
           ...data.user,
           isEmailVerified: true
