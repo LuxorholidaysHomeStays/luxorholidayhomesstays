@@ -33,6 +33,8 @@ const SignIn = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
+  const [firebaseUserData, setFirebaseUserData] = useState(null);
   
   const { setAuthToken, setUserData, handleGoogleSignIn } = useAuth();
   const navigate = useNavigate();
@@ -329,6 +331,18 @@ const SignIn = () => {
       const result = await verifyOTP(confirmationResult, otp);
       const firebaseUser = result.user;
 
+      // Check if this is a first-time user or existing user
+      const isNewUser = await checkIfNewPhoneUser(firebaseUser.phoneNumber);
+      
+      if (isNewUser) {
+        // Show the email collection form for new users
+        setIsFirstTimeUser(true);
+        setFirebaseUserData(firebaseUser);
+        setLoading(false);
+        return;
+      }
+
+      // Proceed with normal flow for existing users
       // Get ID token from Firebase
       const idToken = await firebaseUser.getIdToken();
 
@@ -372,6 +386,135 @@ const SignIn = () => {
       setError(error.message || 'OTP verification failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Function to check if this is a first-time phone user
+  const checkIfNewPhoneUser = async (phoneNumber) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/check-phone-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // If user exists and has an email, not a new user
+        return data.isNewUser;
+      }
+      
+      // If error or can't connect to backend, assume new user to collect info anyway
+      return true;
+    } catch (error) {
+      console.error('Error checking phone user:', error);
+      // On error, assume it's a new user to collect info
+      return true;
+    }
+  };
+
+  // Handler for when user completes the email collection
+  const handleFirstTimeUserComplete = async (userData) => {
+    setLoading(true);
+    
+    try {
+      // Get ID token from Firebase
+      const idToken = await firebaseUserData.getIdToken();
+      
+      // Send to backend with additional email and name
+      const response = await fetch(`${API_BASE_URL}/api/auth/phone-verify-with-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          idToken,
+          phoneNumber: firebaseUserData.phoneNumber,
+          email: userData.email,
+          name: userData.name,
+          isEmailVerified: userData.isEmailVerified
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Phone authentication failed');
+      }
+      
+      // Store auth token
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('userId', data.user._id || data.user.id);
+      localStorage.setItem('userEmail', data.user.email || '');
+      
+      // Update auth context
+      setAuthToken(data.token);
+      setUserData(data.user);
+      
+      // Show success message
+      setSuccess('Account created successfully!');
+      addToast('Registration successful!', 'success');
+      
+      // Navigate after success
+      setTimeout(() => {
+        handleSuccessfulLogin();
+      }, 1000);
+    } catch (error) {
+      console.error('Error completing registration:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+      setIsFirstTimeUser(false);
+    }
+  };
+
+  // Handler for when user skips email collection
+  const handleSkipEmailCollection = async () => {
+    setLoading(true);
+    
+    try {
+      // Get ID token from Firebase
+      const idToken = await firebaseUserData.getIdToken();
+      
+      // Send to backend without email
+      const response = await fetch(`${API_BASE_URL}/api/auth/phone-verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          idToken,
+          phoneNumber: firebaseUserData.phoneNumber,
+          name: name || firebaseUserData.displayName || `User_${firebaseUserData.phoneNumber.slice(-4)}`
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Phone authentication failed');
+      }
+      
+      // Store auth token
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('userId', data.user._id || data.user.id);
+      localStorage.setItem('userEmail', data.user.email || '');
+      
+      // Update auth context
+      setAuthToken(data.token);
+      setUserData(data.user);
+      
+      // Show success message
+      setSuccess('Phone authentication successful!');
+      addToast('Login successful!', 'success');
+      
+      // Navigate after success
+      setTimeout(() => {
+        handleSuccessfulLogin();
+      }, 1000);
+    } catch (error) {
+      console.error('Error skipping email collection:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+      setIsFirstTimeUser(false);
     }
   };
 
@@ -925,4 +1068,234 @@ export const storePhoneUserLocally = (firebaseUser, name) => {
   localStorage.setItem('currentPhoneUser', JSON.stringify(phoneUserData));
   
   return phoneUserData;
+};
+
+// Add this component to collect email and name from first-time phone users
+const FirstTimePhoneUserForm = ({ firebaseUser, onComplete, onCancel }) => {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    
+    try {
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        throw new Error('Please enter a valid email address');
+      }
+      
+      if (!name || name.trim().length < 2) {
+        throw new Error('Please enter your full name');
+      }
+      
+      // Send verification email
+      const response = await fetch(`${API_BASE_URL}/api/auth/send-email-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email,
+          phoneNumber: firebaseUser.phoneNumber,
+          name
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send verification email');
+      }
+      
+      setVerificationSent(true);
+      
+    } catch (error) {
+      console.error('Error:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    
+    try {
+      if (!verificationCode || verificationCode.length !== 6) {
+        throw new Error('Please enter the 6-digit verification code');
+      }
+      
+      // Verify the email verification code
+      const response = await fetch(`${API_BASE_URL}/api/auth/verify-email-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email,
+          otp: verificationCode,
+          phoneNumber: firebaseUser.phoneNumber,
+          name,
+          firebaseUid: firebaseUser.uid
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Verification failed');
+      }
+      
+      // Pass the updated user data back
+      onComplete({
+        name,
+        email,
+        phoneNumber: firebaseUser.phoneNumber,
+        isEmailVerified: true
+      });
+      
+    } catch (error) {
+      console.error('Error:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  return (
+    <div className="mt-4 p-6 bg-white rounded-lg shadow-lg">
+      <h3 className="text-xl font-semibold mb-4 text-gray-800">
+        Complete Your Profile
+      </h3>
+      <p className="text-gray-600 mb-6">
+        Please provide your name and email to complete your account setup.
+      </p>
+      
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
+          <p className="text-sm">{error}</p>
+        </div>
+      )}
+      
+      {!verificationSent ? (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              Full Name
+            </label>
+            <input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="px-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+              placeholder="John Smith"
+              required
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              Email Address
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="px-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+              placeholder="example@email.com"
+              required
+            />
+          </div>
+          
+          <div className="flex space-x-3 pt-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
+            >
+              Skip for Now
+            </button>
+            <button
+              type="submit"
+              className={`flex-1 py-3 px-4 rounded-lg text-white font-medium ${
+                loading 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-yellow-600 hover:bg-yellow-700'
+              }`}
+              disabled={loading}
+            >
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                  </svg>
+                  Sending...
+                </div>
+              ) : (
+                'Verify Email'
+              )}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <form onSubmit={handleVerify} className="space-y-4">
+          <div>
+            <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700 mb-1">
+              Verification Code
+            </label>
+            <input
+              id="verificationCode"
+              type="text"
+              value={verificationCode}
+              onChange={(e) => setVerificationCode(e.target.value)}
+              className="px-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-center text-lg tracking-widest"
+              placeholder="000000"
+              maxLength="6"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">Enter the 6-digit code sent to {email}</p>
+          </div>
+          
+          <div className="flex space-x-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setVerificationSent(false)}
+              className="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
+            >
+              Back
+            </button>
+            <button
+              type="submit"
+              className={`flex-1 py-3 px-4 rounded-lg text-white font-medium ${
+                loading 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-yellow-600 hover:bg-yellow-700'
+              }`}
+              disabled={loading}
+            >
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                  </svg>
+                  Verifying...
+                </div>
+              ) : (
+                'Complete Registration'
+              )}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
 };
