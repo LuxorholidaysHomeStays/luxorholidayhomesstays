@@ -162,14 +162,14 @@ import lvthree18 from "/LavishVilla 3/lvthree18.jpg"
 // Villa Image Collections - Updated to match FeaturedDestination format
 const villaImageCollections = {
   "Amrith Palace": [
-    AP1,
+    AP8,
     AP2,
     AP3,
     AP4,
     AP5,
     AP6,
     AP7,
-    AP8,
+    AP1,
     AP9,
     AP10,
     AP11,
@@ -195,7 +195,7 @@ const villaImageCollections = {
   ],
   "East Coast Villa": [EC1, EC2, EC3, EC4, EC5, EC6, EC7, EC8, EC9, EC10, EC11, EC12, EC13, EC14, EC15],
   "Ram Water Villa": [
-    RW1,
+    RW19,
     RW2,
     RW3,
     RW4,
@@ -212,7 +212,7 @@ const villaImageCollections = {
     RW16,
     RW17,
     RW18,
-    RW19,
+    RW1,
   ],
   "Empire Anand Villa Samudra": [
     anandvilla1,
@@ -233,7 +233,7 @@ const villaImageCollections = {
     anandvilla16,
   ],
   "Lavish Villa I": [
-    lvone1,
+    lvone18,
     lvone2,
     lvone3,
     lvone4,
@@ -250,17 +250,17 @@ const villaImageCollections = {
     lvone15,
     lvone16,
     lvone17,
-    lvone18,
+    lvone1,
     lvone19,
     lvone20,
     lvone21,
     lvone22,
   ],
   "Lavish Villa II": [
-    lvtwo1,
+    lvtwo4,
     lvtwo2,
     lvtwo3,
-    lvtwo4,
+    lvtwo1,
     lvtwo5,
     lvtwo6,
     lvtwo7,
@@ -281,7 +281,7 @@ const villaImageCollections = {
     lvtwo22,
   ],
   "Lavish Villa III": [
-    lvthree1,
+    lvthree17,
     lvthree2,
     lvthree3,
     lvthree4,
@@ -296,7 +296,7 @@ const villaImageCollections = {
     lvthree14,
     lvthree15,
     lvthree16,
-    lvthree17,
+    lvthree1,
     lvthree18,
   ],
 }

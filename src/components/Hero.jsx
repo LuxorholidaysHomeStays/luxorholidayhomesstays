@@ -433,6 +433,128 @@ const useNavbarHeight = () => {
   return navbarHeight
 }
 
+const PremiumLocationsModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+  
+  // Location data
+  const premiumLocations = [
+    {
+      city: "Chennai",
+      description: "Experience luxury living in Chennai's most exclusive neighborhoods with stunning coastal views and elegant villas designed for maximum comfort.",
+      highlights: ["Beachfront Properties", "Private Pools", "Elite Neighborhoods", "Exclusive Amenities"],
+      image: "/chennai-luxury.jpg" // Replace with actual image path
+    },
+    {
+      city: "Pondicherry",
+      description: "Discover the French colonial charm of Pondicherry with our premium villas featuring serene garden spaces and refined architectural details.",
+      highlights: ["Colonial Architecture", "Tranquil Gardens", "Heritage Locations", "Beach Proximity"],
+      image: "/pondicherry-luxury.jpg" // Replace with actual image path
+    }
+  ];
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
+        onClick={onClose}
+      ></div>
+      
+      {/* Modal Content */}
+      <motion.div
+        className="relative w-full max-w-4xl bg-gradient-to-br from-gray-900 to-black rounded-2xl overflow-hidden border border-[#D4AF37]/40 shadow-[0_0_30px_rgba(212,175,55,0.3)]"
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        transition={{ type: "spring", damping: 25 }}
+      >
+        {/* Close button */}
+        <button 
+          className="absolute top-4 right-4 text-white bg-black/40 hover:bg-[#D4AF37]/80 p-2 rounded-full z-10 transition-colors"
+          onClick={onClose}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        
+        {/* Header */}
+        <div className="bg-gradient-to-r from-[#D4AF37] to-[#BFA181] py-6 px-8 text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold text-black">Premium Locations</h2>
+          <p className="text-black/80 mt-1">Discover our exclusive villas in the most sought-after destinations</p>
+        </div>
+        
+        {/* Locations grid */}
+        <div className="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+          {premiumLocations.map((location, index) => (
+            <motion.div
+              key={location.city}
+              className="bg-black/50 backdrop-blur-sm rounded-xl overflow-hidden border border-[#D4AF37]/30 hover:border-[#D4AF37] transition-all group"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 + 0.2 }}
+              whileHover={{ 
+                y: -5,
+                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px -5px rgba(212, 175, 55, 0.5)"
+              }}
+            >
+              <div 
+                className="h-48 bg-cover bg-center relative" 
+                style={{
+                  backgroundImage: `url(${location.image || "/placeholder-location.jpg"})`
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
+                <div className="absolute bottom-0 left-0 p-4">
+                  <h3 className="text-2xl font-bold text-white">{location.city}</h3>
+                </div>
+              </div>
+              
+              <div className="p-5">
+                <p className="text-gray-300 mb-4">{location.description}</p>
+                
+                <h4 className="text-[#D4AF37] font-medium mb-3">Highlights:</h4>
+                <ul className="grid grid-cols-2 gap-2">
+                  {location.highlights.map((highlight, i) => (
+                    <li key={i} className="flex items-center text-sm text-white">
+                      <div className="w-2 h-2 bg-[#D4AF37] rounded-full mr-2"></div>
+                      {highlight}
+                    </li>
+                  ))}
+                </ul>
+                
+                <div className="mt-5 flex justify-end">
+                  <button 
+                    className="px-4 py-2 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-black rounded-full text-sm font-medium hover:opacity-90 transition-opacity"
+                    onClick={() => {
+                      onClose();
+                      // You can navigate to search results with the location filter
+                      navigate(`/search-results?location=${location.city}`);
+                    }}
+                  >
+                    View Villas
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+        
+        {/* Footer */}
+        <div className="px-6 sm:px-8 pb-6 sm:pb-8 text-center">
+          <p className="text-[#D4AF37]/80 text-sm">
+            For personalized booking assistance, contact us at +91 8015924647
+          </p>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 const Hero = () => {
   const navbarHeight = useNavbarHeight()
   const navigate = useNavigate()
@@ -462,6 +584,7 @@ const Hero = () => {
   const [videoLoaded, setVideoLoaded] = useState(true) // Set to true to skip video loading
   const [showLocationDropdown, setShowLocationDropdown] = useState(false)
   const [loadingTimeout, setLoadingTimeout] = useState(false)
+  const [showPremiumLocations, setShowPremiumLocations] = useState(false);
 
   // Add local state for guests
   const [adults, setAdults] = useState(1)
@@ -893,11 +1016,12 @@ const Hero = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Feature 1: Premium Locations */}
                   <motion.div
-                    className="bg-black/30 backdrop-blur-sm border border-[#D4AF37]/20 rounded-2xl p-4 hover:border-[#D4AF37]/40 transition-all"
+                    className="bg-black/30 backdrop-blur-sm border border-[#D4AF37]/20 rounded-2xl p-4 hover:border-[#D4AF37]/40 transition-all group cursor-pointer"
                     whileHover={{ 
                       scale: 1.02, 
                       boxShadow: "0 0 15px rgba(212, 175, 55, 0.15)" 
                     }}
+                    onClick={() => setShowPremiumLocations(true)}
                   >
                     <div className="flex items-center mb-3">
                       <div className="rounded-full bg-gradient-to-r from-[#D4AF37] to-[#BFA181] p-2 mr-3">
@@ -907,7 +1031,14 @@ const Hero = () => {
                       </div>
                       <h4 className="font-semibold text-white">Premium Locations</h4>
                     </div>
-                    <p className="text-xs text-gray-300 ml-10">Stunning views in Chennai and Pondicherry's most desirable areas</p>
+                    <div className="flex items-center justify-between ml-10">
+                      <p className="text-xs text-gray-300">Stunning views in Chennai and Pondicherry's most desirable areas</p>
+                      <span className="text-[#D4AF37] group-hover:translate-x-1 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </span>
+                    </div>
                   </motion.div>
                   
                   {/* Feature 2: Virtual Tour */}
@@ -1010,6 +1141,12 @@ const Hero = () => {
           )}
         </motion.button>
       </motion.div>
+
+      {/* Premium Locations Modal - Initially hidden */}
+      <PremiumLocationsModal 
+        isOpen={showPremiumLocations}
+        onClose={() => setShowPremiumLocations(false)}
+      />
     </div>
   )
 }

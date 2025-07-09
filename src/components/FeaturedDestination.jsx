@@ -163,7 +163,7 @@ import lvthree18 from "/LavishVilla 3/lvthree18.jpg";
 // Create villa image collections object
 const villaImageCollections = {
   "Amrith Palace": [
-    AP1, AP2, AP3, AP4, AP5, AP6, AP7, AP8, AP9, AP10,
+    AP8, AP2, AP3, AP4, AP5, AP6, AP7, AP1, AP9, AP10,
     AP11, AP12, AP13, AP14, AP15, AP16, AP17, AP18, AP19, AP20,
     AP21, AP22, AP23, AP24, AP25, AP26, AP27, AP28, AP29, AP30
   ],
@@ -172,26 +172,26 @@ const villaImageCollections = {
     EC11, EC12, EC13, EC14, EC15
   ],
   "Ram Water Villa": [
-    RW1, RW2, RW3, RW4, RW5, RW6, RW7, RW8, RW9, RW10,
-    RW11, RW13, RW14, RW15, RW16, RW17, RW18, RW19
+    RW19, RW2, RW3, RW4, RW5, RW6, RW7, RW8, RW9, RW10,
+    RW11, RW13, RW14, RW15, RW16, RW17, RW18, RW1
   ],
   "Empire Anand Villa Samudra": [
     anandvilla1, anandvilla2, anandvilla3, anandvilla4, anandvilla5, anandvilla6, anandvilla7, anandvilla8,
     anandvilla9, anandvilla10, anandvilla11, anandvilla12, anandvilla13, anandvilla14, anandvilla15, anandvilla16
   ],
   "Lavish Villa I": [
-    lvone1, lvone2, lvone3, lvone4, lvone5, lvone6, lvone7, lvone8, lvone9, lvone10,
-    lvone11, lvone12, lvone13, lvone14, lvone15, lvone16, lvone17, lvone18, lvone19, lvone20,
+    lvone18, lvone2, lvone3, lvone4, lvone5, lvone6, lvone7, lvone8, lvone9, lvone10,
+    lvone11, lvone12, lvone13, lvone14, lvone15, lvone16, lvone17, lvone1, lvone19, lvone20,
     lvone21, lvone22
   ],
   "Lavish Villa II": [
-    lvtwo1, lvtwo2, lvtwo3, lvtwo4, lvtwo5, lvtwo6, lvtwo7, lvtwo8, lvtwo9, lvtwo10,
+    lvtwo4, lvtwo2, lvtwo3, lvtwo1, lvtwo5, lvtwo6, lvtwo7, lvtwo8, lvtwo9, lvtwo10,
     lvtwo11, lvtwo12, lvtwo13, lvtwo14, lvtwo15, lvtwo16, lvtwo17, lvtwo18, lvtwo19, lvtwo20,
     lvtwo21, lvtwo22
   ],
   "Lavish Villa III": [
-    lvthree1, lvthree2, lvthree3, lvthree4, lvthree5, lvthree6, lvthree7, lvthree8, lvthree9, lvthree10,
-    lvthree11, lvthree12, lvthree13, lvthree14, lvthree15, lvthree16, lvthree17, lvthree18
+    lvthree17, lvthree2, lvthree3, lvthree4, lvthree5, lvthree6, lvthree7, lvthree8, lvthree9, lvthree10,
+    lvthree11, lvthree12, lvthree13, lvthree14, lvthree15, lvthree16, lvthree1, lvthree18
   ]
 };
 

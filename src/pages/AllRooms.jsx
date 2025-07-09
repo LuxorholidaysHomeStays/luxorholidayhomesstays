@@ -516,7 +516,9 @@ const AllRooms = () => {
       })
 
       setVillas(fallbackVillas)
-      setFilteredVillas(fallbackVillas)
+      // Sort fallback villas in the preferred order before setting them
+      const sortedFallbackVillas = sortVillasByPreferredOrder(fallbackVillas)
+      setFilteredVillas(sortedFallbackVillas)
       setLoading(false)
     } catch (fallbackError) {
       console.error("Even fallback creation failed:", fallbackError)
@@ -559,17 +561,59 @@ const AllRooms = () => {
     })
 
     // Apply sorting
-    const sorted = [...filtered]
+    let sorted = [...filtered]
     if (sortBy === "Price: Low to High") {
       sorted.sort((a, b) => a.price - b.price)
     } else if (sortBy === "Price: High to Low") {
       sorted.sort((a, b) => b.price - a.price)
     } else if (sortBy === "Rating") {
       sorted.sort((a, b) => b.rating - a.rating)
+    } else {
+      // Apply custom preferred order sorting
+      sorted = sortVillasByPreferredOrder(sorted)
     }
 
     return sorted
   }
+
+  // Add this function after the applyAllFilters function (around line 455)
+
+  const sortVillasByPreferredOrder = (villas) => {
+    // Define the preferred order
+    const preferredOrder = [
+      "Empire Anand Villa Samudra",
+      "Amrith Palace",
+      "East Coast Villa",
+      "Ram Water Villa", 
+      "Lavish Villa I",
+      "Lavish Villa II",
+      "Lavish Villa III"
+    ];
+    
+    // Create a sorting function based on the preferred order
+    return [...villas].sort((a, b) => {
+      // Get villa name index in the preferred order array
+      const aIndex = preferredOrder.findIndex(name => 
+        a.name.toLowerCase().includes(name.toLowerCase())
+      );
+      
+      const bIndex = preferredOrder.findIndex(name => 
+        b.name.toLowerCase().includes(name.toLowerCase())
+      );
+      
+      // If both villas are in the preferred order, sort by their position
+      if (aIndex !== -1 && bIndex !== -1) {
+        return aIndex - bIndex;
+      }
+      
+      // If only one villa is in the preferred order, prioritize it
+      if (aIndex !== -1) return -1;
+      if (bIndex !== -1) return 1;
+      
+      // For villas not in the preferred order, maintain original order
+      return 0;
+    });
+  };
 
   useEffect(() => {
     // When filters change, apply them to the main villa list
