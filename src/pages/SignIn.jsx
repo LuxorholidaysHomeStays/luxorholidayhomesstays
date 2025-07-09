@@ -35,6 +35,11 @@ const SignIn = () => {
   const [success, setSuccess] = useState('');
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [firebaseUserData, setFirebaseUserData] = useState(null);
+  const [isEmailStep, setIsEmailStep] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [userName, setUserName] = useState('');
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
   
   const { setAuthToken, setUserData, handleGoogleSignIn } = useAuth();
   const navigate = useNavigate();
@@ -323,198 +328,188 @@ const SignIn = () => {
     setError('');
 
     try {
-      if (!otp || otp.length !== 6) {
-        throw new Error('Please enter a valid 6-digit OTP');
+      if (!confirmationResult) {
+        throw new Error('Please request a new OTP first');
       }
 
-      // Verify OTP with Firebase
+      console.log('Verifying OTP with Firebase...');
       const result = await verifyOTP(confirmationResult, otp);
       const firebaseUser = result.user;
 
-      // Check if this is a first-time user or existing user
-      const isNewUser = await checkIfNewPhoneUser(firebaseUser.phoneNumber);
+      console.log('✅ OTP verified with Firebase successfully');
+      console.log('Firebase User:', firebaseUser.phoneNumber);
+
+      // Save the firebase user data
+      setFirebaseUserData(firebaseUser);
       
-      if (isNewUser) {
-        // Show the email collection form for new users
-        setIsFirstTimeUser(true);
-        setFirebaseUserData(firebaseUser);
-        setLoading(false);
-        return;
+      // Check if this is a first-time user or existing user
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/check-phone-user`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber: firebaseUser.phoneNumber }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.isNewUser || !data.hasEmail) {
+            // Show the email collection form
+            setIsFirstTimeUser(true);
+            setIsEmailStep(true);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (checkError) {
+        console.warn('Error checking if user is new:', checkError);
+        // Continue with normal flow if the check fails
       }
 
-      // Proceed with normal flow for existing users
-      // Get ID token from Firebase
+      // Get Firebase ID token
       const idToken = await firebaseUser.getIdToken();
 
-      // Send to backend for verification and user creation/login
-      const response = await fetch(`${API_BASE_URL}/api/auth/phone-verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          idToken,
-          phoneNumber: firebaseUser.phoneNumber,
-          name: name || firebaseUser.displayName || `User_${firebaseUser.phoneNumber.slice(-4)}`
-        }),
-      });
-      
-      const data = await response.json();
+      // Send to backend for verification and user login
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/phone-verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            idToken,
+            phoneNumber: firebaseUser.phoneNumber,
+            name: name || firebaseUser.displayName || `User_${firebaseUser.phoneNumber.slice(-4)}`
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Phone authentication failed');
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Phone authentication failed');
+        }
+
+        // Store auth token
+        localStorage.setItem('authToken', data.token);
+        setAuthToken(data.token);
+        setUserData(data.user);
+        
+        // Navigate to home page
+        setSuccess('Phone verification successful!');
+        setTimeout(() => navigate('/'), 1000);
+        
+      } catch (error) {
+        console.error('Error during backend verification:', error);
+        setError('Login failed: ' + (error.message || 'Server error'));
       }
-
-      // Store auth token
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('userId', data.user._id || data.user.id);
-      localStorage.setItem('userEmail', data.user.email || '');
-
-      // Update auth context
-      setAuthToken(data.token);
-      setUserData(data.user);
-
-      // Show success message
-      setSuccess('Phone authentication successful!');
-      addToast('Login successful!', 'success');
-
-      // Navigate after success
-      setTimeout(() => {
-        handleSuccessfulLogin();
-      }, 1000);
-
+      
     } catch (error) {
       console.error('OTP verification error:', error);
-      setError(error.message || 'OTP verification failed');
+      
+      if (error.code === 'auth/code-expired') {
+        setError('Verification code has expired. Please request a new code.');
+      } else {
+        setError(error.message || 'Verification failed. Please try again.');
+      }
+      
+      clearRecaptcha();
     } finally {
       setLoading(false);
     }
   };
 
-  // Function to check if this is a first-time phone user
-  const checkIfNewPhoneUser = async (phoneNumber) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/check-phone-user`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber }),
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        // If user exists and has an email, not a new user
-        return data.isNewUser;
-      }
-      
-      // If error or can't connect to backend, assume new user to collect info anyway
-      return true;
-    } catch (error) {
-      console.error('Error checking phone user:', error);
-      // On error, assume it's a new user to collect info
-      return true;
-    }
-  };
-
-  // Handler for when user completes the email collection
-  const handleFirstTimeUserComplete = async (userData) => {
+  // Add function to handle email and name submission
+  const handleEmailNameSubmit = async (e) => {
+    e.preventDefault();
     setLoading(true);
+    setError('');
     
     try {
+      // Validate email and name
+      if (!userEmail || !userEmail.includes('@')) {
+        throw new Error('Please enter a valid email address');
+      }
+      
+      if (!userName || userName.trim().length < 2) {
+        throw new Error('Please enter your name (minimum 2 characters)');
+      }
+      
+      if (!firebaseUserData) {
+        throw new Error('Phone verification data is missing. Please try again.');
+      }
+      
       // Get ID token from Firebase
       const idToken = await firebaseUserData.getIdToken();
       
-      // Send to backend with additional email and name
+      // Update the user with email and name
       const response = await fetch(`${API_BASE_URL}/api/auth/phone-verify-with-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           idToken,
           phoneNumber: firebaseUserData.phoneNumber,
-          email: userData.email,
-          name: userData.name,
-          isEmailVerified: userData.isEmailVerified
+          email: userEmail,
+          name: userName,
+          isEmailVerified: true // For simplicity, we're not verifying email in this flow
         }),
       });
       
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || 'Phone authentication failed');
+        throw new Error(data.error || 'Failed to update user information');
       }
       
       // Store auth token
       localStorage.setItem('authToken', data.token);
-      localStorage.setItem('userId', data.user._id || data.user.id);
-      localStorage.setItem('userEmail', data.user.email || '');
-      
-      // Update auth context
       setAuthToken(data.token);
       setUserData(data.user);
       
-      // Show success message
+      // Show success and navigate to home
       setSuccess('Account created successfully!');
-      addToast('Registration successful!', 'success');
+      setTimeout(() => navigate('/'), 1000);
       
-      // Navigate after success
-      setTimeout(() => {
-        handleSuccessfulLogin();
-      }, 1000);
     } catch (error) {
-      console.error('Error completing registration:', error);
-      setError(error.message);
+      console.error('Error updating user data:', error);
+      setError(error.message || 'Failed to update user information');
     } finally {
       setLoading(false);
-      setIsFirstTimeUser(false);
     }
   };
 
-  // Handler for when user skips email collection
-  const handleSkipEmailCollection = async () => {
-    setLoading(true);
-    
+  // Add function to skip the email step
+  const handleSkipEmailStep = async () => {
     try {
+      if (!firebaseUserData) {
+        throw new Error('Phone verification data is missing. Please try again.');
+      }
+      
       // Get ID token from Firebase
       const idToken = await firebaseUserData.getIdToken();
       
-      // Send to backend without email
+      // Just do the normal phone verification without email/name
       const response = await fetch(`${API_BASE_URL}/api/auth/phone-verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           idToken,
           phoneNumber: firebaseUserData.phoneNumber,
-          name: name || firebaseUserData.displayName || `User_${firebaseUserData.phoneNumber.slice(-4)}`
+          name: `User_${firebaseUserData.phoneNumber.slice(-4)}`
         }),
       });
       
       const data = await response.json();
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Phone authentication failed');
-      }
-      
       // Store auth token
       localStorage.setItem('authToken', data.token);
-      localStorage.setItem('userId', data.user._id || data.user.id);
-      localStorage.setItem('userEmail', data.user.email || '');
-      
-      // Update auth context
       setAuthToken(data.token);
       setUserData(data.user);
       
-      // Show success message
-      setSuccess('Phone authentication successful!');
-      addToast('Login successful!', 'success');
+      // Navigate to home
+      setSuccess('Phone verification successful!');
+      setTimeout(() => navigate('/'), 1000);
       
-      // Navigate after success
-      setTimeout(() => {
-        handleSuccessfulLogin();
-      }, 1000);
     } catch (error) {
-      console.error('Error skipping email collection:', error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-      setIsFirstTimeUser(false);
+      console.error('Error skipping email step:', error);
+      setError('Failed to complete login. Please try again.');
     }
   };
 

@@ -47,6 +47,12 @@ const OTPVerification = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   
+  // Additional state for first-time user profile completion
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
+  const [isEmailStep, setIsEmailStep] = useState(false);
+  
   // References for OTP inputs
   const otpInputs = useRef([]);
   
@@ -309,7 +315,85 @@ const OTPVerification = () => {
     } finally {
       setResendLoading(false);
     }
-  };    return (
+  };
+  
+  // Handle email and name submission for first-time users
+  const handleEmailNameSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    
+    try {
+      // Validate name and email
+      if (!userName.trim() || !userEmail.trim()) {
+        throw new Error('Please enter both your name and email address');
+      }
+      
+      // Check if email is valid
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailPattern.test(userEmail)) {
+        throw new Error('Please enter a valid email address');
+      }
+      
+      // Prepare request data
+      const requestData = {
+        email: userEmail,
+        name: userName
+      };
+      
+      // Make the API request to update user profile
+      const response = await fetch(`${API_BASE_URL}/api/auth/complete-profile`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify(requestData)
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to complete profile');
+      }
+      
+      // Update user data in context and local storage
+      setUserData(prev => ({ ...prev, name: userName, email: userEmail }));
+      localStorage.setItem('userEmail', userEmail);
+      
+      // Show success message and redirect
+      Swal.fire({
+        icon: 'success',
+        title: 'Profile Updated',
+        text: 'Your profile has been updated successfully.',
+        confirmButtonColor: '#ca8a04'
+      }).then(() => {
+        navigate('/');
+      });
+      
+    } catch (error) {
+      console.error("Profile completion error:", error);
+      setError(error.message);
+      
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'Failed to update profile',
+        confirmButtonColor: '#ca8a04'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Skip email and name step for first-time users
+  const handleSkipEmailStep = () => {
+    setIsFirstTimeUser(false);
+    navigate('/');
+  };
+  
+  return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-yellow-50 px-4 py-16">
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-10 left-10 w-72 h-72 bg-yellow-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-float"></div>
@@ -472,6 +556,83 @@ const OTPVerification = () => {
               </button>
             </div>
           </form>
+          
+          {/* Add this after the OTP verification form */}
+          {isFirstTimeUser && isEmailStep && (
+            <div className="mt-4 transition-all duration-300">
+              <div className="bg-white p-6 rounded-lg shadow-md">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Complete Your Profile</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Please provide your name and email to complete your account.
+                </p>
+                
+                {error && (
+                  <div className="p-3 bg-red-50 border-l-4 border-red-500 text-red-700 mb-4">
+                    <p className="text-sm">{error}</p>
+                  </div>
+                )}
+                
+                <form onSubmit={handleEmailNameSubmit}>
+                  <div className="mb-4">
+                    <label htmlFor="userName" className="block text-sm font-medium text-gray-700 mb-1">
+                      Full Name
+                    </label>
+                    <input
+                      id="userName"
+                      type="text"
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      placeholder="Enter your full name"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="mb-6">
+                    <label htmlFor="userEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                      Email Address
+                    </label>
+                    <input
+                      id="userEmail"
+                      type="email"
+                      value={userEmail}
+                      onChange={(e) => setUserEmail(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      placeholder="Enter your email address"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="flex space-x-3">
+                    <button
+                      type="button"
+                      onClick={handleSkipEmailStep}
+                      className="w-1/2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400"
+                    >
+                      Skip for Now
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-1/2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                    >
+                      {loading ? (
+                        <div className="flex items-center justify-center">
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                          </svg>
+                          Processing...
+                        </div>
+                      ) : (
+                        "Complete Profile"
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
