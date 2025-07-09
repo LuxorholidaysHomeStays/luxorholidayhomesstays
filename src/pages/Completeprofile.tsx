@@ -17,7 +17,6 @@ const CompleteProfile = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [retryCount, setRetryCount] = useState(0);
   
   // If user navigated here directly without the required state, redirect to login
   useEffect(() => {
@@ -42,50 +41,32 @@ const CompleteProfile = () => {
         throw new Error('Please enter your name (at least 2 characters)');
       }
       
-      // Try to send verification email with proper error handling
-      try {
-        // Set a timeout for the request
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-        
-        const response = await fetch(`${API_BASE_URL}/api/auth/send-email-verification`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
-          },
-          body: JSON.stringify({
-            email,
-            phoneNumber,
-            name
-          }),
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to send verification email');
-        }
-        
-        setIsVerificationSent(true);
-        setSuccess('Verification code sent to your email');
-      } catch (fetchError) {
-        console.error('Email verification error:', fetchError);
-        
-        if (fetchError.name === 'AbortError') {
-          throw new Error('Request timed out. Please try again.');
-        } else {
-          // Fall back to skipping email verification
-          setIsVerificationSent(true);
-          setSuccess('Email accepted. Please continue with profile completion.');
-        }
+      // Use the new endpoint for profile completion
+      const response = await fetch(`${API_BASE_URL}/complete/profile/email/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+        },
+        body: JSON.stringify({
+          email,
+          phoneNumber,
+          name
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send verification email');
       }
+      
+      setIsVerificationSent(true);
+      setSuccess('Verification code sent to your email');
+      
     } catch (error) {
       setError(error.message || 'Something went wrong');
-      console.error('Error in email submission:', error);
+      console.error('Error sending verification email:', error);
     } finally {
       setLoading(false);
     }
@@ -97,37 +78,38 @@ const CompleteProfile = () => {
     setError('');
     
     try {
-      // Since we're bypassing email verification, we'll just use a dummy code
-      // or accept any code the user enters
+      if (!otp || otp.length !== 6) {
+        throw new Error('Please enter a valid 6-digit verification code');
+      }
       
-      // Update user profile with email and name directly
-      const response = await fetch(`${API_BASE_URL}/api/auth/phone-verify-with-email`, {
+      // Use the new endpoint for profile update
+      const response = await fetch(`${API_BASE_URL}/complete/profile/email/update`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
         },
         body: JSON.stringify({
           email,
+          otp,
           phoneNumber,
-          name,
-          idToken,
-          isEmailVerified: true,
-          skipEmailVerification: true // Signal backend to skip verification
+          name
         }),
       });
       
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to update profile');
+        throw new Error(data.error || 'Verification failed');
       }
       
-      // Update auth token with the new one that includes email info
-      localStorage.setItem('authToken', data.token);
-      
-      // Update user data in context
-      setAuthToken(data.token);
-      setUserData(data.user);
+      // Update user data in context and localStorage
+      if (authToken) {
+        setUserData({
+          ...data.user,
+          isEmailVerified: true
+        });
+      }
       
       // Show success and redirect
       setSuccess('Profile updated successfully! Redirecting...');
@@ -138,6 +120,51 @@ const CompleteProfile = () => {
     } catch (error) {
       setError(error.message || 'Verification failed');
       console.error('Error verifying email:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Function to handle cases where email verification is skipped
+  const handleSkipVerification = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/complete/profile/email/update`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+        },
+        body: JSON.stringify({
+          email,
+          phoneNumber,
+          name,
+          skipVerification: true
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update profile');
+      }
+      
+      if (authToken) {
+        setUserData({
+          ...data.user,
+          isEmailVerified: false
+        });
+      }
+      
+      setSuccess('Profile updated! Redirecting...');
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
+      
+    } catch (error) {
+      setError(error.message || 'Failed to update profile');
     } finally {
       setLoading(false);
     }
@@ -192,46 +219,55 @@ const CompleteProfile = () => {
               />
             </div>
             
-            <button
-              type="submit"
-              className="w-full py-2 px-4 bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-md transition duration-200"
-              disabled={loading}
-            >
-              {loading ? 'Processing...' : 'Verify Email'}
-            </button>
+            <div className="flex flex-col space-y-3">
+              <button
+                type="submit"
+                className="w-full py-2 px-4 bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-md transition duration-200"
+                disabled={loading}
+              >
+                {loading ? 'Sending...' : 'Verify Email'}
+              </button>
+            </div>
           </form>
         ) : (
           <form onSubmit={handleVerifyOtp}>
             <div className="mb-6">
-              <p className="text-gray-700 mb-4">
-                Normally we would verify your email with a code, but we'll skip that step for now.
-              </p>
-              
               <label className="block text-gray-700 mb-2" htmlFor="otp">
-                Confirmation Code
+                Verification Code
               </label>
               <input
                 id="otp"
                 type="text"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
-                placeholder="Enter any code (123456)"
+                placeholder="Enter 6-digit code"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 text-center text-lg tracking-widest"
                 maxLength={6}
                 required
               />
               <p className="mt-2 text-sm text-gray-600">
-                Enter any 6-digit code to continue (email verification is bypassed)
+                Enter the 6-digit code sent to {email}
               </p>
             </div>
             
-            <button
-              type="submit"
-              className="w-full py-2 px-4 bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-md transition duration-200"
-              disabled={loading}
-            >
-              {loading ? 'Processing...' : 'Complete Profile'}
-            </button>
+            <div className="flex flex-col space-y-3">
+              <button
+                type="submit"
+                className="w-full py-2 px-4 bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-md transition duration-200"
+                disabled={loading}
+              >
+                {loading ? 'Verifying...' : 'Complete Profile'}
+              </button>
+              
+              <button
+                type="button"
+                onClick={handleSkipVerification}
+                className="text-yellow-600 hover:text-yellow-700 text-sm font-medium"
+                disabled={loading}
+              >
+                Complete profile without verification
+              </button>
+            </div>
           </form>
         )}
       </div>
