@@ -1,12 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'; // Import auth context
+import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from "../config/api";
+
+// TypeScript declarations are still useful for other environment variables
+interface ImportMetaEnv {
+  readonly VITE_API_BASE_URL: string;
+  // Add other environment variables as needed
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
 
 const CompleteProfile = () => {
+  // Remove this line since we're importing API_BASE_URL directly
+  // const url = import.meta.env.VITE_API_BASE_URL;
+  
   const location = useLocation();
   const navigate = useNavigate();
   const { phoneNumber, authToken, currentName, currentEmail, idToken } = location.state || {};
-  const { setUserData, setAuthToken } = useAuth(); // Get auth context methods
+  const { setUserData, setAuthToken } = useAuth();
   
   const [name, setName] = useState(currentName && !currentName.startsWith('User_') ? currentName : '');
   const [email, setEmail] = useState(currentEmail && !currentEmail.includes('@phone.luxor.com') ? currentEmail : '');
@@ -19,7 +33,7 @@ const CompleteProfile = () => {
   // If user navigated here directly without the required state, redirect to login
   useEffect(() => {
     if (!phoneNumber) {
-      navigate('/login');
+      navigate('/sign-in');
     }
   }, [phoneNumber, navigate]);
   
@@ -39,8 +53,8 @@ const CompleteProfile = () => {
         throw new Error('Please enter your name (at least 2 characters)');
       }
       
-      // Send verification email
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/send-email-verification`, {
+      // Send verification email - use API_BASE_URL from import
+      const response = await fetch(`${API_BASE_URL}/api/auth/send-email-verification`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -56,7 +70,7 @@ const CompleteProfile = () => {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to send verification email');
+        throw new Error(data.error || 'Failed to send verification email. Please try again');
       }
       
       setIsVerificationSent(true);
@@ -64,6 +78,7 @@ const CompleteProfile = () => {
       
     } catch (error) {
       setError(error.message || 'Something went wrong');
+      console.error('Error sending verification email:', error);
     } finally {
       setLoading(false);
     }
@@ -79,8 +94,8 @@ const CompleteProfile = () => {
         throw new Error('Please enter a valid 6-digit verification code');
       }
       
-      // Verify OTP
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/phone-verify-with-email`, {
+      // First verify the OTP
+      const verifyResponse = await fetch(`${API_BASE_URL}/api/auth/verify-email-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -89,8 +104,27 @@ const CompleteProfile = () => {
           email,
           otp,
           phoneNumber,
+          name
+        }),
+      });
+      
+      const verifyData = await verifyResponse.json();
+      
+      if (!verifyResponse.ok) {
+        throw new Error(verifyData.error || 'Invalid verification code');
+      }
+      
+      // Now update user profile with verified email and name
+      const response = await fetch(`${API_BASE_URL}/api/auth/phone-verify-with-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          phoneNumber,
           name,
-          idToken, // Send Firebase token if available
+          idToken,
           isEmailVerified: true
         }),
       });
@@ -98,7 +132,7 @@ const CompleteProfile = () => {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || 'Verification failed');
+        throw new Error(data.error || 'Failed to update profile');
       }
       
       // Update auth token with the new one that includes email info
@@ -116,58 +150,7 @@ const CompleteProfile = () => {
       
     } catch (error) {
       setError(error.message || 'Verification failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Handle skip button with proper state management
-  const handleSkip = () => {
-    if (authToken) {
-      // If we have an auth token, just navigate
-      navigate('/');
-    } else {
-      // If we don't have auth token, we need to do basic phone verification
-      handleBasicPhoneVerification();
-    }
-  };
-  
-  // Fallback for users who skip email verification
-  const handleBasicPhoneVerification = async () => {
-    try {
-      setLoading(true);
-      
-      if (!idToken || !phoneNumber) {
-        throw new Error('Missing verification data');
-      }
-      
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/phone-verify`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          idToken,
-          phoneNumber,
-          name: name || currentName || `User_${phoneNumber.slice(-4)}`
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Verification failed');
-      }
-      
-      // Store token and update context
-      localStorage.setItem('authToken', data.token);
-      setAuthToken(data.token);
-      setUserData(data.user);
-      
-      navigate('/');
-      
-    } catch (error) {
-      setError('Failed to complete profile: ' + (error.message || 'Unknown error'));
+      console.error('Error verifying email:', error);
     } finally {
       setLoading(false);
     }
@@ -259,16 +242,6 @@ const CompleteProfile = () => {
           </button>
         </form>
       )}
-      
-      <div className="mt-4 text-center">
-        <button
-          onClick={handleSkip}
-          className="text-yellow-600 hover:text-yellow-700"
-          disabled={loading}
-        >
-          Skip for now
-        </button>
-      </div>
     </div>
   );
 };

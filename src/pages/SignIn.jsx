@@ -399,11 +399,11 @@ const SignIn = () => {
               authToken: data.token,
               currentName: data.user.name,
               currentEmail: data.user.email,
-              idToken // Pass the Firebase ID token
+              idToken 
             } 
           });
         } else {
-          // Regular login flow for existing users
+    
           setUserData(data.user);
           setAuthToken(data.token);
           navigate('/');
