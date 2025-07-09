@@ -42,7 +42,7 @@ const CompleteProfile = () => {
       }
       
       // Use the new endpoint for profile completion
-      const response = await fetch(`${API_BASE_URL}/complete/profile/email/verify`, {
+      const response = await fetch(`${API_BASE_URL}/api/complete/profile/email/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -83,7 +83,7 @@ const CompleteProfile = () => {
       }
       
       // Use the new endpoint for profile update
-      const response = await fetch(`${API_BASE_URL}/complete/profile/email/update`, {
+      const response = await fetch(`${API_BASE_URL}/api/complete/profile/email/update`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +131,7 @@ const CompleteProfile = () => {
     setError('');
     
     try {
-      const response = await fetch(`${API_BASE_URL}/complete/profile/email/update`, {
+      const response = await fetch(`${API_BASE_URL}/api/complete/profile/email/update`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
