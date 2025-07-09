@@ -33,6 +33,7 @@ import AdminDashboard from './pages/Dashboard';
 import VillaManagement from './pages/VillaManagement';
 import BookingManagement from './pages/BookingManagement';
 import UserManagement from './pages/userManagement';
+import PhoneUserManagement from './pages/PhoneUserManagement';
 import Layout from './components/Adminpanel/Layout';
 import ProtectedRoute from './components/Adminpanel/Protected';
 import "./App.css";
@@ -148,7 +149,11 @@ function App() {
               <Route path='/h' element={<HelpCenter />} />
               <Route path='/si' element={<Safety/>} />
                    <Route path='/profile' element={<Profile/>} />
-                   <Route path="/complete-profile" element={<CompleteProfile />} />
+              <Route path="/complete-profile" element={
+                <AuthGuard redirectOnAuthenticated={false} redirectPath="/">
+                  <CompleteProfile />
+                </AuthGuard>
+              } />
               <Route path='/g' element={<NavbarGallery/>} />
               <Route path='/gallery' element={<AboutGallery/>} />
               <Route path='/about' element={<About />} />
@@ -202,6 +207,14 @@ function App() {
   <ProtectedRoute>
     <Layout>
       <UserManagement />
+    </Layout>
+  </ProtectedRoute>
+} />
+
+<Route path="/phone-users" element={
+  <ProtectedRoute>
+    <Layout>
+      <PhoneUserManagement />
     </Layout>
   </ProtectedRoute>
 } />

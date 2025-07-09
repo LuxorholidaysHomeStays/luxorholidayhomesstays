@@ -41,7 +41,7 @@ const Navbar = () => {
     const isSignedIn = !!authToken;
     
     // Check if the current user is admin
-    const isAdmin = isSignedIn && userData && userData.email === 'adminluxor331';
+    const isAdmin = isSignedIn && userData && (userData.role === 'admin' || userData.email === 'adminluxor331');
 
     // Function to handle navigation with proper scroll behavior
     const handleNavigation = (path) => {
@@ -126,7 +126,7 @@ const Navbar = () => {
                         <div className="h-0.5 w-0 group-hover:w-full transition-all duration-300 bg-[#BF953F]" />
                     </div>
                 ))}
-                {isSignedIn && userData && (
+                {isSignedIn && userData && !isAdmin && (
                     <div 
                         onClick={() => handleNavigation('/my-bookings')}
                         className="group flex flex-col gap-0.5 text-white hover:text-[#BF953F] cursor-pointer relative z-10 font-medium transition-colors duration-300"
@@ -135,15 +135,16 @@ const Navbar = () => {
                         <div className="h-0.5 w-0 group-hover:w-full transition-all duration-300 bg-[#BF953F]" />
                     </div>
                 )}
-                
-                {/* Only show Dashboard button for admin */}
-                {isAdmin && (
-                    <button 
-                        className="border border-[#BF953F] px-4 py-1 text-sm font-medium rounded-full cursor-pointer text-white hover:bg-gradient-to-r hover:from-[#BF953F] hover:to-[#FCF6BA] hover:text-gray-900 transition-all duration-300 relative z-10" 
-                        onClick={() => handleNavigation('/owner')}
+
+                {/* Show Dashboard button for admin instead of My Bookings */}
+                {isSignedIn && userData && isAdmin && (
+                    <div 
+                        onClick={() => handleNavigation('/dashboard')}
+                        className="group flex flex-col gap-0.5 text-white hover:text-[#BF953F] cursor-pointer relative z-10 font-medium transition-colors duration-300"
                     >
                         Dashboard
-                    </button>
+                        <div className="h-0.5 w-0 group-hover:w-full transition-all duration-300 bg-[#BF953F]" />
+                    </div>
                 )}
             </div>
 
@@ -197,16 +198,36 @@ const Navbar = () => {
                                 >
                                     <CloseIcon />
                                 </button>
-                                <div 
-                                    className="px-4 py-2 text-white hover:text-[#BF953F] cursor-pointer flex items-center gap-2 transition-colors"
-                                    onClick={() => {
-                                        setUserMenuOpen(false);
-                                        handleNavigation('/my-bookings');
-                                    }}
-                                >
-                                    <BookIcon />
-                                    <span>My Bookings</span>
-                                </div>
+                                {!isAdmin && (
+                                    <div 
+                                        className="px-4 py-2 text-white hover:text-[#BF953F] cursor-pointer flex items-center gap-2 transition-colors"
+                                        onClick={() => {
+                                            setUserMenuOpen(false);
+                                            handleNavigation('/my-bookings');
+                                        }}
+                                    >
+                                        <BookIcon />
+                                        <span>My Bookings</span>
+                                    </div>
+                                )}
+                                
+                                {isAdmin && (
+                                    <div 
+                                        className="px-4 py-2 text-white hover:text-[#BF953F] cursor-pointer flex items-center gap-2 transition-colors"
+                                        onClick={() => {
+                                            setUserMenuOpen(false);
+                                            handleNavigation('/dashboard');
+                                        }}
+                                    >
+                                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M4 4H10V10H4V4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            <path d="M14 4H20V10H14V4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            <path d="M4 14H10V20H4V14Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            <path d="M14 14H20V20H14V14Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                        <span>Dashboard</span>
+                                    </div>
+                                )}
                                 <div 
                                     className="px-4 py-2 text-white hover:text-[#BF953F] cursor-pointer flex items-center gap-2 transition-colors"
                                     onClick={() => {
@@ -307,7 +328,7 @@ const Navbar = () => {
                     </div>
                 ))}
 
-                {isSignedIn && userData && (
+                {isSignedIn && userData && !isAdmin && (
                     <div
                         onClick={() => handleNavigation('/my-bookings')}
                         className="group cursor-pointer text-lg text-white transition-all duration-300 relative px-4 py-2 hover:scale-105"
@@ -317,14 +338,15 @@ const Navbar = () => {
                     </div>
                 )}
 
-                {/* Only show Dashboard button for admin in mobile menu */}
-                {isAdmin && (
-                    <button 
-                        className="border border-[#BF953F] px-6 py-2 text-sm font-medium rounded-full cursor-pointer text-white hover:bg-gradient-to-r hover:from-[#BF953F] hover:to-[#FCF6BA] hover:text-gray-900 transition-all duration-300 mt-4" 
-                        onClick={() => handleNavigation('/owner')}
+                {/* Show Dashboard button for admin in mobile menu instead of My Bookings */}
+                {isSignedIn && userData && isAdmin && (
+                    <div
+                        onClick={() => handleNavigation('/dashboard')}
+                        className="group cursor-pointer text-lg text-white transition-all duration-300 relative px-4 py-2 hover:scale-105"
                     >
-                        Dashboard
-                    </button>
+                        <span className="relative z-10 transition-colors duration-300 group-hover:text-[#BF953F]">Dashboard</span>
+                        <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-[#BF953F] to-[#FCF6BA] group-hover:w-full transition-all duration-300 ease-out"></div>
+                    </div>
                 )}
 
                 {isSignedIn && userData ? (
@@ -359,16 +381,36 @@ const Navbar = () => {
                     >
                         <CloseIcon />
                     </button>
-                    <div 
-                        className="px-4 py-2 text-white hover:text-[#BF953F] cursor-pointer flex items-center gap-2 transition-colors"
-                        onClick={() => {
-                            setUserMenuOpen(false);
-                            handleNavigation('/my-bookings');
-                        }}
-                    >
-                        <BookIcon />
-                        <span>My Bookings</span>
-                    </div>
+                    {!isAdmin && (
+                        <div 
+                            className="px-4 py-2 text-white hover:text-[#BF953F] cursor-pointer flex items-center gap-2 transition-colors"
+                            onClick={() => {
+                                setUserMenuOpen(false);
+                                handleNavigation('/my-bookings');
+                            }}
+                        >
+                            <BookIcon />
+                            <span>My Bookings</span>
+                        </div>
+                    )}
+                    
+                    {isAdmin && (
+                        <div 
+                            className="px-4 py-2 text-white hover:text-[#BF953F] cursor-pointer flex items-center gap-2 transition-colors"
+                            onClick={() => {
+                                setUserMenuOpen(false);
+                                handleNavigation('/dashboard');
+                            }}
+                        >
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 4H10V10H4V4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M14 4H20V10H14V4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M4 14H10V20H4V14Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M14 14H20V20H14V14Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <span>Dashboard</span>
+                        </div>
+                    )}
                     <div 
                         className="px-4 py-2 text-white hover:text-[#BF953F] cursor-pointer flex items-center gap-2 transition-colors"
                         onClick={() => {

@@ -22,6 +22,7 @@ const Layout = ({ children }) => {
     { name: 'Villas', href: '/villas', icon: BuildingOfficeIcon },
     { name: 'Bookings', href: '/bookings', icon: CalendarDaysIcon },
     { name: 'Users', href: '/users', icon: UsersIcon },
+    { name: 'Phone Users', href: '/phone-users', icon: UsersIcon },
   ];
 
   const handleLogout = () => {
