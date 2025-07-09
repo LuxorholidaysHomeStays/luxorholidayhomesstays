@@ -19,9 +19,9 @@ const About = () => {
             <PersonalIntro />
             <SplitLayout />
             <MissionVision />
-            <TeamSection />
+            {/* <TeamSection />
             <Testimonials />
-          <StatsCounter />
+          <StatsCounter /> */}
             <Gallery />
             <CallToAction />
         </div>

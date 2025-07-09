@@ -915,6 +915,17 @@ export default function Contact() {
                     >
                       +91 8015924647
                     </motion.a>
+
+                    <p><motion.a 
+                      href="tel:+919940047463"
+                      className="text-gray-600 text-xs sm:text-sm md:text-base break-all hover:text-black hover:underline transition-colors duration-300 cursor-pointer"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      +91 9940047463
+                    </motion.a> </p>
+
+                    
                   </div>
                 </motion.div>
 
@@ -940,7 +951,7 @@ export default function Contact() {
                   <div>
                     <motion.h3 className="font-medium text-base sm:text-lg md:text-xl text-gray-800">Email</motion.h3>
                     <motion.a 
-                      href="https://mail.google.com/mail/?view=cm&fs=1&to=luxorholidayhomestays@gmail.com"
+                      href="https://mail.google.com/mail/?view=cm&fs=1&to=luxorholidayhomestays@gmail.com&su=Inquiry%20About%20Homestay&body=Hello%2C%20I%20would%20like%20to%20know%20more%20about%20your%20homestay%20options."
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-gray-600 text-xs sm:text-sm md:text-base break-all hover:text-black hover:underline transition-colors duration-300 cursor-pointer"
@@ -974,14 +985,14 @@ export default function Contact() {
                   <div>
                     <motion.h3 className="font-medium text-base sm:text-lg md:text-xl text-gray-800">Address</motion.h3>
                     <motion.a 
-                      href="https://www.google.com/maps/search/?api=1&query=40/2B+Kovalam+main+road,+Chennai,+603112"
+                      href="https://www.google.com/maps/search/?api=1&query=6%2F181%2C+Dargah+road%2C+Kovalam+main+road%2C+Kovalam+taluk%2C+Chengalpattu+dt%2C+Tamil+Nadu+603112"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-gray-600 text-xs sm:text-sm md:text-base break-all hover:text-black hover:underline transition-colors duration-300 cursor-pointer"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      40/2B Kovalam main road, Chennai, 603112
+                      6/181, Dargah road, Kovalam main road, Kovalam taluk, Chengalpattu dt, Tamil Nadu 603 112
                     </motion.a>
                   </div>
                 </motion.div>
@@ -1106,7 +1117,8 @@ export default function Contact() {
 
               <iframe
                 title="Luxor Villa Location Map"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d125323.40216323!2d76.89010037974042!3d11.011870079525526!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ba859af2f971cb5%3A0x2fc1c81e183ed282!2sChennai%2C%20Tamil%20Nadu!5e0!3m2!1sen!2sin!4v1673429729105!5m2!1sen!2sin"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3894.1234567890123!2d80.251414!3d12.786722!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a52582f5abcd123%3A0xef4567890abcdef!2s6%2F181%2C%20Dargah%20Road%2C%20Kovalam%20Main%20Road%2C%20Kovalam%20Taluk%2C%20Chengalpattu%20Dt%2C%20Tamil%20Nadu%20603%20112!5e0!3m2!1sen!2sin!4vXXXXXXX"
+
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}

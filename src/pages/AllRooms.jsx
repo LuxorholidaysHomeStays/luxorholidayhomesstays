@@ -122,14 +122,14 @@ import "react-date-range/dist/theme/default.css"
 // Villa image collections (keeping your existing image imports)
 const villaImageCollections = {
   "Amrith Palace": [
-    "/AmrithPalace/AP1.jpg",
+    "/AmrithPalace/AP8.jpg",
     "/AmrithPalace/AP2.jpg",
     "/AmrithPalace/AP3.jpg",
     "/AmrithPalace/AP4.jpg",
     "/AmrithPalace/AP5.jpg",
     "/AmrithPalace/AP6.jpg",
     "/AmrithPalace/AP7.jpg",
-    "/AmrithPalace/AP8.jpg",
+    "/AmrithPalace/AP1.jpg",
     "/AmrithPalace/AP9.jpg",
     "/AmrithPalace/AP10.jpg",
     "/AmrithPalace/AP11.jpg",
@@ -171,7 +171,7 @@ const villaImageCollections = {
     "/eastcoastvilla/EC15.jpg",
   ],
   "Ram Water Villa": [
-    "/ramwatervilla/RW1.jpg",
+    "/ramwatervilla/RW19.jpg",
     "/ramwatervilla/RW2.jpg",
     "/ramwatervilla/RW3.jpg",
     "/ramwatervilla/RW4.jpg",
@@ -188,7 +188,7 @@ const villaImageCollections = {
     "/ramwatervilla/RW16.jpg",
     "/ramwatervilla/RW17.jpg",
     "/ramwatervilla/RW18.jpg",
-    "/ramwatervilla/RW19.jpg",
+    "/ramwatervilla/RW1.jpg",
   ],
   "Empire Anand Villa Samudra": [
     "/empireanandvillasamudra/anandvilla1.jpg",
@@ -209,7 +209,7 @@ const villaImageCollections = {
     "/empireanandvillasamudra/anandvilla16.jpg",
   ],
   "Lavish Villa I": [
-    "/LavishVilla 1/lvone1.jpg",
+    "/LavishVilla 1/lvone18.jpg",
     "/LavishVilla 1/lvone2.jpg",
     "/LavishVilla 1/lvone3.jpg",
     "/LavishVilla 1/lvone4.jpg",
@@ -226,17 +226,17 @@ const villaImageCollections = {
     "/LavishVilla 1/lvone15.jpg",
     "/LavishVilla 1/lvone16.jpg",
     "/LavishVilla 1/lvone17.jpg",
-    "/LavishVilla 1/lvone18.jpg",
+    "/LavishVilla 1/lvone1.jpg",
     "/LavishVilla 1/lvone19.jpg",
     "/LavishVilla 1/lvone20.jpg",
     "/LavishVilla 1/lvone21.jpg",
     "/LavishVilla 1/lvone22.jpg",
   ],
   "Lavish Villa II": [
-    "/LavishVilla 2/lvtwo1.jpg",
+    "/LavishVilla 2/lvtwo4.jpg",
     "/LavishVilla 2/lvtwo2.jpg",
     "/LavishVilla 2/lvtwo3.jpg",
-    "/LavishVilla 2/lvtwo4.jpg",
+    "/LavishVilla 2/lvtwo1.jpg",
     "/LavishVilla 2/lvtwo5.jpg",
     "/LavishVilla 2/lvtwo6.jpg",
     "/LavishVilla 2/lvtwo7.jpg",
@@ -257,7 +257,7 @@ const villaImageCollections = {
     "/LavishVilla 2/lvtwo22.jpg",
   ],
   "Lavish Villa III": [
-    "/LavishVilla 3/lvthree1.jpg",
+    "/LavishVilla 3/lvthree17.jpg",
     "/LavishVilla 3/lvthree2.jpg",
     "/LavishVilla 3/lvthree3.jpg",
     "/LavishVilla 3/lvthree4.jpg",
@@ -272,7 +272,7 @@ const villaImageCollections = {
     "/LavishVilla 3/lvthree14.jpg",
     "/LavishVilla 3/lvthree15.jpg",
     "/LavishVilla 3/lvthree16.jpg",
-    "/LavishVilla 3/lvthree17.jpg",
+    "/LavishVilla 3/lvthree11.jpg",
     "/LavishVilla 3/lvthree18.jpg",
   ],
 }

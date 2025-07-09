@@ -330,7 +330,7 @@ const PersonalIntro = () => {
                             animate={isVisible ? { opacity: 1 } : {}}
                             transition={{ duration: 0.8, delay: 1.4 }}
                         >
-                            Villa Owner & Host
+                            Founder & Managing Director
                         </motion.span>
                     </div>
                 </motion.div>
