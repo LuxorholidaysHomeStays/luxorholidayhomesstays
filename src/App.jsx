@@ -40,7 +40,7 @@ import { ToastProvider } from './context/ToastContext';
 import Toast from './components/Toast';
 import AuthGuard from './components/AuthGuard';
 import Profile from './pages/Profile';
-
+import CompleteProfile from './pages/Completeprofile';
 function App() {
   const { pathname } = useLocation();
   
@@ -148,6 +148,7 @@ function App() {
               <Route path='/h' element={<HelpCenter />} />
               <Route path='/si' element={<Safety/>} />
                    <Route path='/profile' element={<Profile/>} />
+                   <Route path="/complete-profile" element={<CompleteProfile />} />
               <Route path='/g' element={<NavbarGallery/>} />
               <Route path='/gallery' element={<AboutGallery/>} />
               <Route path='/about' element={<About />} />

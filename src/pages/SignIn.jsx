@@ -389,12 +389,25 @@ const SignIn = () => {
 
         // Store auth token
         localStorage.setItem('authToken', data.token);
-        setAuthToken(data.token);
-        setUserData(data.user);
         
-        // Navigate to home page
-        setSuccess('Phone verification successful!');
-        setTimeout(() => navigate('/'), 1000);
+        // Check if user needs to provide name and email
+        if (data.user.needsProfileUpdate || data.isNewUser || data.user.email.includes('@phone.luxor.com')) {
+          // Navigate to a profile completion page or show modal
+          navigate('/complete-profile', { 
+            state: { 
+              phoneNumber: data.user.phoneNumber,
+              authToken: data.token,
+              currentName: data.user.name,
+              currentEmail: data.user.email,
+              idToken // Pass the Firebase ID token
+            } 
+          });
+        } else {
+          // Regular login flow for existing users
+          setUserData(data.user);
+          setAuthToken(data.token);
+          navigate('/');
+        }
         
       } catch (error) {
         console.error('Error during backend verification:', error);
