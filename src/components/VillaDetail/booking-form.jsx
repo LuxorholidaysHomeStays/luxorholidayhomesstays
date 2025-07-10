@@ -502,8 +502,8 @@ export default function EnhancedBookingForm({
                   <Users className="w-5 h-5 text-[#D4AF37]" />
                   <h4 className="font-semibold text-gray-900 text-sm">How many guests?</h4>
                 </div>
-                <p className="text-xs text-gray-600 mb-2">Maximum {villa?.maxGuests || 15} guests allowed</p>
-                {(adults + children) > (villa?.maxGuests || 15) && (
+                <p className="text-xs text-gray-600 mb-2">Maximum {villa?.guests || 4} guests allowed</p>
+                {(adults + children) > (villa?.guests || 4) && (
                   <div className="mb-4 p-2 bg-red-50 rounded-md border border-red-200 text-xs text-red-700">
                     <strong>Warning:</strong> You have selected more guests than allowed for this villa. Please reduce the number of guests.
                   </div>
@@ -526,7 +526,7 @@ export default function EnhancedBookingForm({
                     <span className="w-6 text-center font-bold">{adults}</span>
                     <button
                       onClick={() => onGuestChange(adults + 1, children, infants)}
-                      disabled={adults + children >= 15}
+                      disabled={adults + children >= (villa?.guests || 4)}
                       className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gradient-to-r hover:from-[#D4AF37] hover:to-[#BFA181] hover:border-[#D4AF37] hover:text-white transition-all disabled:opacity-50"
                     >
                       <Plus className="h-3 w-3" />
@@ -551,7 +551,7 @@ export default function EnhancedBookingForm({
                     <span className="w-6 text-center font-bold">{children}</span>
                     <button
                       onClick={() => onGuestChange(adults, children + 1, infants)}
-                      disabled={adults + children >= 15}
+                      disabled={adults + children >= (villa?.guests || 4)}
                       className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gradient-to-r hover:from-[#D4AF37] hover:to-[#BFA181] hover:border-[#D4AF37] hover:text-white transition-all disabled:opacity-50"
                     >
                       <Plus className="h-3 w-3" />
@@ -765,9 +765,8 @@ export default function EnhancedBookingForm({
                       {adults + children} guest{adults + children !== 1 ? "s" : ""} 
                       {infants > 0 ? ` + ${infants} infant${infants !== 1 ? "s" : ""}` : ""}
                       <span className="text-xs text-gray-500 ml-1">
-                        (Max: {villa?.maxGuests || 15})
+                        (Max: {villa?.guests || 4})
                       </span>
-                      {adults + children} Adults/Children{infants > 0 ? `, ${infants} Infants` : ""}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -841,7 +840,7 @@ export default function EnhancedBookingForm({
             <div className="space-y-2">
               <button
                 onClick={() => {
-                  const maxGuests = villa?.maxGuests || 15;
+                  const maxGuests = villa?.guests || 4;
                   
                   if ((adults + children) > maxGuests) {
                     
