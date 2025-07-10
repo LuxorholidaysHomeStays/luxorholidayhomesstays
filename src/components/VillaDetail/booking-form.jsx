@@ -1,9 +1,23 @@
 "use client"
 import { useState, useEffect } from "react"
-import { Calendar, Plus, Minus, Check, Shield, Heart, ChevronRight, Users, CreditCard, Clock, MapPin, Home } from "lucide-react"
+import {
+  Calendar,
+  Plus,
+  Minus,
+  Check,
+  Shield,
+  Heart,
+  ChevronRight,
+  Users,
+  CreditCard,
+  Clock,
+  MapPin,
+  Phone,
+} from "lucide-react"
 import UnifiedCalendar from "../VillaDetail/unified-calender.jsx"
-import { getVillaPricing, getPriceForDate } from "../../data/villa-pricing.jsx"
+import { getPriceForDate } from "../../data/villa-pricing.jsx"
 import Swal from "sweetalert2"
+import axios from "axios"
 
 export default function EnhancedBookingForm({
   villa,
@@ -21,35 +35,40 @@ export default function EnhancedBookingForm({
   userData,
   isModal = false,
   blockedDates = [],
-}) {
-  const [bookingStep, setBookingStep] = useState(1)
-  const [showCalendar, setShowCalendar] = useState(false)
-  
-  // Address state
-  const [address, setAddress] = useState({
+  initialBookingStep = 1,
+  initialAddress = {
     street: "",
     country: "",
     state: "",
     city: "",
-    zipCode: ""
-  })
+    zipCode: "",
+  },
+}) {
+  const [bookingStep, setBookingStep] = useState(initialBookingStep)
+  const [showCalendar, setShowCalendar] = useState(false)
+  const [address, setAddress] = useState(initialAddress)
   const [countries, setCountries] = useState([])
   const [states, setStates] = useState([])
   const [cities, setCities] = useState([])
   const [isLoadingCountries, setIsLoadingCountries] = useState(false)
   const [isLoadingStates, setIsLoadingStates] = useState(false)
   const [isLoadingCities, setIsLoadingCities] = useState(false)
+  const [savedAddresses, setSavedAddresses] = useState([])
+  const [isLoadingSavedAddresses, setIsLoadingSavedAddresses] = useState(false)
+  const [selectedSavedAddress, setSelectedSavedAddress] = useState("")
+  const [showNewAddressForm, setShowNewAddressForm] = useState(true)
 
-  // Fixed times - no longer changeable by users
-  const checkInTime = "14:00 (2:00 PM)" // Fixed check-in time
-  const checkOutTime = "12:00 (12:00 PM)" // Fixed check-out time
+  const checkInTime = "14:00 (2:00 PM)"
+  const checkOutTime = "12:00 (12:00 PM)"
 
-  // Calculate the number of nights
-  const totalNights = checkInDate && checkOutDate 
-    ? Math.max(1, Math.ceil((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / (1000 * 3600 * 24)))
-    : 0;
-  
-  // Add this fallback pricing map in the component (before any use of it)
+  const totalNights =
+    checkInDate && checkOutDate
+      ? Math.max(
+          1,
+          Math.ceil((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / (1000 * 3600 * 24)),
+        )
+      : 0
+
   const villaFallbackPricing = {
     "Amrith Palace": { weekday: 45000, weekend: 65000 },
     "Ram Water Villa": { weekday: 30000, weekend: 45000 },
@@ -57,75 +76,63 @@ export default function EnhancedBookingForm({
     "Lavish Villa I": { weekday: 18000, weekend: 25000 },
     "Lavish Villa II": { weekday: 18000, weekend: 25000 },
     "Lavish Villa III": { weekday: 16000, weekend: 23000 },
-    "Empire Anand Villa Samudra": { weekday: 40000, weekend: 60000 }
-  };
+    "Empire Anand Villa Samudra": { weekday: 40000, weekend: 60000 },
+  }
 
-  // Get exact prices from villa object with proper fallback
-  const weekdayPrice = villa?.price || 0;
-  
-  // Enhanced weekend price retrieval with fallback logic
-  let weekendPrice = villa?.weekendPrice || villa?.weekendprice || 0;
-  
-  // If weekend price is still 0, use fallback pricing based on villa name
+  const weekdayPrice = villa?.price || 0
+  let weekendPrice = villa?.weekendPrice || villa?.weekendprice || 0
+
   if (weekendPrice === 0 && villa?.name) {
-    // Find matching villa in fallback pricing
-    const villaMatch = Object.entries(villaFallbackPricing).find(([name]) => 
-      villa.name.toLowerCase().includes(name.toLowerCase())
-    );
-    
+    const villaMatch = Object.entries(villaFallbackPricing).find(([name]) =>
+      villa.name.toLowerCase().includes(name.toLowerCase()),
+    )
+
     if (villaMatch) {
-      weekendPrice = villaMatch[1].weekend;
-      console.log(`Using fallback weekend price for ${villa.name}: ₹${weekendPrice}`);
+      weekendPrice = villaMatch[1].weekend
+      console.log(`Using fallback weekend price for ${villa.name}: ₹${weekendPrice}`)
     } else if (weekdayPrice > 0) {
-      // If no match found but weekday price exists, use 1.5x multiplier
-      weekendPrice = Math.round(weekdayPrice * 1.5);
-      console.log(`No fallback found for ${villa.name}, using 1.5x multiplier: ₹${weekendPrice}`);
+      weekendPrice = Math.round(weekdayPrice * 1.5)
+      console.log(`No fallback found for ${villa.name}, using 1.5x multiplier: ₹${weekendPrice}`)
     }
   }
-  
-  // Debug log for prices
-  console.log('Booking form prices:', {
+
+  console.log("Booking form prices:", {
     villaName: villa?.name,
     weekdayPrice: weekdayPrice,
     weekendPrice: weekendPrice,
     rawData: villa,
-    usingFallback: villa?.weekendPrice === 0 || villa?.weekendprice === 0
-  });
+    usingFallback: villa?.weekendPrice === 0 || villa?.weekendprice === 0,
+  })
 
-  // DEFINE THE FUNCTIONS BEFORE USING THEM
-  // Updated calculation function to properly handle weekend prices
   const calculateBasePrice = () => {
-    if (!checkInDate || !checkOutDate || !villa) return 0;
-    
-    try {
-      let totalPrice = 0;
-      const startDate = new Date(checkInDate);
-      const endDate = new Date(checkOutDate);
-      const nights = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)));
+    if (!checkInDate || !checkOutDate || !villa) return 0
 
-      // Include the check-in date in the calculation
+    try {
+      let totalPrice = 0
+      const startDate = new Date(checkInDate)
+      const endDate = new Date(checkOutDate)
+      const nights = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)))
+
       for (let i = 0; i < nights; i++) {
-        const currentDate = new Date(startDate);
-        currentDate.setDate(currentDate.getDate() + i);
-        
-        // Determine if it's a weekend
-        const dayOfWeek = currentDate.getDay();
-        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
-        
-        // Apply weekend price if applicable - use our already calculated weekend price
+        const currentDate = new Date(startDate)
+        currentDate.setDate(currentDate.getDate() + i)
+
+        const dayOfWeek = currentDate.getDay()
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+
         if (isWeekend) {
-          totalPrice += Number(weekendPrice);
+          totalPrice += Number(weekendPrice)
         } else {
-          totalPrice += Number(weekdayPrice);
+          totalPrice += Number(weekdayPrice)
         }
       }
-      
-      return totalPrice;
+
+      return totalPrice
     } catch (error) {
-      console.error("Error calculating base price:", error);
-      return 0;
+      console.error("Error calculating base price:", error)
+      return 0
     }
-  };
+  }
 
   const calculateTotalAmount = () => {
     if (!checkInDate || !checkOutDate || !villa) return 0
@@ -133,16 +140,14 @@ export default function EnhancedBookingForm({
       let totalPrice = 0
       const startDate = new Date(checkInDate)
       const endDate = new Date(checkOutDate)
-  
+
       const nights = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)))
-      
-      // Include the check-in date in the calculation
+
       for (let i = 0; i < nights; i++) {
         const currentDate = new Date(startDate)
         currentDate.setDate(currentDate.getDate() + i)
         totalPrice += getPriceForDate(currentDate, villa)
       }
-
       const serviceFee = Math.round(totalPrice * 0.05)
       const taxAmount = Math.round((totalPrice + serviceFee) * 0.18)
       return Math.round(totalPrice + serviceFee + taxAmount)
@@ -150,44 +155,32 @@ export default function EnhancedBookingForm({
       console.error("Error calculating total amount:", error)
       return 0
     }
-  };
+  }
 
-  // NOW USE THE FUNCTIONS
-  // Calculate the base price
-  const basePrice = calculateBasePrice();
-  
-  // Calculate the total amount
-  const totalAmount = calculateTotalAmount();
+  const basePrice = calculateBasePrice()
+  const totalAmount = calculateTotalAmount()
 
-  // Helper function to format time display
   const formatTimeDisplay = (timeString) => {
-    return timeString // Already formatted
+    return timeString
   }
 
-  // Helper function to extract 24-hour time for backend
   const extractRailwayTime = (timeString) => {
-    // Extract the railway time part from "14:00 (2:00 PM)" format
     if (timeString.includes("(")) {
-      return timeString.split(" ")[0] // Returns "14:00"
+      return timeString.split(" ")[0]
     }
-    return timeString 
+    return timeString
   }
 
-  // Enhanced date change handler
   const handleDateChangeWithTime = (checkIn, checkOut) => {
     if (checkIn && checkOut) {
-      // Both dates selected at once - save immediately and close calendar
       onDateChange(checkIn, checkOut)
       setShowCalendar(false)
     } else if (checkIn && !checkInDate) {
-      // New check-in date selected - save it immediately
       onDateChange(checkIn, checkOutDate)
     } else if (checkOut && checkInDate) {
-      // New check-out date selected - save it immediately
       onDateChange(checkInDate, checkOut)
       setShowCalendar(false)
     } else {
-      // Fallback - save whatever is provided
       onDateChange(checkIn, checkOut)
       if (checkIn && checkOut) {
         setShowCalendar(false)
@@ -195,130 +188,421 @@ export default function EnhancedBookingForm({
     }
   }
 
-  // Enhanced booking handler with fixed time and address data
   const handleBookNowWithTime = () => {
-    // Check if user is signed in
     if (!isSignedIn) {
-      // Save current booking state including address
       const bookingData = {
         checkInDate,
         checkOutDate,
         adults,
         children,
         infants,
-        address, // Include address data here
+        address: address,
         bookingStep,
-        villaId: villa?._id
-      };
-      
-      localStorage.setItem('pendingBookingData', JSON.stringify(bookingData));
-      
-      // Show message before redirecting to login
+        villaId: villa?._id || villa?.id,
+        returnUrl: window.location.pathname + window.location.search,
+      }
+
+      localStorage.setItem("pendingBookingData", JSON.stringify(bookingData))
+
       Swal.fire({
-        icon: 'info',
-        title: 'Login Required',
-        text: 'Please log in to complete your booking. Your selections will be saved.',
-        confirmButtonColor: '#D4AF37',
-        confirmButtonText: 'Continue to Login',
+        icon: "info",
+        title: "Login Required",
+        text: "Please log in to complete your booking. Your selections will be saved.",
+        confirmButtonColor: "#D4AF37",
+        confirmButtonText: "Continue to Login",
       }).then(() => {
-        // Redirect to login
-        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
-      });
-      
-      return;
+        window.location.href = "/sign-in?redirect=booking"
+      })
+
+      return
     }
-    
+
     const bookingData = {
-      checkInTime: extractRailwayTime(checkInTime), // Send "14:00" format to backend
-      checkOutTime: extractRailwayTime(checkOutTime), // Send "12:00" format to backend
-      address: address // Include address data
+      checkInTime: extractRailwayTime(checkInTime),
+      checkOutTime: extractRailwayTime(checkOutTime),
+      address: address,
     }
     onBookNow(bookingData)
   }
-  
-  // Fetch all countries on component mount
+
   useEffect(() => {
-    fetchCountries();
-  }, []);
+    fetchCountries()
+  }, [])
+
+  useEffect(() => {
+    if (isSignedIn && userData) {
+      fetchSavedAddresses()
+    }
+  }, [isSignedIn, userData])
+
+  useEffect(() => {
+    if (initialAddress.street || initialAddress.country || initialAddress.city) {
+      setAddress(initialAddress)
+    }
+  }, [initialAddress])
+
+  useEffect(() => {
+    if (initialBookingStep > 1) {
+      setBookingStep(initialBookingStep)
+    }
+  }, [initialBookingStep])
+
+  // Add new useEffect to fetch user address when user is signed in
+  useEffect(() => {
+    if (isSignedIn && userData) {
+      fetchUserAddressInfo();
+    }
+  }, [isSignedIn, userData]);
+  
+  // Function to fetch user address information from previous bookings or profile
+  const fetchUserAddressInfo = async () => {
+    try {
+      // Don't fetch if we already have an address from props
+      if (initialAddress.street || initialAddress.country || initialAddress.city) {
+        console.log("Using provided initial address:", initialAddress);
+        return;
+      }
+
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://luxorstay-backend.vercel.app";
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        console.log("No auth token available for fetching address");
+        return;
+      }
+      
+      const response = await axios.get(`${baseUrl}/api/bookings/user-address-info`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.data && response.data.success && response.data.addressInfo) {
+        console.log("Found user address info:", response.data.addressInfo);
+        setAddress(response.data.addressInfo);
+        
+        // If we have country and state info, fetch the corresponding states and cities
+        if (response.data.addressInfo.country) {
+          fetchStates(response.data.addressInfo.country);
+          
+          if (response.data.addressInfo.state) {
+            fetchCities(response.data.addressInfo.country, response.data.addressInfo.state);
+          }
+        }
+      }
+    } catch (error) {
+      // Just log the error but don't show to user since this is just an enhancement
+      console.error("Error fetching user address info:", error.response?.data || error.message);
+    }
+  };
 
   const fetchCountries = async () => {
-    setIsLoadingCountries(true);
+    setIsLoadingCountries(true)
     try {
-      const response = await fetch('https://countriesnow.space/api/v0.1/countries/positions');
-      const data = await response.json();
+      const response = await fetch("https://countriesnow.space/api/v0.1/countries/positions")
+      const data = await response.json()
       if (data.data && Array.isArray(data.data)) {
-        setCountries(data.data.map(c => ({ name: c.name, code: c.iso2 || '' })));
+        setCountries(data.data.map((c) => ({ name: c.name, code: c.iso2 || "" })))
       }
     } catch (error) {
-      console.error('Error fetching countries:', error);
+      console.error("Error fetching countries:", error)
     } finally {
-      setIsLoadingCountries(false);
+      setIsLoadingCountries(false)
     }
-  };
+  }
 
   const fetchStates = async (country) => {
-    if (!country) return;
-    
-    setIsLoadingStates(true);
-    setStates([]);
-    setCities([]);
-    
+    if (!country) return
+
+    setIsLoadingStates(true)
+    setStates([])
+    setCities([])
+
     try {
-      const response = await fetch('https://countriesnow.space/api/v0.1/countries/states', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ country })
-      });
-      
-      const data = await response.json();
+      const response = await fetch("https://countriesnow.space/api/v0.1/countries/states", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ country }),
+      })
+
+      const data = await response.json()
       if (data.data && data.data.states) {
-        setStates(data.data.states);
+        setStates(data.data.states)
       }
     } catch (error) {
-      console.error('Error fetching states:', error);
+      console.error("Error fetching states:", error)
     } finally {
-      setIsLoadingStates(false);
+      setIsLoadingStates(false)
     }
-  };
+  }
 
   const fetchCities = async (country, state) => {
-    if (!country || !state) return;
-    
-    setIsLoadingCities(true);
-    setCities([]);
-    
+    if (!country || !state) return
+
+    setIsLoadingCities(true)
+    setCities([])
+
     try {
-      const response = await fetch('https://countriesnow.space/api/v0.1/countries/state/cities', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ country, state })
-      });
-      
-      const data = await response.json();
+      const response = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ country, state }),
+      })
+
+      const data = await response.json()
       if (data.data) {
-        setCities(data.data);
+        setCities(data.data)
       }
     } catch (error) {
-      console.error('Error fetching cities:', error);
+      console.error("Error fetching cities:", error)
     } finally {
-      setIsLoadingCities(false);
+      setIsLoadingCities(false)
     }
-  };
+  }
+
+  const fetchSavedAddresses = async () => {
+    if (!isSignedIn) return
+
+    setIsLoadingSavedAddresses(true)
+
+    try {
+      const token = localStorage.getItem("token") || localStorage.getItem("authToken")
+      if (!token) return
+
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://luxorstay-backend.vercel.app"
+      
+      // First try the new consolidated endpoint that includes both profile and booking addresses
+      try {
+        const addressResponse = await axios.get(`${baseUrl}/api/bookings/user-address-info`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        if (addressResponse.data && addressResponse.data.success && addressResponse.data.addressInfo) {
+          // If we have a successful response with address info, use it
+          const addressInfo = addressResponse.data.addressInfo;
+          
+          // Create a single address entry from the consolidated info
+          const addressList = [{
+            id: "saved",
+            label: "Previous Booking Address",
+            street: addressInfo.street || "",
+            city: addressInfo.city || "",
+            state: addressInfo.state || "",
+            country: addressInfo.country || "",
+            zipCode: addressInfo.zipCode || "",
+            source: "saved",
+          }];
+          
+          setSavedAddresses(addressList);
+          setShowNewAddressForm(false);
+          
+          // If this is the first time the form is loaded, set the address
+          if (!address.street && !address.city) {
+            setAddress(addressInfo);
+            
+            // Load the related states and cities
+            if (addressInfo.country) {
+              fetchStates(addressInfo.country);
+              if (addressInfo.state) {
+                fetchCities(addressInfo.country, addressInfo.state);
+              }
+            }
+          }
+          
+          setIsLoadingSavedAddresses(false);
+          return;
+        }
+      } catch (error) {
+        console.log("New address endpoint not available or returned an error, falling back to legacy method");
+      }
+      
+      // Fall back to the original implementation if the new endpoint fails
+      const bookingsResponse = await fetch(`${baseUrl}/api/bookings/user-bookings`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      const profileResponse = await fetch(`${baseUrl}/api/profile`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      const addressList = []
+
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json()
+        if (profileData.user) {
+          const { address: streetAddress, city, state, zipCode, country } = profileData.user
+
+          if (streetAddress || city || state || country) {
+            addressList.push({
+              id: "profile",
+              label: "Profile Address",
+              street: streetAddress || "",
+              city: city || "",
+              state: state || "",
+              country: country || "",
+              zipCode: zipCode || "",
+              source: "profile",
+            })
+          }
+        }
+      }
+
+      if (bookingsResponse.ok) {
+        const bookingsData = await bookingsResponse.json()
+
+        if (Array.isArray(bookingsData)) {
+          // Handle the case where bookings are returned directly as an array
+          bookingsData.forEach((booking) => {
+            if (booking.address && typeof booking.address === "object") {
+              if (booking.address.street || booking.address.city || booking.address.state || booking.address.country) {
+                const addressId = `booking-${booking._id}`
+
+                const isAddressAlreadyAdded = addressList.some(
+                  (addr) =>
+                    addr.street === booking.address.street &&
+                    addr.city === booking.address.city &&
+                    addr.state === booking.address.state &&
+                    addr.country === booking.address.country,
+                )
+
+                if (!isAddressAlreadyAdded) {
+                  let label = `${booking.address.city || ""}, ${booking.address.state || ""}`
+                  if (label.startsWith(", ")) label = label.substring(2)
+                  if (label.endsWith(", ")) label = label.substring(0, label.length - 2)
+                  if (!label) label = "Previous Booking Address"
+
+                  addressList.push({
+                    id: addressId,
+                    label: label,
+                    street: booking.address.street || "",
+                    city: booking.address.city || "",
+                    state: booking.address.state || "",
+                    country: booking.address.country || "",
+                    zipCode: booking.address.zipCode || "",
+                    source: "booking",
+                    bookingDate: booking.createdAt || null,
+                  })
+                }
+              }
+            }
+          })
+        } else if (bookingsData.bookings && Array.isArray(bookingsData.bookings)) {
+          // Handle the case where bookings are in a bookings property
+          bookingsData.bookings.forEach((booking) => {
+            if (booking.address && typeof booking.address === "object") {
+              if (booking.address.street || booking.address.city || booking.address.state || booking.address.country) {
+                const addressId = `booking-${booking._id}`
+
+                const isAddressAlreadyAdded = addressList.some(
+                  (addr) =>
+                    addr.street === booking.address.street &&
+                    addr.city === booking.address.city &&
+                    addr.state === booking.address.state &&
+                    addr.country === booking.address.country,
+                )
+
+                if (!isAddressAlreadyAdded) {
+                  let label = `${booking.address.city || ""}, ${booking.address.state || ""}`
+                  if (label.startsWith(", ")) label = label.substring(2)
+                  if (label.endsWith(", ")) label = label.substring(0, label.length - 2)
+                  if (!label) label = "Previous Booking Address"
+
+                  addressList.push({
+                    id: addressId,
+                    label: label,
+                    street: booking.address.street || "",
+                    city: booking.address.city || "",
+                    state: booking.address.state || "",
+                    country: booking.address.country || "",
+                    zipCode: booking.address.zipCode || "",
+                    source: "booking",
+                    bookingDate: booking.createdAt || null,
+                  })
+                }
+              }
+            }
+          })
+        }
+      }
+
+      addressList.sort((a, b) => {
+        if (a.source === "profile" && b.source === "booking") return 1
+        if (a.source === "booking" && b.source === "profile") return -1
+        if (a.source === "booking" && b.source === "booking") {
+          if (a.bookingDate && b.bookingDate) {
+            return new Date(b.bookingDate) - new Date(a.bookingDate)
+          }
+        }
+        return 0
+      })
+
+      setSavedAddresses(addressList)
+    } catch (error) {
+      console.error("Error fetching saved addresses:", error)
+    } finally {
+      setIsLoadingSavedAddresses(false)
+    }
+  }
+
+  const handleSavedAddressChange = (e) => {
+    const selectedId = e.target.value
+    setSelectedSavedAddress(selectedId)
+
+    if (selectedId === "new") {
+      setShowNewAddressForm(true)
+      setAddress({
+        street: "",
+        country: "",
+        state: "",
+        city: "",
+        zipCode: "",
+      })
+      return
+    }
+
+    setShowNewAddressForm(true)
+
+    const selectedAddress = savedAddresses.find((addr) => addr.id === selectedId)
+    if (selectedAddress) {
+      setAddress({
+        street: selectedAddress.street || "",
+        city: selectedAddress.city || "",
+        state: selectedAddress.state || "",
+        country: selectedAddress.country || "",
+        zipCode: selectedAddress.zipCode || "",
+      })
+
+      if (selectedAddress.country) {
+        fetchStates(selectedAddress.country)
+      }
+
+      if (selectedAddress.country && selectedAddress.state) {
+        fetchCities(selectedAddress.country, selectedAddress.state)
+      }
+    }
+  }
 
   const handleAddressChange = (e) => {
-    const { name, value } = e.target;
-    setAddress(prev => ({ ...prev, [name]: value }));
-    
-    if (name === 'country') {
-      fetchStates(value);
-      setAddress(prev => ({ ...prev, state: '', city: '' }));
+    const { name, value } = e.target
+    setAddress((prev) => ({ ...prev, [name]: value }))
+
+    if (name === "country") {
+      fetchStates(value)
+      setAddress((prev) => ({ ...prev, state: "", city: "" }))
     }
-    
-    if (name === 'state') {
-      fetchCities(address.country, value);
-      setAddress(prev => ({ ...prev, city: '' }));
+    if (name === "state") {
+      fetchCities(address.country, value)
+      setAddress((prev) => ({ ...prev, city: "" }))
     }
-  };
+  }
 
   return (
     <div
@@ -331,7 +615,6 @@ export default function EnhancedBookingForm({
           isModal ? "mt-0" : "mt-4"
         } transition-all duration-300 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto scrollbar-none lg:custom-scrollbar`}
       >
-        {/* Enhanced Header */}
         <div className="text-center mb-6 p-4 bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 rounded-xl border border-[#D4AF37]/20">
           <h3 className="text-xl font-bold text-gray-900 mb-2">Reserve Your Stay</h3>
           <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
@@ -340,7 +623,6 @@ export default function EnhancedBookingForm({
           </div>
         </div>
 
-        {/* Progress Steps */}
         <div className="flex items-center justify-between mb-6">
           {[1, 2, 3, 4].map((step) => (
             <div key={step} className="flex items-center">
@@ -366,7 +648,6 @@ export default function EnhancedBookingForm({
           ))}
         </div>
 
-        {/* Step Title */}
         <div className="text-center mb-6">
           <h3 className="text-lg font-bold text-gray-900">
             {bookingStep === 1 && "📅 Select Dates"}
@@ -377,7 +658,6 @@ export default function EnhancedBookingForm({
           <p className="text-gray-600 text-sm mt-1">Step {bookingStep} of 4</p>
         </div>
 
-        {/* Price Display - Fix weekend price display */}
         <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 rounded-xl p-4 mb-6 border border-[#D4AF37]/20">
           <div className="text-center">
             <div className="text-sm text-gray-600 mb-1">Starting from</div>
@@ -396,9 +676,7 @@ export default function EnhancedBookingForm({
           </div>
         </div>
 
-        {/* Step Content */}
         <div className="space-y-4">
-          {/* Step 1: Date Selection */}
           {bookingStep === 1 && (
             <div className="space-y-3">
               <button
@@ -423,7 +701,6 @@ export default function EnhancedBookingForm({
                 </div>
               </button>
 
-              {/* Fixed Time Display - No interaction */}
               {checkInDate && checkOutDate && (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 rounded-xl p-3 border border-[#D4AF37]/20">
@@ -457,14 +734,20 @@ export default function EnhancedBookingForm({
                 </div>
               )}
 
-              {/* Fixed Time Info Note with Clarification */}
               <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="text-xs text-blue-700 text-center">
                   <div className="font-medium mb-1">⏰ Standard Check-in/Check-out Times</div>
                   <div className="space-y-1">
-                    <div><span className="font-medium">Check-in:</span> 14:00 (2:00 PM) on arrival day</div>
-                    <div><span className="font-medium">Check-out:</span> 12:00 (12:00 PM) on departure day</div>
-                    <div>When you select dates {checkInDate && checkOutDate && `(${totalNights} nights)`}, your stay includes all selected days</div>
+                    <div>
+                      <span className="font-medium">Check-in:</span> 14:00 (2:00 PM) on arrival day
+                    </div>
+                    <div>
+                      <span className="font-medium">Check-out:</span> 12:00 (12:00 PM) on departure day
+                    </div>
+                    <div>
+                      When you select dates {checkInDate && checkOutDate && `(${totalNights} nights)`}, your stay
+                      includes all selected days
+                    </div>
                   </div>
                 </div>
               </div>
@@ -494,7 +777,6 @@ export default function EnhancedBookingForm({
             </div>
           )}
 
-          {/* Step 2: Guest Selection */}
           {bookingStep === 2 && (
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 rounded-xl p-4 border border-[#D4AF37]/20">
@@ -503,13 +785,14 @@ export default function EnhancedBookingForm({
                   <h4 className="font-semibold text-gray-900 text-sm">How many guests?</h4>
                 </div>
                 <p className="text-xs text-gray-600 mb-2">Maximum {villa?.guests || 4} guests allowed</p>
-                {(adults + children) > (villa?.guests || 4) && (
+
+                {adults + children > (villa?.guests || 4) && (
                   <div className="mb-4 p-2 bg-red-50 rounded-md border border-red-200 text-xs text-red-700">
-                    <strong>Warning:</strong> You have selected more guests than allowed for this villa. Please reduce the number of guests.
+                    <strong>Warning:</strong> You have selected more guests than allowed for this villa. Please reduce
+                    the number of guests.
                   </div>
                 )}
 
-                {/* Adults */}
                 <div className="flex items-center justify-between mb-4 p-3 bg-white rounded-lg shadow-sm">
                   <div>
                     <div className="font-semibold text-gray-900 text-sm">Adults</div>
@@ -534,7 +817,6 @@ export default function EnhancedBookingForm({
                   </div>
                 </div>
 
-                {/* Children */}
                 <div className="flex items-center justify-between mb-4 p-3 bg-white rounded-lg shadow-sm">
                   <div>
                     <div className="font-semibold text-gray-900 text-sm">Children</div>
@@ -559,7 +841,6 @@ export default function EnhancedBookingForm({
                   </div>
                 </div>
 
-                {/* Infants */}
                 <div className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
                   <div>
                     <div className="font-semibold text-gray-900 text-sm">Infants</div>
@@ -590,10 +871,60 @@ export default function EnhancedBookingForm({
                   </span>
                 </div>
               </div>
+
+              <div className="mt-4 border-t border-gray-200 pt-4">
+                <button
+                  onClick={() => {
+                    Swal.fire({
+                      title: "Need More Guests?",
+                      html: `
+                        <div class="space-y-3 mt-2">
+                          <p class="text-sm text-gray-600">Please contact us directly for special arrangements:</p>
+                          <div class="flex items-center justify-center gap-3 mt-3 bg-gray-50 p-3 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" class="text-[#D4AF37]">
+                              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                            </svg>
+                            <span class="font-medium text-gray-800">+91 8015924647</span>
+                            <button id="copyPhone" class="bg-[#D4AF37]/20 p-1 rounded-full text-[#D4AF37] hover:bg-[#D4AF37]/30 transition-colors">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      `,
+                      showCloseButton: true,
+                      showConfirmButton: false,
+                      didOpen: () => {
+                        const copyButton = document.getElementById("copyPhone")
+                        if (copyButton) {
+                          copyButton.addEventListener("click", () => {
+                            navigator.clipboard.writeText("+91 8015924647").then(() => {
+                              const originalHtml = copyButton.innerHTML
+                              copyButton.innerHTML = `
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M20 6L9 17l-5-5"></path>
+                                </svg>
+                              `
+                              setTimeout(() => {
+                                copyButton.innerHTML = originalHtml
+                              }, 1500)
+                            })
+                          })
+                        }
+                      },
+                    })
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2 text-sm text-[#D4AF37] bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 rounded-lg transition-colors"
+                >
+                  <span>Need to accommodate more guests?</span>
+                  <Phone className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
 
-          {/* Step 3: Address Entry */}
           {bookingStep === 3 && (
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 rounded-xl p-4 border border-[#D4AF37]/20">
@@ -603,123 +934,143 @@ export default function EnhancedBookingForm({
                 </div>
                 <p className="text-xs text-gray-600 mb-4">Please provide your address information for the booking</p>
 
-                <form className="space-y-4">
-                  {/* Street Address */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Street Address</label>
-                    <input 
-                      type="text" 
-                      name="street" 
-                      value={address.street} 
-                      onChange={handleAddressChange} 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                      placeholder="Enter your street address" 
-                      required
-                    />
-                  </div>
-
-                  {/* Country */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Country</label>
-                    <select 
-                      name="country" 
-                      value={address.country} 
-                      onChange={handleAddressChange}
+                {savedAddresses.length > 0 && (
+                  <div className="space-y-2 mb-4">
+                    <label className="text-sm font-medium text-gray-700">Saved Addresses</label>
+                    <select
+                      value={selectedSavedAddress}
+                      onChange={handleSavedAddressChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm appearance-none bg-white"
-                      required
                     >
-                      <option value="">-- Select Country --</option>
-                      {isLoadingCountries ? (
-                        <option value="" disabled>Loading countries...</option>
-                      ) : (
-                        countries.map((country) => (
-                          <option key={country.name} value={country.name}>
-                            {country.name}
-                          </option>
-                        ))
-                      )}
+                      <option value="">-- Select a saved address --</option>
+                      {savedAddresses.map((addr) => (
+                        <option key={addr.id} value={addr.id}>
+                          {addr.label}
+                        </option>
+                      ))}
+                      <option value="new">+ Enter new address</option>
                     </select>
                   </div>
+                )}
 
-                  {/* State */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">State/Province</label>
-                    <select 
-                      name="state" 
-                      value={address.state} 
-                      onChange={handleAddressChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm appearance-none bg-white"
-                      disabled={!address.country || isLoadingStates}
-                      required
-                    >
-                      <option value="">-- Select State --</option>
-                      {isLoadingStates ? (
-                        <option value="" disabled>Loading states...</option>
-                      ) : (
-                        states.map((state) => (
-                          <option key={state.name} value={state.name}>
-                            {state.name}
+                {showNewAddressForm && (
+                  <form className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Street Address</label>
+                      <input
+                        type="text"
+                        name="street"
+                        value={address.street}
+                        onChange={handleAddressChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        placeholder="Enter your street address"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Country</label>
+                      <select
+                        name="country"
+                        value={address.country}
+                        onChange={handleAddressChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm appearance-none bg-white"
+                        required
+                      >
+                        <option value="">-- Select Country --</option>
+                        {isLoadingCountries ? (
+                          <option value="" disabled>
+                            Loading countries...
                           </option>
-                        ))
-                      )}
-                    </select>
-                  </div>
+                        ) : (
+                          countries.map((country) => (
+                            <option key={country.name} value={country.name}>
+                              {country.name}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
 
-                  {/* City */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">City</label>
-                    <select 
-                      name="city" 
-                      value={address.city} 
-                      onChange={handleAddressChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm appearance-none bg-white"
-                      disabled={!address.state || isLoadingCities}
-                      required
-                    >
-                      <option value="">-- Select City --</option>
-                      {isLoadingCities ? (
-                        <option value="" disabled>Loading cities...</option>
-                      ) : (
-                        cities.map((city) => (
-                          <option key={city} value={city}>
-                            {city}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">State/Province</label>
+                      <select
+                        name="state"
+                        value={address.state}
+                        onChange={handleAddressChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm appearance-none bg-white"
+                        disabled={!address.country || isLoadingStates}
+                        required
+                      >
+                        <option value="">-- Select State --</option>
+                        {isLoadingStates ? (
+                          <option value="" disabled>
+                            Loading states...
                           </option>
-                        ))
-                      )}
-                    </select>
-                  </div>
+                        ) : (
+                          states.map((state) => (
+                            <option key={state.name} value={state.name}>
+                              {state.name}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
 
-                  {/* ZIP Code */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">ZIP/Postal Code</label>
-                    <input 
-                      type="text" 
-                      name="zipCode" 
-                      value={address.zipCode} 
-                      onChange={handleAddressChange} 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                      placeholder="Enter ZIP code" 
-                      required
-                    />
-                  </div>
-                </form>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">City</label>
+                      <select
+                        name="city"
+                        value={address.city}
+                        onChange={handleAddressChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm appearance-none bg-white"
+                        disabled={!address.state || isLoadingCities}
+                        required
+                      >
+                        <option value="">-- Select City --</option>
+                        {isLoadingCities ? (
+                          <option value="" disabled>
+                            Loading cities...
+                          </option>
+                        ) : (
+                          cities.map((city) => (
+                            <option key={city} value={city}>
+                              {city}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">ZIP/Postal Code</label>
+                      <input
+                        type="text"
+                        name="zipCode"
+                        value={address.zipCode}
+                        onChange={handleAddressChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        placeholder="Enter ZIP code"
+                        required
+                      />
+                    </div>
+                  </form>
+                )}
               </div>
 
               <div className="space-y-2 mt-4">
                 <button
                   onClick={() => {
-                    // Validate address fields
                     if (!address.street || !address.country || !address.state || !address.city || !address.zipCode) {
                       Swal.fire({
-                        icon: 'warning',
-                        title: 'Missing Information',
-                        text: 'Please fill in all address fields to continue.',
-                        confirmButtonColor: '#D4AF37',
-                      });
-                      return;
+                        icon: "warning",
+                        title: "Missing Information",
+                        text: "Please fill in all address fields to continue.",
+                        confirmButtonColor: "#D4AF37",
+                      })
+                      return
                     }
-                    
-                    setBookingStep(4);
+                    setBookingStep(4)
                   }}
                   className="w-full bg-gradient-to-r from-[#D4AF37] to-[#BFA181] hover:from-[#BFA181] hover:to-[#D4AF37] text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 text-sm"
                 >
@@ -735,46 +1086,57 @@ export default function EnhancedBookingForm({
             </div>
           )}
 
-          {/* Step 4: Booking Summary */}
           {bookingStep === 4 && (
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 rounded-xl p-4 border border-[#D4AF37]/20">
                 <div className="flex items-center gap-2 mb-3">
                   <CreditCard className="w-5 h-5 text-[#D4AF37]" />
                   <h4 className="font-semibold text-gray-900 text-sm">Booking Summary</h4>
-                </div>                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Dates ({totalNights} {totalNights === 1 ? 'night' : 'nights'}):</span>
-                      <span className="font-medium text-xs">
-                        {checkInDate &&
-                          checkOutDate &&
-                          `${new Date(checkInDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${new Date(checkOutDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Check-in (arrival):</span>
-                      <span className="font-medium text-xs">{formatTimeDisplay(checkInTime)} on {new Date(checkInDate).toLocaleDateString("en-US", {month: "short", day: "numeric"})}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Check-out (departure):</span>
-                      <span className="font-medium text-xs">{formatTimeDisplay(checkOutTime)} on {new Date(checkOutDate).toLocaleDateString("en-US", {month: "short", day: "numeric"})}</span>
-                    </div>
+                </div>
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">
+                      Dates ({totalNights} {totalNights === 1 ? "night" : "nights"}):
+                    </span>
+                    <span className="font-medium text-xs">
+                      {checkInDate &&
+                        checkOutDate &&
+                        `${new Date(checkInDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${new Date(checkOutDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Check-in (arrival):</span>
+                    <span className="font-medium text-xs">
+                      {formatTimeDisplay(checkInTime)} on{" "}
+                      {new Date(checkInDate).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Check-out (departure):</span>
+                    <span className="font-medium text-xs">
+                      {formatTimeDisplay(checkOutTime)} on{" "}
+                      {new Date(checkOutDate).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                  </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Guests:</span>
                     <span className="font-medium text-xs">
-                      {adults + children} guest{adults + children !== 1 ? "s" : ""} 
+                      {adults + children} guest{adults + children !== 1 ? "s" : ""}
                       {infants > 0 ? ` + ${infants} infant${infants !== 1 ? "s" : ""}` : ""}
-                      <span className="text-xs text-gray-500 ml-1">
-                        (Max: {villa?.guests || 4})
-                      </span>
+                      <span className="text-xs text-gray-500 ml-1">(Max: {villa?.guests || 4})</span>
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Booked by:</span>
                     <span className="font-medium text-xs">{userData?.name || userData?.email || "Guest User"}</span>
                   </div>
-                  
-                
                   {address.street && address.country && (
                     <div className="pt-2 mt-2 border-t border-gray-200">
                       <p className="font-medium text-sm text-gray-700 mb-1">Booking Address:</p>
@@ -818,7 +1180,6 @@ export default function EnhancedBookingForm({
           )}
         </div>
 
-       
         <div className="mt-6 space-y-2">
           {bookingStep === 1 && (
             <button
@@ -840,21 +1201,18 @@ export default function EnhancedBookingForm({
             <div className="space-y-2">
               <button
                 onClick={() => {
-                  const maxGuests = villa?.guests || 4;
-                  
-                  if ((adults + children) > maxGuests) {
-                    
+                  const maxGuests = villa?.guests || 4
+                  if (adults + children > maxGuests) {
                     Swal.fire({
-                      icon: 'error',
-                      title: 'Guest Limit Exceeded',
+                      icon: "error",
+                      title: "Guest Limit Exceeded",
                       text: `This villa allows a maximum of ${maxGuests} guests. Please reduce the number of guests to continue.`,
-                      confirmButtonText: 'OK',
-                      confirmButtonColor: '#D4AF37',
-                    });
-                    return;
+                      confirmButtonText: "OK",
+                      confirmButtonColor: "#D4AF37",
+                    })
+                    return
                   }
-                  
-                  setBookingStep(3); 
+                  setBookingStep(3)
                 }}
                 className="w-full bg-gradient-to-r from-[#D4AF37] to-[#BFA181] hover:from-[#BFA181] hover:to-[#D4AF37] text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 text-sm"
               >
@@ -896,11 +1254,16 @@ export default function EnhancedBookingForm({
                   `Pay & Confirm ₹${totalAmount.toLocaleString()}`
                 )}
               </button>
+              <button
+                onClick={() => setBookingStep(3)}
+                className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-xl transition-all duration-300 text-sm"
+              >
+                Back to Address
+              </button>
             </div>
           )}
         </div>
 
-        {/* Trust Indicators */}
         <div className="mt-4 p-3 bg-gray-50 rounded-xl">
           <div className="flex items-center justify-center gap-4 text-xs text-gray-600">
             <div className="flex items-center gap-1">
@@ -918,7 +1281,6 @@ export default function EnhancedBookingForm({
           </div>
         </div>
 
-        {/* Authentication Notice */}
         {!isSignedIn && (
           <div className="mt-3 p-3 bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 rounded-xl border border-[#D4AF37]/20">
             <div className="text-center">
@@ -929,7 +1291,6 @@ export default function EnhancedBookingForm({
         )}
       </div>
 
-      {/* Calendar Modal */}
       {showCalendar && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center"

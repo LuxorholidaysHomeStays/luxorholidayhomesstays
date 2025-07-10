@@ -382,7 +382,7 @@ const MyBookings = () => {
                         View Details
                       </button>
                       
-                      {booking.status === 'confirmed' && (
+                      {/* {booking.status === 'confirmed' && (
                         <button 
                           onClick={() => {
                             // Add cancel booking functionality here
@@ -392,7 +392,7 @@ const MyBookings = () => {
                         >
                           Cancel Booking
                         </button>
-                      )}
+                      )} */}
                     </div>
                   </div>
                 </div>

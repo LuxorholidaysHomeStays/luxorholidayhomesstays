@@ -8,6 +8,8 @@ import { X, MapPin, Users, Bed, Bath, Star, Heart, Share, ArrowLeft, ChevronRigh
 import VillaGallery from "../components/VillaDetail/villagallery"
 import VillaInfo from "../components/VillaDetail/VillaInfo.jsx"
 import BookingForm from "../components/VillaDetail/booking-form.jsx"
+import BookingModal from "../components/VillaDetail/booking-form.jsx"
+import axios from "axios"
 
 // Import existing dependencies
 import { useAuth } from "../context/AuthContext"
@@ -184,6 +186,57 @@ export default function VillaDetails() {
   const [activeSection, setActiveSection] = useState("overview")
   const [showAllAmenities, setShowAllAmenities] = useState(false)
 
+  // New state variables for booking step and address
+  const [bookingStep, setBookingStep] = useState(1)
+  const [bookingAddress, setBookingAddress] = useState({
+    street: "",
+    country: "",
+    state: "",
+    city: "",
+    zipCode: ""
+  })
+  
+  // New state to track if we're fetching address info
+  const [loadingAddressInfo, setLoadingAddressInfo] = useState(false)
+  
+  // Function to fetch user's address information from backend
+  const fetchUserAddress = async () => {
+    if (!isSignedIn || !authToken) return;
+    
+    try {
+      setLoadingAddressInfo(true);
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://luxorstay-backend.vercel.app";
+      const token = authToken || localStorage.getItem('token');
+      
+      if (!token) {
+        console.log("No auth token available for fetching address");
+        return;
+      }
+      
+      const response = await axios.get(`${baseUrl}/api/bookings/user-address-info`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.data && response.data.success && response.data.addressInfo) {
+        console.log("Found user address info:", response.data.addressInfo);
+        setBookingAddress(response.data.addressInfo);
+      }
+    } catch (error) {
+      // Just log the error but don't show to user since this is just an enhancement
+      console.error("Error fetching user address info:", error.response?.data || error.message);
+    } finally {
+      setLoadingAddressInfo(false);
+    }
+  };
+  
+  // When user signs in, fetch their address
+  useEffect(() => {
+    if (isSignedIn && authToken) {
+      fetchUserAddress();
+    }
+  }, [isSignedIn, authToken]);
   
   const fetchVillaDetails = async () => {
     try {
@@ -577,6 +630,42 @@ export default function VillaDetails() {
     }
   }, [villa])
 
+  // Restore booking data if available
+  useEffect(() => {
+    if (isSignedIn) {
+      // Check if we have pending booking data
+      const pendingBookingData = localStorage.getItem('pendingBookingData');
+      if (pendingBookingData) {
+        try {
+          const bookingData = JSON.parse(pendingBookingData);
+          
+          // Only restore data if it's for the current villa
+          if (bookingData.villaId === id) {
+            if (bookingData.checkInDate) setCheckInDate(bookingData.checkInDate);
+            if (bookingData.checkOutDate) setCheckOutDate(bookingData.checkOutDate);
+            if (bookingData.adults) setAdults(bookingData.adults);
+            if (bookingData.children) setChildren(bookingData.children);
+            if (bookingData.infants) setInfants(bookingData.infants);
+            if (bookingData.bookingStep) setBookingStep(bookingData.bookingStep);
+            
+            // Also restore the address state
+            if (bookingData.address) {
+              setBookingAddress(bookingData.address);
+            }
+            
+            // Remove the Swal.fire notification
+            // Silently restore the user's previous state without interrupting their flow
+            
+            // Clear the stored data after restoring
+            localStorage.removeItem('pendingBookingData');
+          }
+        } catch (error) {
+          console.error("Error restoring booking data:", error);
+        }
+      }
+    }
+  }, [isSignedIn, id]);
+
   // Loading state
   if (loading) {
     return (
@@ -593,7 +682,7 @@ export default function VillaDetails() {
     )
   }
 
-  // Error state
+
   if (error) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -785,6 +874,8 @@ export default function VillaDetails() {
                 isSignedIn={isSignedIn}
                 userData={userData}
                 blockedDates={blockedDates}
+                initialBookingStep={bookingStep}
+                initialAddress={bookingAddress}
               />
             </div>
           </div>
@@ -805,6 +896,8 @@ export default function VillaDetails() {
               isSignedIn={isSignedIn}
               userData={userData}
               blockedDates={blockedDates}
+              initialBookingStep={bookingStep}
+              initialAddress={bookingAddress}
             />
           </div>
         </div>
@@ -844,6 +937,8 @@ export default function VillaDetails() {
                   userData={userData}
                   blockedDates={blockedDates}
                   isModal={true}
+                  initialBookingStep={bookingStep}
+                  initialAddress={bookingAddress}
                 />
               </div>
             </div>
