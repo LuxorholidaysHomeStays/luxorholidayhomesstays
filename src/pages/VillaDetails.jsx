@@ -136,6 +136,17 @@ const villaImageCollections = {
   ],
 }
 
+// Add this fallback pricing map after the villaImageCollections object
+const villaFallbackPricing = {
+  "Amrith Palace": { weekday: 45000, weekend: 65000 },
+  "Ram Water Villa": { weekday: 30000, weekend: 45000 },
+  "East Coast Villa": { weekday: 15000, weekend: 25000 },
+  "Lavish Villa I": { weekday: 18000, weekend: 25000 },
+  "Lavish Villa II": { weekday: 18000, weekend: 25000 },
+  "Lavish Villa III": { weekday: 16000, weekend: 23000 },
+  "Empire Anand Villa Samudra": { weekday: 40000, weekend: 60000 },
+}
+
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
     const script = document.createElement("script")
@@ -190,87 +201,67 @@ export default function VillaDetails() {
       }
 
       const data = await response.json()
-
-   
-      const villaName = data.name?.toLowerCase() || ""
+      console.log("Backend villa data:", data); // Debug log
+      
+      const villaName = data.name || "Unknown Villa"
       let images = []
-      if (villaName.includes("amrith") || villaName.includes("palace")) {
+      
+      // Get images based on villa name
+      if (villaName.toLowerCase().includes("amrith") || villaName.toLowerCase().includes("palace")) {
         images = villaImageCollections["Amrith Palace"]
-      } else if (villaName.includes("east") || villaName.includes("coast")) {
+      } else if (villaName.toLowerCase().includes("east") || villaName.toLowerCase().includes("coast")) {
         images = villaImageCollections["East Coast Villa"]
       } else {
         images = villaImageCollections["Empire Anand Villa Samudra"]
       }
 
-      const pricing = getVillaPricing(data.name)
+      // Get fallback pricing if needed
+      let weekendPrice = data.weekendprice || data.weekendPrice || 0;
+      let weekdayPrice = data.price || 0;
+      
+      // Apply fallback pricing if weekend price is missing or zero
+      if (weekendPrice === 0 || !weekendPrice) {
+        // Try to find a match in our fallback pricing data
+        const fallbackPricing = Object.entries(villaFallbackPricing).find(([name]) => 
+          villaName.toLowerCase().includes(name.toLowerCase())
+        );
+        
+        if (fallbackPricing) {
+          console.log(`Using fallback pricing for ${villaName}:`, fallbackPricing[1]);
+          weekendPrice = fallbackPricing[1].weekend;
+          // Only override weekday price if it's also zero/missing
+          if (weekdayPrice === 0 || !weekdayPrice) {
+            weekdayPrice = fallbackPricing[1].weekday;
+          }
+        } else if (weekdayPrice > 0) {
+          // If we can't find a match but have a weekday price, use a standard multiplier
+          console.log(`No fallback pricing found for ${villaName}, using standard 1.5x multiplier`);
+          weekendPrice = Math.round(weekdayPrice * 1.5);
+        }
+      }
+
+      // Don't use pricing from getVillaPricing - use direct backend data with fallback
       const transformedVilla = {
         id: data._id,
         _id: data._id,
         name: data.name,
         location: data.location,
-        price: pricing.weekday,
+        price: weekdayPrice,
+        weekendPrice: weekendPrice,
+        weekendprice: weekendPrice, // Keep both for compatibility
         description: data.description || "Luxury villa with all modern amenities for a comfortable stay.",
-        longDescription:
-          data.longDescription ||
-          "Experience unparalleled luxury in our stunning villa. This spacious retreat features multiple bedrooms, a private pool, and breathtaking views. Enjoy modern amenities and impeccable service for an unforgettable experience. Perfect for families, large groups, or anyone seeking a lavish escape from the ordinary.",
+        longDescription: data.longDescription || "Experience unparalleled luxury in our stunning villa...",
         images: images,
-        guests: pricing.maxGuests,
-        capacity: pricing.maxGuests,
+        guests: data.guests || 8,
+        capacity: data.guests || 8,
         bedrooms: data.bedrooms || 4,
         bathrooms: data.bathrooms || data.bedrooms || 3,
         rating: data.rating || 4.5,
-        amenities: data.facilities?.map((f) => f.name || f) || [
-          "Private Pool",
-          "Free WiFi",
-          "AC",
-          "Kitchen",
-          "Free Parking",
-          "Security",
-          "Meal Service",
-          "Room Service",
-          "Toiletries",
-          "Hair Dryer",
-          "Shower",
-          "Ease of Access",
-          "Pet Friendly",
-          "Gym",
-          "BBQ",
-          "Coffee Maker",
-          "Smart TV",
-          "Netflix",
-          "Gaming Console",
-          "Sound System",
-          "Microwave",
-          "Refrigerator",
-          "Espresso Machine",
-          "Dining Area",
-          "Home Gym",
-          "Yoga Space",
-          "Pet Bed",
-          "Catering",
-          "CCTV",
-          "Safe",
-          "Premium Toiletries",
-          "Rain Shower",
-          "Hot Water",
-          "Towels",
-          "Wheelchair Accessible",
-          "Living Room",
-          "Comfortable Seating",
-          "Work Desk",
-          "Reading Area",
-          "Balcony",
-          "Terrace",
-          "Garden View",
-          "Mountain View",
-          "Sea View",
-          "City View",
-          "Washing Machine",
-          "Laundry",
-          "Iron & Board",
-        ],
+        amenities: data.amenities || [],
         type: data.type || "VILLA",
       }
+      
+      console.log("Transformed villa with prices:", transformedVilla); // Debug log
       setVilla(transformedVilla)
       setLoading(false)
     } catch (error) {
@@ -410,6 +401,7 @@ export default function VillaDetails() {
           infants,
           totalDays: nights + 1,
           totalNights: nights,
+          address: bookingData.address || {} // Include address data here
         }),
       })
 
@@ -461,6 +453,7 @@ export default function VillaDetails() {
                   totalAmount: calculatedTotalAmount,
                   totalDays: nights + 1,
                   totalNights: nights,
+                  address: bookingData.address || {} // Include address data here
                 },
               }),
             })
@@ -760,13 +753,13 @@ export default function VillaDetails() {
         </div>
       </div>
 
-      {/* Main Content Grid */}
+  
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8 min-h-[calc(100vh-4rem)]">
  
         <div className="lg:col-span-2 order-2 lg:order-1">
           <VillaInfo
             villa={villa}
-            villaPricing={getVillaPricing(villa?.name || "")}
+            villaPricing={getVillaPricing(villa || {})}
             onShowBookingModal={() => setShowBookingModal(true)}
             activeSection={activeSection}
             setActiveSection={setActiveSection}

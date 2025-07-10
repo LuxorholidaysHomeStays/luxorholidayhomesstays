@@ -1,5 +1,5 @@
-// Use VITE_API_BASE_URL from .env file, fallback to localhost:5000
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// Use VITE_API_BASE_URL from .env file, fallback to localhost:5001
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
 
 // Helper function for authenticated requests
 export const authFetch = async (url, options = {}) => {
@@ -48,6 +48,44 @@ export const authFetch = async (url, options = {}) => {
     console.error('API request failed:', error);
     throw error;
   }
+};
+
+/**
+ * Fetch villa information from the backend with fallback support
+ * @param {string} villaId - ID of the villa to fetch
+ * @returns {Promise<Object>} - Villa information
+ */
+export const fetchVillaInfo = async (villaId) => {
+  if (!villaId) {
+    throw new Error('Villa ID is required');
+  }
+  
+  // Try different endpoint formats that might exist in the backend
+  const endpoints = [
+    `/api/villa-info/villa/${villaId}`,
+    `/api/villainfo/${villaId}`,
+    `/api/villa-info/id/${villaId}`,
+    `/api/villas/${villaId}`
+  ];
+  
+  let lastError = null;
+  
+  // Try each endpoint until one works
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`);
+      
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      lastError = error;
+      console.warn(`Failed to fetch from ${endpoint}:`, error.message);
+    }
+  }
+  
+  // If we got here, none of the endpoints worked
+  throw lastError || new Error('Failed to fetch villa information');
 };
 
 

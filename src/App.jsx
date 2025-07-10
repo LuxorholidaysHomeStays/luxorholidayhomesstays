@@ -36,6 +36,8 @@ import UserManagement from './pages/userManagement';
 import PhoneUserManagement from './pages/PhoneUserManagement';
 import Layout from './components/Adminpanel/Layout';
 import ProtectedRoute from './components/Adminpanel/Protected';
+import VillaInfoManagementPage from './pages/VillaInfoManagementPage';
+import AmenitiesManagement from './pages/AmenitiesManagement';
 import "./App.css";
 import { ToastProvider } from './context/ToastContext';
 import Toast from './components/Toast';
@@ -215,6 +217,22 @@ function App() {
   <ProtectedRoute>
     <Layout>
       <PhoneUserManagement />
+    </Layout>
+  </ProtectedRoute>
+} />
+
+<Route path="/villa-info" element={
+  <ProtectedRoute>
+    <Layout>
+      <VillaInfoManagementPage />
+    </Layout>
+  </ProtectedRoute>
+} />
+
+<Route path="/amenities" element={
+  <ProtectedRoute>
+    <Layout>
+      <AmenitiesManagement />
     </Layout>
   </ProtectedRoute>
 } />

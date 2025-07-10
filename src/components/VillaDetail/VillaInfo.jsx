@@ -5,31 +5,73 @@ import {
   MapPin,
   ChevronDown,
   Shield,
-  Home,
   Star,
   Users,
   Bed,
   Bath,
+  Home
 } from "lucide-react"
 import AmenitiesSection from "./AmenitiesSection"
 
 // Step 1: Default villa descriptions based on name
 const villaDescriptions = {
-  "Amrith Palace": `Amrith Palace is a luxurious 9BHK private villa located in Pattipulam ECR. It features 9 AC bedrooms, 1 AC hall, and a private swimming pool. Located just 800m from the beach, the villa offers ample parking, Wi-Fi, basic kitchen facilities, fridge, TV, caretaker service, and CCTV security. Suitable for family get-togethers, bachelor parties, weddings, corporate events, shootings, and birthday celebrations.
+  "Amrith Palace": `Amrith Palace is an exquisite 9BHK private luxury villa strategically located in Pattipulam ECR, just 45 minutes from Chennai city. This magnificent property spans across 8000 sq. ft., featuring 9 spacious air-conditioned bedrooms, each with en-suite bathrooms, and a grand air-conditioned hall perfect for indoor gatherings. The crown jewel of the property is its pristine private swimming pool surrounded by lush tropical landscaping.
+
+  Located just 800 meters from the beach, guests can enjoy the perfect balance of privacy and sea proximity. The villa boasts ample parking space for up to 10 vehicles, high-speed Wi-Fi coverage throughout the property, and comprehensive kitchen facilities including modern appliances, cookware, and utensils. The entertainment options include large smart TVs in common areas and select bedrooms, a premium sound system, and outdoor BBQ facilities.
+
+  Security is paramount with 24/7 CCTV surveillance, night patrol, and a dedicated caretaker who lives on-site to assist with all guest requirements. The property features elegant interiors with a blend of contemporary and traditional Tamil Nadu design elements, marble flooring, and handcrafted wooden furniture.
+
+  Amrith Palace is an ideal venue for various occasions including family get-togethers, bachelor/bachelorette parties, intimate weddings, corporate retreats, photo/video shoots, and milestone birthday celebrations. The expansive outdoor area can accommodate events with up to 100 guests.
   
   Weekdays: ₹45,000 | Weekend: ₹65,000
-  Max occupancy: 35 guests
-  Event pricing varies based on the type of event.`,
+  Max occupancy: 35 guests (overnight stay)
+  Event pricing varies based on the type and scale of event.
+  Refundable security deposit: ₹25,000`,
 
-  "Ram Water Villa": `Ram Water Villa is a 5BHK private luxury villa located in Perur ECR. It includes 5 AC rooms and an AC hall, private swimming pool, TV, party speaker, fridge, kitchen facilities, Wi-Fi, caretaker service, and private beach access. Ideal for a serene stay with party amenities.`,
+  "Ram Water Villa": `Ram Water Villa is a stunning 5BHK private luxury property situated in the serene coastal area of Perur ECR, offering the perfect blend of modern amenities and natural beauty. This two-story villa features 5 meticulously designed air-conditioned bedrooms with premium mattresses and linens, plus a spacious air-conditioned hall ideal for indoor gatherings or relaxation.
 
-  "Eastcoast Villa": `Eastcoast Villa is a compact and elegant 3BHK villa in Perur ECR featuring AC rooms and hall, private swimming pool, basic kitchen, fridge, TV, Wi-Fi, power backup, caretaker service, JBL party speaker, BBQ setup, and a compact party lawn.
+  The villa's centerpiece is its crystal-clear private swimming pool with adjacent sun loungers and outdoor seating, perfect for soaking up the Tamil Nadu sunshine. Entertainment options abound with large smart TVs in the living area and master bedrooms, a professional-grade JBL party speaker system that can be set up indoors or poolside, and high-speed fiber-optic Wi-Fi throughout the property.
+
+  The kitchen is fully equipped with modern appliances including a large refrigerator, microwave, gas cooking range, water purifier, and all necessary cookware and utensils. A significant advantage of Ram Water Villa is its private beach access path, allowing guests to reach the shoreline in just a 5-minute walk.
+
+  The property is secured with 24/7 CCTV surveillance and features a resident caretaker who can assist with housekeeping, local recommendations, and arranging additional services like massage therapists, private chefs, or transportation. The outdoor area includes a covered veranda, garden seating, and mood lighting for evening gatherings.
+
+  Ram Water Villa is ideally suited for family vacations, friend reunions, small celebrations, or as a peaceful retreat for those looking to escape the city while enjoying luxury amenities. The combination of privacy, comfort, and proximity to the sea makes this villa a sought-after destination on East Coast Road.
+  
+  Weekdays: ₹30,000 | Weekend: ₹45,000
+  Max occupancy: 12 guests
+  Refundable security deposit: ₹15,000`,
+
+  "Eastcoast Villa": `Eastcoast Villa is a charming and compact 3BHK property in Perur ECR that offers an intimate, cozy atmosphere without compromising on luxury or amenities. This single-story villa spans approximately 2,500 sq. ft. and features three well-appointed air-conditioned bedrooms with quality furnishings, as well as a comfortable air-conditioned living room perfect for relaxation and entertainment.
+
+  The villa's delightful private swimming pool is ideal for refreshing dips and is complemented by a surrounding deck area with outdoor furniture. The property is tastefully landscaped with native plants and features a compact but well-designed party lawn that can accommodate small gatherings of up to 25 people.
+
+  Inside, guests will find a functional kitchen equipped with essential appliances including a refrigerator, microwave, and basic cooking facilities. Entertainment options include a large flat-screen TV with streaming capabilities, reliable high-speed Wi-Fi, and a premium JBL party speaker system that can fill the space with excellent sound quality.
+
+  The villa is equipped with power backup to ensure uninterrupted comfort during your stay. Security and assistance are provided by an attentive caretaker who resides nearby and is available to help with housekeeping, local information, and other requirements during your stay.
+
+  One of the highlights of Eastcoast Villa is its BBQ setup, perfect for evening cookouts and casual dining under the stars. The property is within a 10-minute drive to local beaches, restaurants, and attractions, making it convenient while maintaining its peaceful ambiance.
+
+  This villa is particularly well-suited for small families, couples seeking extra space, or friend groups looking for an intimate setting for weekend getaways, small celebrations, or simply as a base to explore the beautiful East Coast Road area.
   
   Weekdays: ₹15,000 | Weekend: ₹25,000
   Max occupancy: 15 guests
-  Event pricing varies based on the type of event.`,
+  Event pricing varies based on the type of event.
+  Refundable security deposit: ₹10,000`,
 
-  "Empire Anand Villa Samudra": `Empire Villa is a luxurious 6BHK private beachfront villa located in Kovalam (ECR). The property includes a private swimming pool, en-suite bedrooms, modern interiors, and a sea-view living space. The villa features a fully equipped kitchen, dining area, and caretaker service. Perfect for family gatherings or corporate retreats.
+  "Empire Anand Villa Samudra": `Empire Anand Villa Samudra is a prestigious 6BHK beachfront luxury villa situated in the coveted Kovalam area of ECR, offering an unparalleled coastal living experience with direct sea views. This magnificent three-level property spans over 5,500 sq. ft. of thoughtfully designed living space that seamlessly blends indoor and outdoor environments.
+
+  The villa features six luxurious en-suite bedrooms, each uniquely decorated with designer furnishings, premium bedding, and large windows that frame spectacular ocean views. The master suite includes a private balcony overlooking the sea, a walk-in closet, and a spa-like bathroom with both shower and soaking tub.
+
+  The heart of the villa is its expansive open-concept living area with double-height ceilings, floor-to-ceiling windows, and sliding glass doors that open onto a large terrace with unobstructed ocean views. The elegant interior design incorporates natural materials, a sophisticated neutral color palette, and carefully curated artwork that complements the coastal setting.
+
+  The villa boasts a stunning private infinity pool that appears to merge with the sea horizon, surrounded by a spacious deck furnished with premium loungers, outdoor dining furniture, and shaded relaxation areas. A few steps beyond the property's edge, guests can access a semi-private beach area perfect for morning walks or evening sunset viewing.
+
+  The gourmet kitchen is a chef's dream, equipped with high-end appliances, stone countertops, and all necessary cookware and serving pieces for elaborate meals. Adjacent to the kitchen is a formal dining area that comfortably seats 12 guests, featuring a handcrafted teak table beneath an elegant chandelier.
+
+  Additional amenities include smart home technology controlling lighting, temperature, and entertainment systems; a media room with surround sound; a well-stocked library corner; and a fitness area with basic exercise equipment. The villa offers complete privacy yet is only a 15-minute drive from local restaurants, shops, and attractions.
+
+  A dedicated property manager and service staff ensure a seamless experience, from daily housekeeping to arranging special requests such as private chefs, in-villa spa services, yacht excursions, or cultural experiences. Empire Anand Villa Samudra represents the pinnacle of luxury coastal living in Tamil Nadu, ideal for discerning travelers seeking an exclusive retreat for family gatherings, milestone celebrations, or high-level corporate escapes.
   
   Weekdays: ₹40,000 | Weekend: ₹60,000
   Max occupancy: 15–20 guests
@@ -38,52 +80,137 @@ const villaDescriptions = {
   Location: https://maps.app.goo.gl/D1iCT5tYpnmbuHQr7`
 }
 
-export default function VillaInfo({
-  villa,
-  villaPricing,
-  onShowBookingModal,
-  activeSection,
-  setActiveSection,
-}) {
+// Villa location details with coordinates and descriptions
+const villaLocations = {
+  "Amrith Palace": {
+    address: "Pattipulam, East Coast Road, Chennai",
+    coordinates: "12.8046° N, 80.2329° E",
+    description: "Located just 800m from Pattipulam Beach, 45 minutes from Chennai city center",
+    mapUrl: "https://maps.app.goo.gl/abcdefghijklmnop",
+    nearbyAttractions: [
+      "Kovalam Beach - 15 min drive",
+      "Mahabalipuram - 25 min drive",
+      "Dakshina Chitra Museum - 20 min drive"
+    ]
+  },
+  "Ram Water Villa": {
+    address: "Perur, East Coast Road, Chennai",
+    coordinates: "12.7985° N, 80.2456° E",
+    description: "Peaceful location in Perur with just 5 minutes walk to a secluded beach",
+    mapUrl: "https://maps.app.goo.gl/qrstuvwxyz123456",
+    nearbyAttractions: [
+      "Perur Beach - 5 min walk",
+      "Local fish market - 10 min drive",
+      "ECR restaurants - 15 min drive"
+    ]
+  },
+  "Eastcoast Villa": {
+    address: "Perur, East Coast Road, Chennai",
+    coordinates: "12.8025° N, 80.2515° E",
+    description: "Conveniently located on the East Coast Road with easy access to beaches and attractions",
+    mapUrl: "https://maps.app.goo.gl/789012abcdefghij",
+    nearbyAttractions: [
+      "Nettukuppam Beach - 10 min drive",
+      "VGP Snow Kingdom - 25 min drive",
+      "Muttukadu Boat House - 20 min drive"
+    ]
+  },
+  "Empire Anand Villa Samudra": {
+    address: "Kovalam, East Coast Road, Chennai",
+    coordinates: "12.7879° N, 80.2483° E",
+    description: "Premium beachfront location in Kovalam with direct sea views and private beach access",
+    mapUrl: "https://maps.app.goo.gl/D1iCT5tYpnmbuHQr7",
+    nearbyAttractions: [
+      "Kovalam Beach - Direct access",
+      "Crocodile Bank - 10 min drive",
+      "Mahabalipuram temples - 20 min drive"
+    ]
+  },
+
+  "default": {
+    address: "East Coast Road, Chennai",
+    coordinates: "13.0827° N, 80.2707° E",
+    description: "Located in Chennai, Tamil Nadu",
+    mapUrl: "https://maps.app.goo.gl/defaultmaplocation",
+    nearbyAttractions: [
+      "Marina Beach - 30 min drive",
+      "Kapaleeshwarar Temple - 35 min drive",
+      "Fort St. George - 40 min drive"
+    ]
+  }
+};
+
+// Standard amenities list for all villas - comprehensive list
+const standardAmenities = [
+  "Private Pool",
+  "Free Parking",
+  "Free Street Parking",
+  "AC",
+  "WiFi",
+  "Garden",
+  "Microwave",
+  "Refrigerator",
+  "Stove",
+  "Dishes",
+  "Cooking Basics",
+  "Coffee Maker",
+  "Washing machine",
+  "Geyser",
+  "Oven",
+  "Baby Crib",
+  "TV",
+  "Shampoo",
+  "Essentials",
+  "Hanger",
+  "Room Dark Shades",
+  "Patio",
+  // Adding more amenities for a comprehensive list
+  "Premium Toiletries",
+  "Housekeeping",
+  "BBQ Grill",
+  "Sound System",
+  "Beach Access",
+  "Yoga Space",
+  "Hot Tub",
+  "Air Conditioning",
+  "Smart TV",
+  "Kitchen",
+  "Caretaker Service",
+  "CCTV Security",
+  "Power Backup",
+  "JBL Party Speaker",
+  "BBQ Setup",
+  "Party Lawn"
+];
+
+export default function VillaInfo ({ villa, villaPricing }) {
   const [showFullDescription, setShowFullDescription] = useState(false)
   const [showCancellationPolicy, setShowCancellationPolicy] = useState(false)
   const [showThingsToKnow, setShowThingsToKnow] = useState(false)
+  const [showAllAmenities, setShowAllAmenities] = useState(false)
+  const [activeSection, setActiveSection] = useState("overview")
 
-  // Full list of amenities with their respective icons
-  const allAmenities = [
-    "Private Pool",
-    "Hot Tub",
-    "Smart TV",
-    "Closet",
-    "Refrigerator",
-    "BBQ Grill",
-    "Baby Care",
-    "Fireplace",
-    "Beach Access",
-    "Yoga Space",
-    "Housekeeping",
-    "Books",
-    "Sound System",
-    "Charging Points",
-    "Premium Toiletries",
-    "Hair Dryer",
-    "Room Service",
-    "Ease of Access",
-    "Meal Service",
-    "Shower",
-    "Air Conditioning",
-    "Free WiFi",
-    "Kitchen",
-    "Microwave",
-    "Dining Area",
-    "Hot Water",
-    "Safe",
-    "24/7 Support",
-    "Private Garden",
-    "Balcony",
-    "Terrace",
-    "Parking",
-  ];
+  // Use standard amenities for all villas
+  const villaAmenities = standardAmenities;
+  
+  // Get villa location data based on name, default to Chennai if not found
+  const getVillaLocation = () => {
+    if (!villa || !villa.name) return villaLocations.default;
+    
+    // Try to find exact match first
+    if (villaLocations[villa.name]) {
+      return villaLocations[villa.name];
+    }
+    
+    // Try to find partial match
+    const locationKey = Object.keys(villaLocations).find(
+      key => key !== "default" && villa.name.toLowerCase().includes(key.toLowerCase())
+    );
+    
+    return locationKey ? villaLocations[locationKey] : villaLocations.default;
+  };
+  
+  const villaLocation = getVillaLocation();
 
   const sections = [
     { id: "overview", label: "Overview", icon: Home },
@@ -91,22 +218,6 @@ export default function VillaInfo({
     { id: "location", label: "Location", icon: MapPin },
     { id: "policies", label: "Policies", icon: Shield },
   ]
-
-  // Default amenities if not provided
-  const defaultAmenities = [
-    "Private Pool",
-    "Air Conditioning",
-    "Free WiFi",
-    "Kitchen",
-    "Smart TV",
-    "Premium Toiletries",
-    "Housekeeping",
-    "BBQ Grill",
-    "Sound System",
-    "Beach Access",
-    "Yoga Space",
-    "Hot Tub",
-  ];
 
   const renderSectionContent = () => {
     switch (activeSection) {
@@ -137,7 +248,37 @@ export default function VillaInfo({
         return (
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-sm border border-[#D4AF37]/20">
             <h2 className="text-3xl font-bold text-gray-800 mb-6">What this place offers</h2>
-            <AmenitiesSection amenities={villa?.amenities || defaultAmenities} />
+            
+            {/* Simple list view of amenities */}
+            <div className="mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                {(showAllAmenities ? villaAmenities : villaAmenities.slice(0, 12)).map((amenity, index) => (
+                  <div key={index} className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-[#D4AF37]/10 rounded-full flex items-center justify-center">
+                      <div className="w-5 h-5 text-[#D4AF37] flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                      </div>
+                    </div>
+                    <span className="text-gray-700">{amenity}</span>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Show more/less button if there are more than 12 amenities */}
+              {villaAmenities.length > 12 && (
+                <button 
+                  onClick={() => setShowAllAmenities(!showAllAmenities)}
+                  className="mt-6 flex items-center gap-2 text-[#D4AF37] font-medium hover:underline"
+                >
+                  {showAllAmenities ? 'Show fewer amenities' : 'Show all amenities'}
+                  <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 transition-transform ${showAllAmenities ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
         )
 
@@ -145,21 +286,35 @@ export default function VillaInfo({
         return (
           <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
             <h2 className="text-3xl font-bold text-gray-900 mb-6">Where you'll be</h2>
-            <div className="rounded-2xl overflow-hidden h-80 shadow-lg">
+            <div className="rounded-2xl overflow-hidden h-80 shadow-lg mb-6">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d497511.2313083493!2d79.92235835!3d13.048160899999999!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a5265ea4f7d3361%3A0x6e61a70b6863d433!2sChennai%2C%20Tamil%20Nadu!5e0!3m2!1sen!2sin!4v1703123456789!5m2!1sen!2sin"
+                src={`https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d497511.2313083493!2d79.92235835!3d13.048160899999999!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a5265ea4f7d3361%3A0x6e61a70b6863d433!2sChennai%2C%20Tamil%20Nadu!5e0!3m2!1sen!2sin!4v1703123456789!5m2!1sen!2sin`}
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}
                 allowFullScreen
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                title={`Map showing ${villa.name} location`}
+                title={`Map showing ${villa?.name || 'Villa'} location`}
               />
             </div>
-            <div className="flex items-center gap-3 mt-4 text-gray-600">
-              <MapPin className="h-5 w-5 text-blue-600" />
-              <span className="font-medium">{villa.location}</span>
+            
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 text-gray-600">
+                <MapPin className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                <span className="font-medium">{villaLocation.address}</span>
+              </div>
+              
+              <p className="text-gray-700 leading-relaxed">{villaLocation.description}</p>
+              
+              <div className="mt-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Nearby attractions:</h3>
+                <ul className="list-disc pl-5 space-y-1 text-gray-700">
+                  {villaLocation.nearbyAttractions.map((attraction, index) => (
+                    <li key={index}>{attraction}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
         )
@@ -278,6 +433,8 @@ export default function VillaInfo({
 
       {/* Dynamic Section Content */}
       {renderSectionContent()}
+      
     </div>
   )
+
 }

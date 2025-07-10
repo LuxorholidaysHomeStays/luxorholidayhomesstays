@@ -39,73 +39,48 @@ const SignIn = () => {
   const [userEmail, setUserEmail] = useState('');
   const [userName, setUserName] = useState('');
   const [isEmailVerified, setIsEmailVerified] = useState(false);
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
   
   const { setAuthToken, setUserData, handleGoogleSignIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const isRedirectFromBooking = searchParams.get('redirect') === 'booking';
+  const isRedirectFromBooking = searchParams.get('redirect')?.includes('booking');
+  const redirectPath = searchParams.get('redirect');
   const { addToast } = useToast();
 
-  // Country codes list
-  const countryCodes = [
-    { code: '+1', name: 'United States', flag: '🇺🇸' },
-    { code: '+44', name: 'United Kingdom', flag: '🇬🇧' },
-    { code: '+91', name: 'India', flag: '🇮🇳' },
-    { code: '+86', name: 'China', flag: '🇨🇳' },
-    { code: '+81', name: 'Japan', flag: '🇯🇵' },
-    { code: '+49', name: 'Germany', flag: '🇩🇪' },
-    { code: '+33', name: 'France', flag: '🇫🇷' },
-    { code: '+39', name: 'Italy', flag: '🇮🇹' },
-    { code: '+7', name: 'Russia', flag: '🇷🇺' },
-    { code: '+55', name: 'Brazil', flag: '🇧🇷' },
-    { code: '+61', name: 'Australia', flag: '🇦🇺' },
-    { code: '+34', name: 'Spain', flag: '🇪🇸' },
-    { code: '+82', name: 'South Korea', flag: '🇰🇷' },
-    { code: '+65', name: 'Singapore', flag: '🇸🇬' },
-    { code: '+971', name: 'UAE', flag: '🇦🇪' },
-    { code: '+966', name: 'Saudi Arabia', flag: '🇸🇦' },
-    { code: '+60', name: 'Malaysia', flag: '🇲🇾' },
-    { code: '+66', name: 'Thailand', flag: '🇹🇭' },
-    { code: '+84', name: 'Vietnam', flag: '🇻🇳' },
-    { code: '+62', name: 'Indonesia', flag: '🇮🇩' },
-    { code: '+63', name: 'Philippines', flag: '🇵🇭' },
-    { code: '+880', name: 'Bangladesh', flag: '🇧🇩' },
-    { code: '+94', name: 'Sri Lanka', flag: '🇱🇰' },
-    { code: '+977', name: 'Nepal', flag: '🇳🇵' },
-    { code: '+92', name: 'Pakistan', flag: '🇵🇰' },
-    { code: '+27', name: 'South Africa', flag: '🇿🇦' },
-    { code: '+20', name: 'Egypt', flag: '🇪🇬' },
-    { code: '+234', name: 'Nigeria', flag: '🇳🇬' },
-    { code: '+254', name: 'Kenya', flag: '🇰🇪' },
-    { code: '+52', name: 'Mexico', flag: '🇲🇽' },
-    { code: '+54', name: 'Argentina', flag: '🇦🇷' },
-    { code: '+56', name: 'Chile', flag: '🇨🇱' },
-    { code: '+57', name: 'Colombia', flag: '🇨🇴' },
-    { code: '+51', name: 'Peru', flag: '🇵🇪' },
-    { code: '+90', name: 'Turkey', flag: '🇹🇷' },
-    { code: '+98', name: 'Iran', flag: '🇮🇷' },
-    { code: '+964', name: 'Iraq', flag: '🇮🇶' },
-    { code: '+972', name: 'Israel', flag: '🇮🇱' },
-    { code: '+31', name: 'Netherlands', flag: '🇳🇱' },
-    { code: '+46', name: 'Sweden', flag: '🇸🇪' },
-    { code: '+47', name: 'Norway', flag: '🇳🇴' },
-    { code: '+45', name: 'Denmark', flag: '🇩🇰' },
-    { code: '+358', name: 'Finland', flag: '🇫🇮' },
-    { code: '+41', name: 'Switzerland', flag: '🇨🇭' },
-    { code: '+43', name: 'Austria', flag: '🇦🇹' },
-    { code: '+32', name: 'Belgium', flag: '🇧🇪' },
-    { code: '+351', name: 'Portugal', flag: '🇵🇹' },
-    { code: '+48', name: 'Poland', flag: '🇵🇱' },
-    { code: '+420', name: 'Czech Republic', flag: '🇨🇿' },
-    { code: '+36', name: 'Hungary', flag: '🇭🇺' },
-    { code: '+30', name: 'Greece', flag: '🇬🇷' },
-  ];
-  
   // Function to handle post-login navigation
   const handleSuccessfulLogin = () => {
-    // First check for auth redirect URL
+
+    const pendingBookingData = localStorage.getItem('pendingBookingData');
+    
+    if (pendingBookingData) {
+      try {
+        // Parse the stored booking data
+        const bookingInfo = JSON.parse(pendingBookingData);
+        
+        // Clear the stored data since we're about to use it
+        localStorage.removeItem('pendingBookingData');
+        
+        // Show success message
+        addToast('Login successful! Continuing with your booking.', 'success');
+        
+        // Redirect back to the villa page
+        if (bookingInfo.villaId) {
+          navigate(`/villas/${bookingInfo.villaId}`);
+          return;
+        }
+      } catch (error) {
+        console.error("Error parsing pending booking data:", error);
+      }
+    }
+    
+    // If there's a specific redirect path, use it
+    if (redirectPath) {
+      navigate(redirectPath.startsWith('/') ? redirectPath : `/${redirectPath}`);
+      return;
+    }
+    
+    // Check for auth redirect URL
     const redirectUrl = localStorage.getItem("authRedirectUrl");
     if (redirectUrl) {
       localStorage.removeItem("authRedirectUrl");
@@ -113,32 +88,11 @@ const SignIn = () => {
       return;
     }
     
-    // Then check for location state redirect
+    // Check for location state redirect
     const fromLocation = location.state?.from;
     if (fromLocation) {
       navigate(fromLocation);
       return;
-    }
-    
-    // Then check for pending booking redirect
-    const pendingBooking = localStorage.getItem('pendingBooking');
-    
-    if (pendingBooking && isRedirectFromBooking) {
-      try {
-        const bookingData = JSON.parse(pendingBooking);
-        
-        if (bookingData.returnUrl) {
-          // Navigate back to the specific villa details page
-          navigate(bookingData.returnUrl);
-          return;
-        } else if (bookingData.villaId) {
-          // If no return URL but we have villa ID, construct the URL
-          navigate(`/villas/${bookingData.villaId}`);
-          return;
-        }
-      } catch (error) {
-        console.error("Error parsing pending booking data:", error);
-      }
     }
     
     // Default redirect to home
@@ -282,6 +236,16 @@ const SignIn = () => {
     setShowOtpInput(false);
     setConfirmationResult(null);
   };
+  
+  // Clear reCAPTCHA
+  const clearRecaptcha = () => {
+    const recaptchaContainer = document.getElementById('recaptcha-container');
+    if (recaptchaContainer) {
+      while (recaptchaContainer.firstChild) {
+        recaptchaContainer.removeChild(recaptchaContainer.firstChild);
+      }
+    }
+  };
 
   // Handle phone number submission and OTP sending
   const handlePhoneSubmit = async (e) => {
@@ -403,10 +367,11 @@ const SignIn = () => {
             } 
           });
         } else {
-    
           setUserData(data.user);
           setAuthToken(data.token);
-          navigate('/');
+          
+          // Handle pending booking data if exists
+          handleSuccessfulLogin();
         }
         
       } catch (error) {
@@ -478,7 +443,9 @@ const SignIn = () => {
       
       // Show success and navigate to home
       setSuccess('Account created successfully!');
-      setTimeout(() => navigate('/'), 1000);
+      setTimeout(() => {
+        handleSuccessfulLogin();
+      }, 1000);
       
     } catch (error) {
       console.error('Error updating user data:', error);
@@ -518,7 +485,9 @@ const SignIn = () => {
       
       // Navigate to home
       setSuccess('Phone verification successful!');
-      setTimeout(() => navigate('/'), 1000);
+      setTimeout(() => {
+        handleSuccessfulLogin();
+      }, 1000);
       
     } catch (error) {
       console.error('Error skipping email step:', error);
@@ -590,6 +559,8 @@ const SignIn = () => {
     }
   };
   
+  // Rest of your component remains the same...
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-yellow-50 px-4 py-20">
       <div className="absolute inset-0 -z-10">

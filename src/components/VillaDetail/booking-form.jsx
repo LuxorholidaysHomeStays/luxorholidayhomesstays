@@ -1,8 +1,9 @@
 "use client"
-import { useState } from "react"
-import { Calendar, Plus, Minus, Check, Shield, Heart, ChevronRight, Users, CreditCard, Clock } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Calendar, Plus, Minus, Check, Shield, Heart, ChevronRight, Users, CreditCard, Clock, MapPin, Home } from "lucide-react"
 import UnifiedCalendar from "../VillaDetail/unified-calender.jsx"
 import { getVillaPricing, getPriceForDate } from "../../data/villa-pricing.jsx"
+import Swal from "sweetalert2"
 
 export default function EnhancedBookingForm({
   villa,
@@ -23,12 +24,140 @@ export default function EnhancedBookingForm({
 }) {
   const [bookingStep, setBookingStep] = useState(1)
   const [showCalendar, setShowCalendar] = useState(false)
+  
+  // Address state
+  const [address, setAddress] = useState({
+    street: "",
+    country: "",
+    state: "",
+    city: "",
+    zipCode: ""
+  })
+  const [countries, setCountries] = useState([])
+  const [states, setStates] = useState([])
+  const [cities, setCities] = useState([])
+  const [isLoadingCountries, setIsLoadingCountries] = useState(false)
+  const [isLoadingStates, setIsLoadingStates] = useState(false)
+  const [isLoadingCities, setIsLoadingCities] = useState(false)
 
   // Fixed times - no longer changeable by users
   const checkInTime = "14:00 (2:00 PM)" // Fixed check-in time
   const checkOutTime = "12:00 (12:00 PM)" // Fixed check-out time
 
-  const villaPricing = getVillaPricing(villa?.name || "")
+  // Calculate the number of nights
+  const totalNights = checkInDate && checkOutDate 
+    ? Math.max(1, Math.ceil((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / (1000 * 3600 * 24)))
+    : 0;
+  
+  // Add this fallback pricing map in the component (before any use of it)
+  const villaFallbackPricing = {
+    "Amrith Palace": { weekday: 45000, weekend: 65000 },
+    "Ram Water Villa": { weekday: 30000, weekend: 45000 },
+    "East Coast Villa": { weekday: 15000, weekend: 25000 },
+    "Lavish Villa I": { weekday: 18000, weekend: 25000 },
+    "Lavish Villa II": { weekday: 18000, weekend: 25000 },
+    "Lavish Villa III": { weekday: 16000, weekend: 23000 },
+    "Empire Anand Villa Samudra": { weekday: 40000, weekend: 60000 }
+  };
+
+  // Get exact prices from villa object with proper fallback
+  const weekdayPrice = villa?.price || 0;
+  
+  // Enhanced weekend price retrieval with fallback logic
+  let weekendPrice = villa?.weekendPrice || villa?.weekendprice || 0;
+  
+  // If weekend price is still 0, use fallback pricing based on villa name
+  if (weekendPrice === 0 && villa?.name) {
+    // Find matching villa in fallback pricing
+    const villaMatch = Object.entries(villaFallbackPricing).find(([name]) => 
+      villa.name.toLowerCase().includes(name.toLowerCase())
+    );
+    
+    if (villaMatch) {
+      weekendPrice = villaMatch[1].weekend;
+      console.log(`Using fallback weekend price for ${villa.name}: ₹${weekendPrice}`);
+    } else if (weekdayPrice > 0) {
+      // If no match found but weekday price exists, use 1.5x multiplier
+      weekendPrice = Math.round(weekdayPrice * 1.5);
+      console.log(`No fallback found for ${villa.name}, using 1.5x multiplier: ₹${weekendPrice}`);
+    }
+  }
+  
+  // Debug log for prices
+  console.log('Booking form prices:', {
+    villaName: villa?.name,
+    weekdayPrice: weekdayPrice,
+    weekendPrice: weekendPrice,
+    rawData: villa,
+    usingFallback: villa?.weekendPrice === 0 || villa?.weekendprice === 0
+  });
+
+  // DEFINE THE FUNCTIONS BEFORE USING THEM
+  // Updated calculation function to properly handle weekend prices
+  const calculateBasePrice = () => {
+    if (!checkInDate || !checkOutDate || !villa) return 0;
+    
+    try {
+      let totalPrice = 0;
+      const startDate = new Date(checkInDate);
+      const endDate = new Date(checkOutDate);
+      const nights = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)));
+
+      // Include the check-in date in the calculation
+      for (let i = 0; i < nights; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(currentDate.getDate() + i);
+        
+        // Determine if it's a weekend
+        const dayOfWeek = currentDate.getDay();
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
+        
+        // Apply weekend price if applicable - use our already calculated weekend price
+        if (isWeekend) {
+          totalPrice += Number(weekendPrice);
+        } else {
+          totalPrice += Number(weekdayPrice);
+        }
+      }
+      
+      return totalPrice;
+    } catch (error) {
+      console.error("Error calculating base price:", error);
+      return 0;
+    }
+  };
+
+  const calculateTotalAmount = () => {
+    if (!checkInDate || !checkOutDate || !villa) return 0
+    try {
+      let totalPrice = 0
+      const startDate = new Date(checkInDate)
+      const endDate = new Date(checkOutDate)
+  
+      const nights = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)))
+      
+      // Include the check-in date in the calculation
+      for (let i = 0; i < nights; i++) {
+        const currentDate = new Date(startDate)
+        currentDate.setDate(currentDate.getDate() + i)
+        totalPrice += getPriceForDate(currentDate, villa)
+      }
+
+      const serviceFee = Math.round(totalPrice * 0.05)
+      const taxAmount = Math.round((totalPrice + serviceFee) * 0.18)
+      return Math.round(totalPrice + serviceFee + taxAmount)
+    } catch (error) {
+      console.error("Error calculating total amount:", error)
+      return 0
+    }
+  };
+
+  // NOW USE THE FUNCTIONS
+  // Calculate the base price
+  const basePrice = calculateBasePrice();
+  
+  // Calculate the total amount
+  const totalAmount = calculateTotalAmount();
 
   // Helper function to format time display
   const formatTimeDisplay = (timeString) => {
@@ -42,49 +171,6 @@ export default function EnhancedBookingForm({
       return timeString.split(" ")[0] // Returns "14:00"
     }
     return timeString 
-  }
-
-  const calculateTotalAmount = () => {
-    if (!checkInDate || !checkOutDate || !villa?.name) return 0
-    try {
-      let totalPrice = 0
-      const startDate = new Date(checkInDate)
-      const endDate = new Date(checkOutDate)
-      const nights = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24))
-
-      for (let i = 0; i < nights; i++) {
-        const currentDate = new Date(startDate)
-        currentDate.setDate(currentDate.getDate() + i)
-        totalPrice += getPriceForDate(currentDate, villa.name)
-      }
-
-      const serviceFee = Math.round(totalPrice * 0.05)
-      const taxAmount = Math.round((totalPrice + serviceFee) * 0.18)
-      return Math.round(totalPrice + serviceFee + taxAmount)
-    } catch (error) {
-      console.error("Error calculating total amount:", error)
-      return 0
-    }
-  }
-
-  const calculateBasePrice = () => {
-    if (!checkInDate || !checkOutDate || !villa?.name) return 0
-    try {
-      let totalPrice = 0
-      const startDate = new Date(checkInDate)
-      const endDate = new Date(checkOutDate)
-      const nights = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24))
-
-      for (let i = 0; i < nights; i++) {
-        const currentDate = new Date(startDate)
-        currentDate.setDate(currentDate.getDate() + i)
-        totalPrice += getPriceForDate(currentDate, villa.name)
-      }
-      return totalPrice
-    } catch (error) {
-      console.error("Error calculating base price:", error)
-      return 0
-    }
   }
 
   // Enhanced date change handler
@@ -109,22 +195,130 @@ export default function EnhancedBookingForm({
     }
   }
 
-  // Enhanced booking handler with fixed time data
+  // Enhanced booking handler with fixed time and address data
   const handleBookNowWithTime = () => {
+    // Check if user is signed in
+    if (!isSignedIn) {
+      // Save current booking state including address
+      const bookingData = {
+        checkInDate,
+        checkOutDate,
+        adults,
+        children,
+        infants,
+        address, // Include address data here
+        bookingStep,
+        villaId: villa?._id
+      };
+      
+      localStorage.setItem('pendingBookingData', JSON.stringify(bookingData));
+      
+      // Show message before redirecting to login
+      Swal.fire({
+        icon: 'info',
+        title: 'Login Required',
+        text: 'Please log in to complete your booking. Your selections will be saved.',
+        confirmButtonColor: '#D4AF37',
+        confirmButtonText: 'Continue to Login',
+      }).then(() => {
+        // Redirect to login
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+      });
+      
+      return;
+    }
+    
     const bookingData = {
       checkInTime: extractRailwayTime(checkInTime), // Send "14:00" format to backend
       checkOutTime: extractRailwayTime(checkOutTime), // Send "12:00" format to backend
+      address: address // Include address data
     }
     onBookNow(bookingData)
   }
+  
+  // Fetch all countries on component mount
+  useEffect(() => {
+    fetchCountries();
+  }, []);
 
-  const totalNights =
-    checkInDate && checkOutDate
-      ? Math.ceil((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / (1000 * 3600 * 24))
-      : 0
+  const fetchCountries = async () => {
+    setIsLoadingCountries(true);
+    try {
+      const response = await fetch('https://countriesnow.space/api/v0.1/countries/positions');
+      const data = await response.json();
+      if (data.data && Array.isArray(data.data)) {
+        setCountries(data.data.map(c => ({ name: c.name, code: c.iso2 || '' })));
+      }
+    } catch (error) {
+      console.error('Error fetching countries:', error);
+    } finally {
+      setIsLoadingCountries(false);
+    }
+  };
 
-  const totalAmount = calculateTotalAmount()
-  const basePrice = calculateBasePrice()
+  const fetchStates = async (country) => {
+    if (!country) return;
+    
+    setIsLoadingStates(true);
+    setStates([]);
+    setCities([]);
+    
+    try {
+      const response = await fetch('https://countriesnow.space/api/v0.1/countries/states', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ country })
+      });
+      
+      const data = await response.json();
+      if (data.data && data.data.states) {
+        setStates(data.data.states);
+      }
+    } catch (error) {
+      console.error('Error fetching states:', error);
+    } finally {
+      setIsLoadingStates(false);
+    }
+  };
+
+  const fetchCities = async (country, state) => {
+    if (!country || !state) return;
+    
+    setIsLoadingCities(true);
+    setCities([]);
+    
+    try {
+      const response = await fetch('https://countriesnow.space/api/v0.1/countries/state/cities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ country, state })
+      });
+      
+      const data = await response.json();
+      if (data.data) {
+        setCities(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching cities:', error);
+    } finally {
+      setIsLoadingCities(false);
+    }
+  };
+
+  const handleAddressChange = (e) => {
+    const { name, value } = e.target;
+    setAddress(prev => ({ ...prev, [name]: value }));
+    
+    if (name === 'country') {
+      fetchStates(value);
+      setAddress(prev => ({ ...prev, state: '', city: '' }));
+    }
+    
+    if (name === 'state') {
+      fetchCities(address.country, value);
+      setAddress(prev => ({ ...prev, city: '' }));
+    }
+  };
 
   return (
     <div
@@ -148,7 +342,7 @@ export default function EnhancedBookingForm({
 
         {/* Progress Steps */}
         <div className="flex items-center justify-between mb-6">
-          {[1, 2, 3].map((step) => (
+          {[1, 2, 3, 4].map((step) => (
             <div key={step} className="flex items-center">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
@@ -161,7 +355,7 @@ export default function EnhancedBookingForm({
               >
                 {bookingStep > step ? <Check className="h-4 w-4" /> : step}
               </div>
-              {step < 3 && (
+              {step < 4 && (
                 <div
                   className={`w-6 h-1 transition-all duration-300 ${
                     bookingStep > step ? "bg-gradient-to-r from-[#D4AF37] to-[#BFA181]" : "bg-gray-200"
@@ -177,25 +371,26 @@ export default function EnhancedBookingForm({
           <h3 className="text-lg font-bold text-gray-900">
             {bookingStep === 1 && "📅 Select Dates"}
             {bookingStep === 2 && "👥 Choose Guests"}
-            {bookingStep === 3 && "💳 Confirm & Pay"}
+            {bookingStep === 3 && "🏠 Enter Address"}
+            {bookingStep === 4 && "💳 Confirm & Pay"}
           </h3>
-          <p className="text-gray-600 text-sm mt-1">Step {bookingStep} of 3</p>
+          <p className="text-gray-600 text-sm mt-1">Step {bookingStep} of 4</p>
         </div>
 
-        {/* Price Display */}
+        {/* Price Display - Fix weekend price display */}
         <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 rounded-xl p-4 mb-6 border border-[#D4AF37]/20">
           <div className="text-center">
             <div className="text-sm text-gray-600 mb-1">Starting from</div>
             <div className="text-2xl font-bold text-gray-900">
-              ₹{villaPricing.weekday?.toLocaleString() || "15,000"}
+              ₹{weekdayPrice?.toLocaleString() || "15,000"}
               <span className="text-base font-normal text-gray-600 ml-1">/ night</span>
             </div>
             <div className="flex justify-center gap-3 mt-2 text-xs">
               <div className="text-gray-600">
-                Weekdays: <span className="font-semibold">₹{villaPricing.weekday?.toLocaleString() || "15,000"}</span>
+                Weekdays: <span className="font-semibold">₹{weekdayPrice?.toLocaleString()}</span>
               </div>
               <div className="text-gray-600">
-                Weekends: <span className="font-semibold">₹{villaPricing.weekend?.toLocaleString() || "25,000"}</span>
+                Weekends: <span className="font-semibold">₹{weekendPrice?.toLocaleString()}</span>
               </div>
             </div>
           </div>
@@ -262,14 +457,14 @@ export default function EnhancedBookingForm({
                 </div>
               )}
 
-              {/* Fixed Time Info Note */}
+              {/* Fixed Time Info Note with Clarification */}
               <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="text-xs text-blue-700 text-center">
                   <div className="font-medium mb-1">⏰ Standard Check-in/Check-out Times</div>
                   <div className="space-y-1">
-                    <div><span className="font-medium">Check-in:</span> 14:00 (2:00 PM) - Fixed</div>
-                    <div><span className="font-medium">Check-out:</span> 12:00 (12:00 PM) - Fixed</div>
-                    <div>These times are standard for all bookings</div>
+                    <div><span className="font-medium">Check-in:</span> 14:00 (2:00 PM) on arrival day</div>
+                    <div><span className="font-medium">Check-out:</span> 12:00 (12:00 PM) on departure day</div>
+                    <div>When you select dates {checkInDate && checkOutDate && `(${totalNights} nights)`}, your stay includes all selected days</div>
                   </div>
                 </div>
               </div>
@@ -307,7 +502,12 @@ export default function EnhancedBookingForm({
                   <Users className="w-5 h-5 text-[#D4AF37]" />
                   <h4 className="font-semibold text-gray-900 text-sm">How many guests?</h4>
                 </div>
-                <p className="text-xs text-gray-600 mb-4">Maximum {villaPricing.maxGuests || 15} guests allowed</p>
+                <p className="text-xs text-gray-600 mb-2">Maximum {villa?.maxGuests || 15} guests allowed</p>
+                {(adults + children) > (villa?.maxGuests || 15) && (
+                  <div className="mb-4 p-2 bg-red-50 rounded-md border border-red-200 text-xs text-red-700">
+                    <strong>Warning:</strong> You have selected more guests than allowed for this villa. Please reduce the number of guests.
+                  </div>
+                )}
 
                 {/* Adults */}
                 <div className="flex items-center justify-between mb-4 p-3 bg-white rounded-lg shadow-sm">
@@ -326,7 +526,7 @@ export default function EnhancedBookingForm({
                     <span className="w-6 text-center font-bold">{adults}</span>
                     <button
                       onClick={() => onGuestChange(adults + 1, children, infants)}
-                      disabled={adults + children >= (villaPricing.maxGuests || 15)}
+                      disabled={adults + children >= 15}
                       className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gradient-to-r hover:from-[#D4AF37] hover:to-[#BFA181] hover:border-[#D4AF37] hover:text-white transition-all disabled:opacity-50"
                     >
                       <Plus className="h-3 w-3" />
@@ -351,7 +551,7 @@ export default function EnhancedBookingForm({
                     <span className="w-6 text-center font-bold">{children}</span>
                     <button
                       onClick={() => onGuestChange(adults, children + 1, infants)}
-                      disabled={adults + children >= (villaPricing.maxGuests || 15)}
+                      disabled={adults + children >= 15}
                       className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gradient-to-r hover:from-[#D4AF37] hover:to-[#BFA181] hover:border-[#D4AF37] hover:text-white transition-all disabled:opacity-50"
                     >
                       <Plus className="h-3 w-3" />
@@ -393,34 +593,180 @@ export default function EnhancedBookingForm({
             </div>
           )}
 
-          {/* Step 3: Booking Summary */}
+          {/* Step 3: Address Entry */}
           {bookingStep === 3 && (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 rounded-xl p-4 border border-[#D4AF37]/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <MapPin className="w-5 h-5 text-[#D4AF37]" />
+                  <h4 className="font-semibold text-gray-900 text-sm">Your Address Details</h4>
+                </div>
+                <p className="text-xs text-gray-600 mb-4">Please provide your address information for the booking</p>
+
+                <form className="space-y-4">
+                  {/* Street Address */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Street Address</label>
+                    <input 
+                      type="text" 
+                      name="street" 
+                      value={address.street} 
+                      onChange={handleAddressChange} 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      placeholder="Enter your street address" 
+                      required
+                    />
+                  </div>
+
+                  {/* Country */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Country</label>
+                    <select 
+                      name="country" 
+                      value={address.country} 
+                      onChange={handleAddressChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm appearance-none bg-white"
+                      required
+                    >
+                      <option value="">-- Select Country --</option>
+                      {isLoadingCountries ? (
+                        <option value="" disabled>Loading countries...</option>
+                      ) : (
+                        countries.map((country) => (
+                          <option key={country.name} value={country.name}>
+                            {country.name}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+
+                  {/* State */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">State/Province</label>
+                    <select 
+                      name="state" 
+                      value={address.state} 
+                      onChange={handleAddressChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm appearance-none bg-white"
+                      disabled={!address.country || isLoadingStates}
+                      required
+                    >
+                      <option value="">-- Select State --</option>
+                      {isLoadingStates ? (
+                        <option value="" disabled>Loading states...</option>
+                      ) : (
+                        states.map((state) => (
+                          <option key={state.name} value={state.name}>
+                            {state.name}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+
+                  {/* City */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">City</label>
+                    <select 
+                      name="city" 
+                      value={address.city} 
+                      onChange={handleAddressChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm appearance-none bg-white"
+                      disabled={!address.state || isLoadingCities}
+                      required
+                    >
+                      <option value="">-- Select City --</option>
+                      {isLoadingCities ? (
+                        <option value="" disabled>Loading cities...</option>
+                      ) : (
+                        cities.map((city) => (
+                          <option key={city} value={city}>
+                            {city}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+
+                  {/* ZIP Code */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">ZIP/Postal Code</label>
+                    <input 
+                      type="text" 
+                      name="zipCode" 
+                      value={address.zipCode} 
+                      onChange={handleAddressChange} 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      placeholder="Enter ZIP code" 
+                      required
+                    />
+                  </div>
+                </form>
+              </div>
+
+              <div className="space-y-2 mt-4">
+                <button
+                  onClick={() => {
+                    // Validate address fields
+                    if (!address.street || !address.country || !address.state || !address.city || !address.zipCode) {
+                      Swal.fire({
+                        icon: 'warning',
+                        title: 'Missing Information',
+                        text: 'Please fill in all address fields to continue.',
+                        confirmButtonColor: '#D4AF37',
+                      });
+                      return;
+                    }
+                    
+                    setBookingStep(4);
+                  }}
+                  className="w-full bg-gradient-to-r from-[#D4AF37] to-[#BFA181] hover:from-[#BFA181] hover:to-[#D4AF37] text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 text-sm"
+                >
+                  Continue to Review
+                </button>
+                <button
+                  onClick={() => setBookingStep(2)}
+                  className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-xl transition-all duration-300 text-sm"
+                >
+                  Back to Guests
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Booking Summary */}
+          {bookingStep === 4 && (
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 rounded-xl p-4 border border-[#D4AF37]/20">
                 <div className="flex items-center gap-2 mb-3">
                   <CreditCard className="w-5 h-5 text-[#D4AF37]" />
                   <h4 className="font-semibold text-gray-900 text-sm">Booking Summary</h4>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Dates:</span>
-                    <span className="font-medium text-xs">
-                      {checkInDate &&
-                        checkOutDate &&
-                        `${new Date(checkInDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${new Date(checkOutDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Check-in:</span>
-                    <span className="font-medium text-xs">{formatTimeDisplay(checkInTime)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Check-out:</span>
-                    <span className="font-medium text-xs">{formatTimeDisplay(checkOutTime)}</span>
-                  </div>
+                </div>                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Dates ({totalNights} {totalNights === 1 ? 'night' : 'nights'}):</span>
+                      <span className="font-medium text-xs">
+                        {checkInDate &&
+                          checkOutDate &&
+                          `${new Date(checkInDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${new Date(checkOutDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Check-in (arrival):</span>
+                      <span className="font-medium text-xs">{formatTimeDisplay(checkInTime)} on {new Date(checkInDate).toLocaleDateString("en-US", {month: "short", day: "numeric"})}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Check-out (departure):</span>
+                      <span className="font-medium text-xs">{formatTimeDisplay(checkOutTime)} on {new Date(checkOutDate).toLocaleDateString("en-US", {month: "short", day: "numeric"})}</span>
+                    </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Guests:</span>
                     <span className="font-medium text-xs">
+                      {adults + children} guest{adults + children !== 1 ? "s" : ""} 
+                      {infants > 0 ? ` + ${infants} infant${infants !== 1 ? "s" : ""}` : ""}
+                      <span className="text-xs text-gray-500 ml-1">
+                        (Max: {villa?.maxGuests || 15})
+                      </span>
                       {adults + children} Adults/Children{infants > 0 ? `, ${infants} Infants` : ""}
                     </span>
                   </div>
@@ -428,10 +774,19 @@ export default function EnhancedBookingForm({
                     <span className="text-gray-600">Booked by:</span>
                     <span className="font-medium text-xs">{userData?.name || userData?.email || "Guest User"}</span>
                   </div>
+                  
+                
+                  {address.street && address.country && (
+                    <div className="pt-2 mt-2 border-t border-gray-200">
+                      <p className="font-medium text-sm text-gray-700 mb-1">Booking Address:</p>
+                      <p className="text-xs text-gray-600 leading-relaxed">
+                        {address.street}, {address.city}, {address.state}, {address.country}, {address.zipCode}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Price Breakdown */}
               {totalAmount > 0 && (
                 <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 rounded-xl p-4 border border-[#D4AF37]/20">
                   <div className="space-y-2 text-sm">
@@ -464,7 +819,7 @@ export default function EnhancedBookingForm({
           )}
         </div>
 
-        {/* Navigation Buttons */}
+       
         <div className="mt-6 space-y-2">
           {bookingStep === 1 && (
             <button
@@ -485,10 +840,26 @@ export default function EnhancedBookingForm({
           {bookingStep === 2 && (
             <div className="space-y-2">
               <button
-                onClick={() => setBookingStep(3)}
+                onClick={() => {
+                  const maxGuests = villa?.maxGuests || 15;
+                  
+                  if ((adults + children) > maxGuests) {
+                    
+                    Swal.fire({
+                      icon: 'error',
+                      title: 'Guest Limit Exceeded',
+                      text: `This villa allows a maximum of ${maxGuests} guests. Please reduce the number of guests to continue.`,
+                      confirmButtonText: 'OK',
+                      confirmButtonColor: '#D4AF37',
+                    });
+                    return;
+                  }
+                  
+                  setBookingStep(3); 
+                }}
                 className="w-full bg-gradient-to-r from-[#D4AF37] to-[#BFA181] hover:from-[#BFA181] hover:to-[#D4AF37] text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 text-sm"
               >
-                Review Booking
+                Continue to Address
               </button>
               <button
                 onClick={() => setBookingStep(1)}
@@ -500,6 +871,17 @@ export default function EnhancedBookingForm({
           )}
 
           {bookingStep === 3 && (
+            <div className="space-y-2">
+              <button
+                onClick={() => setBookingStep(2)}
+                className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-xl transition-all duration-300 text-sm"
+              >
+                Back to Guests
+              </button>
+            </div>
+          )}
+
+          {bookingStep === 4 && (
             <div className="space-y-2">
               <button
                 onClick={handleBookNowWithTime}
@@ -514,13 +896,6 @@ export default function EnhancedBookingForm({
                 ) : (
                   `Pay & Confirm ₹${totalAmount.toLocaleString()}`
                 )}
-              </button>
-              <button
-                onClick={() => setBookingStep(2)}
-                disabled={bookingLoading || paymentProcessing}
-                className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-xl transition-all duration-300 text-sm"
-              >
-                Back to Guests
               </button>
             </div>
           )}

@@ -20,6 +20,8 @@ const Layout = ({ children }) => {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
     { name: 'Villas', href: '/villas', icon: BuildingOfficeIcon },
+    { name: 'Villa Info', href: '/villa-info', icon: BuildingOfficeIcon },
+    { name: 'Amenities', href: '/amenities', icon: BuildingOfficeIcon },
     { name: 'Bookings', href: '/bookings', icon: CalendarDaysIcon },
     { name: 'Users', href: '/users', icon: UsersIcon },
     { name: 'Phone Users', href: '/phone-users', icon: UsersIcon },

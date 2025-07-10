@@ -3,21 +3,29 @@ import { Link } from 'react-router-dom';
 import { MapPin, Users, Bed, Bath, Star, ArrowRight } from 'lucide-react';
 
 const VillaCard = ({ villa }) => {
-  // Extract villa properties
+  // Extract villa properties with proper backend structure
   const {
     _id,
     name,
     location,
     price,
-    weekdayPrice,
-    weekendPrice,
+    weekendprice,
     description,
     images,
     bedrooms,
     bathrooms,
     guests,
-    rating
+    rating,
+    amenities = []
   } = villa;
+
+  // Parse weekend price properly
+  const weekendPrice = weekendprice ? 
+    (typeof weekendprice === 'string' ? parseInt(weekendprice) : weekendprice) : 
+    Math.round(price * 1.5);
+
+  // Get first 3 amenities for display
+  const displayAmenities = amenities.slice(0, 3);
 
   return (
     <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-gray-200 flex flex-col h-full">
@@ -53,25 +61,37 @@ const VillaCard = ({ villa }) => {
         {/* Short Description */}
         <p className="text-gray-600 text-sm mb-4 line-clamp-2">{description}</p>
         
-        {/* Weekend/Weekday Price Display */}
-        {(weekdayPrice || weekendPrice) && (
-          <div className="mb-3 bg-gray-50 rounded-lg p-2.5 text-xs">
-            <div className="flex justify-between items-center">
-              {weekdayPrice && (
-                <div>
-                  <span className="text-gray-500">Weekdays:</span>
-                  <span className="font-medium ml-1 text-gray-800">₹{weekdayPrice.toLocaleString()}</span>
-                </div>
-              )}
-              {weekendPrice && (
-                <div>
-                  <span className="text-gray-500">Weekends:</span>
-                  <span className="font-medium ml-1 text-gray-800">₹{weekendPrice.toLocaleString()}</span>
-                </div>
+        {/* Amenities Display */}
+        {displayAmenities.length > 0 && (
+          <div className="mb-3">
+            <div className="flex flex-wrap gap-1">
+              {displayAmenities.map((amenity, index) => (
+                <span key={index} className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
+                  {amenity}
+                </span>
+              ))}
+              {amenities.length > 3 && (
+                <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
+                  +{amenities.length - 3} more
+                </span>
               )}
             </div>
           </div>
         )}
+        
+        {/* Weekend/Weekday Price Display */}
+        <div className="mb-3 bg-gray-50 rounded-lg p-2.5 text-xs">
+          <div className="flex justify-between items-center">
+            <div>
+              <span className="text-gray-500">Weekdays:</span>
+              <span className="font-medium ml-1 text-gray-800">₹{price?.toLocaleString()}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">Weekends:</span>
+              <span className="font-medium ml-1 text-gray-800">₹{weekendPrice.toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
         
         {/* Features */}
         <div className="grid grid-cols-3 gap-2 mt-auto">
@@ -94,7 +114,7 @@ const VillaCard = ({ villa }) => {
       <div className="px-5 pb-5 pt-3 border-t border-gray-100">
         <Link 
           to={`/villa/${_id}`} 
-          className="block text-center py-2.5 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-300 flex items-center justify-center gap-2"
+          className="text-center py-2.5 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-300 flex items-center justify-center gap-2"
         >
           View Details
           <ArrowRight className="w-4 h-4" />

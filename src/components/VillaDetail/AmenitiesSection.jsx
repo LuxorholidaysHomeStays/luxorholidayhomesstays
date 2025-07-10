@@ -1,58 +1,78 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
+// Standard amenities list for all villas
+const standardAmenities = [
+  "Private Pool",
+  "Free Parking",
+  "Free Street Parking",
+  "AC",
+  "WiFi",
+  "Garden",
+  "Microwave",
+  "Refrigerator",
+  "Stove",
+  "Dishes",
+  "Cooking Basics",
+  "Coffee Maker",
+  "Washing machine",
+  "Geyser",
+  "Oven",
+  "Baby Crib",
+  "TV",
+  "Shampoo",
+  "Essentials",
+  "Hanger",
+  "Room Dark Shades",
+  "Patio"
+];
+
 export default function AmenitiesSection({ amenities = [] }) {
   const [showAllAmenities, setShowAllAmenities] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   
-  console.log("Received amenities:", amenities);
+  // Use standard amenities if none provided
+  const amenitiesList = Array.isArray(amenities) && amenities.length > 0 ? 
+    amenities : standardAmenities;
 
-  // Define categories
+  // Define categories - updated to match standard amenities
   const categories = {
     "Essential Comforts": [
-      "Private Pool",
-      "Hot Tub",
-      "Air Conditioning",
-      "Free WiFi",
-      "Charging Points",
-    ],
-    "Entertainment & Media": [
-      "Smart TV",
-      "Sound System",
-      "Books",
-      "Board Games",
+      "AC",
+      "WiFi",
+      "TV",
+      "Geyser",
+      "Room Dark Shades",
+      "Essentials",
     ],
     "Kitchen & Dining": [
-      "Kitchen",
       "Refrigerator",
-      "BBQ Grill",
       "Coffee Maker",
       "Microwave",
-      "Dining Area",
-      "Meal Service",
-      "Room Service",
+      "Stove",
+      "Dishes",
+      "Cooking Basics",
+      "Oven",
     ],
     "Bathroom & Personal Care": [
-      "Premium Toiletries",
-      "Hair Dryer",
-      "Shower",
-      "Hot Water",
-      "Spa Services",
-      "Ease of Access",
+      "Shampoo",
+      "Hanger",
+      "Washing machine",
     ],
-    "Comfort & Wellness": [
-      "Yoga Space",
-      "Beach Access",
-      "Fireplace",
-      "Baby Care",
-      "Closet",
-      "Housekeeping"
-    ]
+    "Outdoor Space": [
+      "Private Pool",
+      "Garden",
+      "Patio",
+    ],
+    "Parking & Transport": [
+      "Free Parking",
+      "Free Street Parking",
+    ],
+    "Baby & Family": [
+      "Baby Crib",
+    ],
   };
 
-  // Ensure amenities is an array
-  const amenitiesList = Array.isArray(amenities) ? amenities : [];
-  
   // Group amenities by category
   const groupedAmenities = Object.entries(categories).map(([category, items]) => ({
     category,
@@ -62,67 +82,60 @@ export default function AmenitiesSection({ amenities = [] }) {
   const visibleAmenities = showAllAmenities ? groupedAmenities : groupedAmenities.slice(0, 3);
 
   const getAmenityIcon = (amenity) => {
-    const iconName = amenity.toLowerCase().replace(/\s+/g, '-');
-    const possiblePaths = [
-      `/amenities-icons/${iconName}.svg`,
-      `/amenities-icons/icons8-${iconName}-48.png`,
-      `/amenities-icons/icons8-${iconName}-50.png`,
-      `/amenities-icons/icons8-${iconName}-64.png`,
-    ];
+    // Map amenities to exact icon paths
+    const iconMap = {
+      "Private Pool": "/amenities-icons/pool.svg",
+      "AC": "/amenities-icons/icons8-air-conditioner-48.png",
+      "WiFi": "/amenities-icons/icons8-wifi-48.png",
+      "Free WiFi": "/amenities-icons/icons8-wifi-48.png",
+      "Geyser": "/amenities-icons/icons8-water-heater-48.png",
+      "Room Dark Shades": "/amenities-icons/icons8-blinds-48.png",
+      "Essentials": "/amenities-icons/essentials.svg",
+      "TV": "/amenities-icons/icons8-tv-50.png",
+      "Garden": "/amenities-icons/icons8-garden-48.png",
+      "Patio": "/amenities-icons/icons8-patio-48.png",
+      "Refrigerator": "/amenities-icons/icons8-ice-cream-freezer-48.png",
+      "Coffee Maker": "/amenities-icons/icons8-coffee-maker-48.png",
+      "Microwave": "/amenities-icons/icons8-microwave-48.png",
+      "Stove": "/amenities-icons/icons8-stove-48.png",
+      "Dishes": "/amenities-icons/icons8-tableware-48.png",
+      "Cooking Basics": "/amenities-icons/icons8-cooking-48.png",
+      "Oven": "/amenities-icons/icons8-oven-48.png",
+      "Shampoo": "/amenities-icons/icons8-shampoo-48.png",
+      "Hanger": "/amenities-icons/icons8-hanger-48.png",
+      "Washing machine": "/amenities-icons/icons8-washing-machine-48.png",
+      "Free Parking": "/amenities-icons/icons8-parking-48.png",
+      "Free Street Parking": "/amenities-icons/icons8-parking-48.png",
+      "Baby Crib": "/amenities-icons/icons8-feeding-baby-50.png",
+    };
     
-    // Try the exact match first
-    switch(amenity) {
-      case "Private Pool": return "/amenities-icons/pool.svg";
-      case "Hot Tub": return "/amenities-icons/icons8-hot-tub-64.png";
-      case "Smart TV": return "/amenities-icons/icons8-tv-50.png";
-      case "Closet": return "/amenities-icons/icons8-closet-50.png";
-      case "Refrigerator": return "/amenities-icons/icons8-ice-cream-freezer-48.png";
-      case "BBQ Grill": return "/amenities-icons/icons8-grill-50.png";
-      case "Baby Care": return "/amenities-icons/icons8-feeding-baby-50.png";
-      case "Fireplace": return "/amenities-icons/icons8-fire-48.png";
-      case "Beach Access": return "/amenities-icons/icons8-beach-with-umbrella-48.png";
-      case "Yoga Space": return "/amenities-icons/icons8-woman-in-lotus-position-48.png";
-      case "Housekeeping": return "/amenities-icons/icons8-housekeeping-48.png";
-      case "Books": return "/amenities-icons/icons8-books-emoji-48.png";
-      case "Sound System": return "/amenities-icons/icons8-portable-speaker-48.png";
-      case "Charging Points": return "/amenities-icons/icons8-charging-battery-50.png";
-      case "Premium Toiletries": return "/amenities-icons/toiletries.svg";
-      case "Hair Dryer": return "/amenities-icons/hair-dryer.svg";
-      case "Room Service": return "/amenities-icons/room-service.svg";
-      case "Ease of Access": return "/amenities-icons/ease.svg";
-      case "Meal Service": return "/amenities-icons/meal.svg";
-      case "Shower": return "/amenities-icons/shower.svg";
-      case "Spa Services": return "/amenities-icons/icons8-cosmetology-64.png";
-      default: return possiblePaths[0];
-    }
+    // Return specific icon or fallback
+    return iconMap[amenity] || "/amenities-icons/ease.svg";
   };
 
   const amenityDescriptions = {
     "Private Pool": "Exclusive swimming pool for your personal use",
-    "Hot Tub": "Relaxing jacuzzi for ultimate comfort",
-    "Smart TV": "Modern TV with streaming services",
-    "Closet": "Spacious wardrobe for storage",
-    "Refrigerator": "Large fridge for food storage",
-    "BBQ Grill": "Outdoor grilling facility",
-    "Baby Care": "Baby-friendly amenities and furniture",
-    "Fireplace": "Cozy fireplace for winter evenings",
-    "Beach Access": "Easy access to nearby beach",
-    "Yoga Space": "Dedicated area for yoga and meditation",
-    "Housekeeping": "Daily cleaning service available",
-    "Books": "Collection of books for leisure reading",
-    "Sound System": "High-quality audio system",
-    "Charging Points": "Multiple USB and power outlets",
-    "Premium Toiletries": "High-end bath and body products",
-    "Air Conditioning": "Climate control in all rooms",
-    "Free WiFi": "High-speed internet access",
-    "Kitchen": "Fully equipped modern kitchen",
-    "Hair Dryer": "Professional hair dryer provided",
-    "Shower": "Modern shower facilities",
-    "Hot Water": "24/7 hot water availability",
-    "Room Service": "In-room dining service available",
-    "Ease of Access": "Wheelchair accessible facilities",
-    "Meal Service": "Optional meal service with chef",
-    "Spa Services": "Professional spa treatments available",
+    "AC": "Air conditioning in all rooms for comfort",
+    "WiFi": "High-speed internet access throughout the property",
+    "Geyser": "Hot water system for comfortable bathing",
+    "Room Dark Shades": "Blackout curtains for better sleep",
+    "Essentials": "Basic toiletries and amenities provided",
+    "TV": "Television with entertainment channels",
+    "Garden": "Beautiful landscaped garden area",
+    "Patio": "Outdoor seating area for relaxation",
+    "Refrigerator": "Full-size refrigerator for food storage",
+    "Coffee Maker": "Fresh coffee brewing facilities",
+    "Microwave": "Convenient microwave for quick meals",
+    "Stove": "Full cooking stove for meal preparation",
+    "Dishes": "Complete set of dishes and utensils",
+    "Cooking Basics": "Essential cooking ingredients and spices",
+    "Oven": "Baking oven for cooking needs",
+    "Shampoo": "Quality hair care products provided",
+    "Hanger": "Clothing hangers in wardrobes",
+    "Washing machine": "Laundry facilities available",
+    "Free Parking": "Complimentary parking space",
+    "Free Street Parking": "Free parking available on street",
+    "Baby Crib": "Baby-friendly furniture and amenities",
   };
 
   return (
