@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../utils/firebase";
 
@@ -9,6 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Add this state
+  const isRefreshing = useRef(false); // Add this isRefreshing ref
 
   // This effect runs once on component mount and when auth token changes
   useEffect(() => {
@@ -168,45 +169,70 @@ export const AuthProvider = ({ children }) => {
     setUserData(data);
   };
   
-  // Add a refreshAuthStatus function to your AuthContext
+  // Update the refreshAuthStatus function to use setUserData instead of setUser
   const refreshAuthStatus = async () => {
-    const token = localStorage.getItem('authToken');
-    
-    if (!token) {
-      setAuthToken(null);
-      setUserData(null);
-      setLoading(false);
-      return false;
+    // Prevent multiple simultaneous refresh attempts
+    if (isRefreshing.current) {
+      console.log('Auth refresh already in progress, skipping...');
+      return;
     }
     
+    isRefreshing.current = true;
+    
     try {
-      // Verify token is valid with backend
+      // Check if token exists before attempting refresh
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        setIsAuthenticated(false);
+        setUserData(null); // Changed from setUser to setUserData
+        setLoading(false);
+        isRefreshing.current = false;
+        return;
+      }
+      
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/verify-token`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setUserData(data.user);
-        setAuthToken(token);
-        setLoading(false);
-        return true;
+
+      if (!response.ok) {
+        // If response is 401 or 403, clear auth data
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem('authToken');
+          setIsAuthenticated(false);
+          setUserData(null); // Changed from setUser to setUserData
+        }
+        throw new Error(`Auth refresh failed with status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setIsAuthenticated(true);
+        setUserData(data.user); // Changed from setUser to setUserData
       } else {
-        // Token invalid, clear it
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userData');
-        setAuthToken(null);
-        setUserData(null);
-        setLoading(false);
-        return false;
+        setIsAuthenticated(false);
+        setUserData(null); // Changed from setUser to setUserData
+        if (data.message === 'Token expired') {
+          localStorage.removeItem('authToken');
+        }
       }
     } catch (error) {
       console.error('Error refreshing auth status:', error);
+      // Don't clear auth data on network errors to prevent logout loops
+      if (!(error instanceof TypeError && error.message.includes('NetworkError'))) {
+        localStorage.removeItem('authToken');
+        setIsAuthenticated(false);
+        setUserData(null); // Changed from setUser to setUserData
+      }
+    } finally {
       setLoading(false);
-      return false;
+      // Add a delay before allowing another refresh
+      setTimeout(() => {
+        isRefreshing.current = false;
+      }, 5000); // 5 second cooldown
     }
   };
 

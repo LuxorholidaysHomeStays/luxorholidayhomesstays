@@ -356,7 +356,7 @@ export default function EnhancedBookingForm({
       }
     } catch (error) {
       console.error("Error fetching states:", error)
-      setStates([]) // Ensure states is empty on error
+      setStates([]) 
     } finally {
       setIsLoadingStates(false)
     }

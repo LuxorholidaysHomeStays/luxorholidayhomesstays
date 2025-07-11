@@ -120,6 +120,83 @@ const PrintStyles = () => (
   </style>
 )
 
+const BookingAddressDisplay = ({ address, booking }) => {
+  if (!address || (!address.street && !address.city && !address.state && !address.country)) {
+    return (
+      <div className="text-center py-6">
+        <MapPin className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+        <p className="text-gray-500 text-sm">No address information provided for this booking</p>
+      </div>
+    )
+  }
+
+  const formatAddress = () => {
+    const addressParts = [address.street, address.city, address.state, address.country, address.zipCode].filter(Boolean)
+
+    return addressParts.join(", ")
+  }
+
+  return (
+    <div className="space-y-3 sm:space-y-4">
+      <div>
+        <div className="text-xs sm:text-sm text-gray-500 mb-1">Booking Address</div>
+        <div className="flex items-start gap-1 sm:gap-2">
+          <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 mt-1 flex-shrink-0" />
+          <div className="text-gray-700 text-xs sm:text-sm leading-relaxed">{formatAddress()}</div>
+        </div>
+      </div>
+
+      {/* Individual Address Components */}
+      {address.street && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
+          <div>
+            <div className="text-xs text-gray-500 mb-1">Street</div>
+            <div className="text-gray-700 text-xs sm:text-sm">{address.street}</div>
+          </div>
+
+          {address.city && (
+            <div>
+              <div className="text-xs text-gray-500 mb-1">City</div>
+              <div className="text-gray-700 text-xs sm:text-sm">{address.city}</div>
+            </div>
+          )}
+
+          {address.state && (
+            <div>
+              <div className="text-xs text-gray-500 mb-1">State</div>
+              <div className="text-gray-700 text-xs sm:text-sm">{address.state}</div>
+            </div>
+          )}
+
+          {address.country && (
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Country</div>
+              <div className="text-gray-700 text-xs sm:text-sm">{address.country}</div>
+            </div>
+          )}
+
+          {address.zipCode && (
+            <div>
+              <div className="text-xs text-gray-500 mb-1">ZIP Code</div>
+              <div className="text-gray-700 text-xs sm:text-sm">{address.zipCode}</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="flex items-center gap-2 mb-2">
+          <MapPin className="h-4 w-4 text-blue-600" />
+          <span className="text-sm font-medium text-blue-800">Address Source</span>
+        </div>
+        <p className="text-xs text-blue-700">
+          This address was provided during the booking process and will be used for any delivery or correspondence related to this reservation.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 const BookingDetails = () => {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -136,6 +213,9 @@ const BookingDetails = () => {
   const [cancelSuccess, setCancelSuccess] = useState(false)
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState("")
+
+  const [guestContactInfo, setGuestContactInfo] = useState(null)
+  const [loadingGuestInfo, setLoadingGuestInfo] = useState(false)
 
   const bookingId = id || location.state?.bookingId
   const villaImage = location.state?.villaImage
@@ -161,6 +241,12 @@ const BookingDetails = () => {
       setLoading(false)
     }
   }, [bookingId, authToken, navigate])
+
+  useEffect(() => {
+    if (booking && booking.email) {
+      fetchGuestDetails(booking.email)
+    }
+  }, [booking])
 
   const fetchBookingDetails = async () => {
     try {
@@ -188,6 +274,39 @@ const BookingDetails = () => {
       console.error("Error fetching booking details:", err)
       setError(err.message || "Unable to load booking details. Please try again later.")
       setLoading(false)
+    }
+  }
+
+  const fetchGuestDetails = async (email) => {
+    if (!email || !authToken) return
+
+    try {
+      setLoadingGuestInfo(true)
+      const response = await fetch(
+        `${API_BASE_URL}/api/bookings/guest-details?email=${encodeURIComponent(email)}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      )
+
+      if (!response.ok) {
+        console.error("Failed to fetch guest details:", response.status)
+        return
+      }
+
+      const data = await response.json()
+      if (data.success) {
+        setGuestContactInfo(data.guestDetails)
+        console.log("Guest details loaded:", data.guestDetails)
+      }
+    } catch (error) {
+      console.error("Error fetching guest details:", error)
+    } finally {
+      setLoadingGuestInfo(false)
     }
   }
 
@@ -391,6 +510,112 @@ const BookingDetails = () => {
     }
   }
 
+  const GuestContactDisplay = ({ guestInfo, booking }) => {
+    // Use the merged data (API response + booking data)
+    const mergedGuestInfo = {
+      ...booking.guestInfo,
+      ...guestInfo,
+      address: guestInfo?.address || booking.address,
+    }
+
+    const formatPhoneNumber = (phone, countryCode) => {
+      if (!phone) return "Not provided"
+      const cleanPhone = phone.replace(/^\+\d{1,4}\s?/, "")
+      return `${countryCode} ${cleanPhone}`
+    }
+
+    return (
+      <div className="space-y-3 sm:space-y-4">
+        <div>
+          <div className="text-xs sm:text-sm text-gray-500 mb-1">Guest Contact Information</div>
+          <div className="flex items-center gap-2">
+            {mergedGuestInfo.profileImage && (
+              <img
+                src={mergedGuestInfo.profileImage}
+                alt="Profile"
+                className="w-8 h-8 rounded-full object-cover border border-gray-200"
+              />
+            )}
+            <div className="font-medium text-gray-700 text-sm sm:text-base">
+              {mergedGuestInfo.name || booking.guestName || "Guest User"}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div className="text-xs sm:text-sm text-gray-500 mb-1">Email</div>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Mail className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
+            <span className="text-gray-700 text-xs sm:text-sm">{mergedGuestInfo.email || booking.email}</span>
+          </div>
+        </div>
+
+        <div>
+          <div className="text-xs sm:text-sm text-gray-500 mb-1">Contact Number</div>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Phone className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
+            <span className="text-gray-700 text-xs sm:text-sm">
+              {mergedGuestInfo.phone
+                ? formatPhoneNumber(mergedGuestInfo.phone, mergedGuestInfo.countryCode)
+                : "Not provided"}
+            </span>
+            {mergedGuestInfo.phone && (
+              <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Verified</span>
+            )}
+          </div>
+        </div>
+
+        {/* Add Contact Address */}
+        {mergedGuestInfo.address && (mergedGuestInfo.address.street || mergedGuestInfo.address.city) && (
+          <div>
+            <div className="text-xs sm:text-sm text-gray-500 mb-1">Contact Address</div>
+            <div className="flex items-start gap-1 sm:gap-2">
+              <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 mt-1 flex-shrink-0" />
+              <div className="text-gray-700 text-xs sm:text-sm leading-relaxed">
+                { [
+                  mergedGuestInfo.address.street,
+                  mergedGuestInfo.address.city,
+                  mergedGuestInfo.address.state,
+                  mergedGuestInfo.address.country,
+                  mergedGuestInfo.address.zipCode,
+                ]
+                  .filter(Boolean)
+                  .join(", ")}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* User Type Indicator */}
+        <div>
+          <div className="text-xs sm:text-sm text-gray-500 mb-1">Account Type</div>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <div className={`w-2 h-2 rounded-full ${mergedGuestInfo.phone ? "bg-blue-500" : "bg-gray-400"}`}></div>
+            <span className="text-gray-700 text-xs sm:text-sm">
+              {mergedGuestInfo.phone ? "Phone Verified User" : "Email User"}
+            </span>
+          </div>
+        </div>
+
+        {/* Data source indicator */}
+        <div className="mt-4 p-2 bg-blue-50 rounded-md border border-blue-100">
+          <div className="text-xs text-blue-700">
+            {loadingGuestInfo ? (
+              <div className="flex items-center">
+                <div className="animate-spin h-3 w-3 border border-blue-500 border-t-transparent rounded-full mr-2"></div>
+                Loading additional contact details...
+              </div>
+            ) : (
+              <div>
+                <span className="font-medium">Contact Information</span>: Combined from booking details and user profile
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen pt-28 flex flex-col items-center justify-center bg-gray-50">
@@ -575,12 +800,12 @@ const BookingDetails = () => {
                     booking.status === "confirmed"
                       ? "bg-emerald-100 text-emerald-700"
                       : booking.status === "pending"
-                        ? "bg-amber-100 text-amber-700"
-                        : booking.status === "cancelled"
-                          ? "bg-red-100 text-red-700"
-                          : booking.status === "completed"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-gray-100 text-gray-700"
+                      ? "bg-amber-100 text-amber-700"
+                      : booking.status === "cancelled"
+                      ? "bg-red-100 text-red-700"
+                      : booking.status === "completed"
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-gray-100 text-gray-700"
                   } text-xs sm:text-sm`}
                 >
                   {getStatusIcon(booking.status)}
@@ -594,7 +819,9 @@ const BookingDetails = () => {
                   <div className="flex items-center gap-1 sm:gap-2">
                     <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
                     <div className="flex flex-col">
-                      <span className="font-medium text-gray-700 text-xs sm:text-sm">{formatDate(booking.checkIn)}</span>
+                      <span className="font-medium text-gray-700 text-xs sm:text-sm">
+                        {formatDate(booking.checkIn)}
+                      </span>
                       {booking.checkInTime && (
                         <span className="text-xs text-gray-500">
                           {booking.checkInTime} ({formatTimeFor12Hour(booking.checkInTime)})
@@ -608,7 +835,9 @@ const BookingDetails = () => {
                   <div className="flex items-center gap-1 sm:gap-2">
                     <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
                     <div className="flex flex-col">
-                      <span className="font-medium text-gray-700 text-xs sm:text-sm">{formatDate(booking.checkOut)}</span>
+                      <span className="font-medium text-gray-700 text-xs sm:text-sm">
+                        {formatDate(booking.checkOut)}
+                      </span>
                       {booking.checkOutTime && (
                         <span className="text-xs text-gray-500">
                           {booking.checkOutTime} ({formatTimeFor12Hour(booking.checkOutTime)})
@@ -664,8 +893,8 @@ const BookingDetails = () => {
         </div>
 
         {/* Booking Details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          {/* Guest Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          {/* Guest Information - Enhanced with Contact Info */}
           <div
             className={`${isPrintView ? "bg-white border-emerald-100" : "bg-white border-gray-200"} p-4 sm:p-6 rounded-xl ${isPrintView ? "" : "shadow-md"} page-break-inside-avoid border`}
           >
@@ -673,26 +902,7 @@ const BookingDetails = () => {
               <Users className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
               Guest Information
             </h3>
-            <div className="space-y-3 sm:space-y-4">
-              <div>
-                <div className="text-xs sm:text-sm text-gray-500 mb-1">Guest Name</div>
-                <div className="font-medium text-gray-700 text-sm sm:text-base">{booking.guestName}</div>
-              </div>
-              <div>
-                <div className="text-xs sm:text-sm text-gray-500 mb-1">Email</div>
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <Mail className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
-                  <span className="text-gray-700 text-xs sm:text-sm">{booking.email}</span>
-                </div>
-              </div>
-              <div>
-                <div className="text-xs sm:text-sm text-gray-500 mb-1">Contact</div>
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <Phone className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
-                  <span className="text-gray-700 text-xs sm:text-sm">{booking.phone || "Not provided"}</span>
-                </div>
-              </div>
-            </div>
+            <GuestContactDisplay guestInfo={guestContactInfo} booking={booking} />
           </div>
 
           {/* Payment Details */}
@@ -746,7 +956,7 @@ const BookingDetails = () => {
                     {booking.isPaid ? "Paid" : "Payment Due at Hotel"}
                   </div>
                 </div>
-                
+
                 {/* Payment Method */}
                 <div className="flex justify-between items-center pt-3 border-t border-gray-200">
                   <div className="flex items-center gap-1 sm:gap-2">
@@ -757,7 +967,7 @@ const BookingDetails = () => {
                     {booking.paymentMethod || "Not specified"}
                   </div>
                 </div>
-                
+
                 {/* Transaction ID for paid bookings */}
                 {booking.isPaid && booking.paymentId && (
                   <div className="flex justify-between items-center pt-3 border-t border-gray-200">
@@ -765,13 +975,22 @@ const BookingDetails = () => {
                       <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
                       <span className="font-medium text-gray-700 text-xs sm:text-sm">Transaction ID</span>
                     </div>
-                    <div className="font-mono text-xs sm:text-sm text-gray-600">
-                      {booking.paymentId}
-                    </div>
+                    <div className="font-mono text-xs sm:text-sm text-gray-600">{booking.paymentId}</div>
                   </div>
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Booking Address - New Section */}
+          <div
+            className={`${isPrintView ? "bg-white border-emerald-100" : "bg-white border-gray-200"} p-4 sm:p-6 rounded-xl ${isPrintView ? "" : "shadow-md"} page-break-inside-avoid border lg:col-span-1 md:col-span-2`}
+          >
+            <h3 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 flex items-center gap-2 text-gray-800">
+              <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
+              Booking Address
+            </h3>
+            <BookingAddressDisplay address={booking.primaryAddress || booking.address} booking={booking} />
           </div>
         </div>
 
@@ -875,7 +1094,7 @@ const BookingDetails = () => {
                       {/* Calculate days until check-in and display refund percentage */}
                       {(() => {
                         const daysUntilCheckIn = Math.ceil(
-                          (new Date(booking.checkIn).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+                          (new Date(booking.checkIn).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
                         )
                         let refundPercentage = 0
                         if (daysUntilCheckIn > 30) {
