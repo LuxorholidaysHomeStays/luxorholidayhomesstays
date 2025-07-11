@@ -30,20 +30,24 @@ import TermsConditions from './components/Footer/TermsConditions';
 import ForgotPassword from './pages/ForgotPassword';
 import VerifyOTP from './pages/VerifyOTP';
 import AdminDashboard from './pages/Dashboard';
-import VillaManagement from './pages/VillaManagement';
-import BookingManagement from './pages/BookingManagement';
-import UserManagement from './pages/userManagement';
-import PhoneUserManagement from './pages/PhoneUserManagement';
+import VillaManagement from './pages/Admin/VillaManagement';
+import BookingManagement from './pages/Admin/BookingManagement';
+import UserManagement from './pages/Admin/userManagement';
+import PhoneUserManagement from './pages/Admin/PhoneUserManagement';
 import Layout from './components/Adminpanel/Layout';
 import ProtectedRoute from './components/Adminpanel/Protected';
-import VillaInfoManagementPage from './pages/VillaInfoManagementPage';
-import AmenitiesManagement from './pages/AmenitiesManagement';
+import VillaInfoManagementPage from './pages/Admin/VillaInfoManagementPage';
+import AmenitiesManagement from './pages/Admin/AmenitiesManagement';
+import NewsletterManagement from './pages/Admin/NewsletterManagement';
+import UserProfilesManagement from './pages/Admin/UserProfilesManagement';
 import "./App.css";
 import { ToastProvider } from './context/ToastContext';
 import Toast from './components/Toast';
 import AuthGuard from './components/AuthGuard';
 import Profile from './pages/Profile';
 import CompleteProfile from './pages/Completeprofile';
+import CancelRequestsManagementPage from './pages/Admin/CancelRequestsManagementPage';
+// import AmenitiesManagement from './pages/Admin/AmenitiesManagement';
 function App() {
   const { pathname } = useLocation();
   
@@ -189,6 +193,21 @@ function App() {
   </ProtectedRoute>
 } />
 
+<Route path="/cancel-requests" element={
+  <ProtectedRoute>
+    <Layout>
+      <CancelRequestsManagementPage />
+    </Layout>
+  </ProtectedRoute>
+} />
+<Route path="/amenities" element={
+  <ProtectedRoute>
+    <Layout>
+      <AmenitiesManagement />
+    </Layout>
+  </ProtectedRoute>
+} />
+
 <Route path="/bookings" element={
   <ProtectedRoute>
     <Layout>
@@ -233,6 +252,21 @@ function App() {
   <ProtectedRoute>
     <Layout>
       <AmenitiesManagement />
+    </Layout>
+  </ProtectedRoute>
+} />
+<Route path="/newsletter" element={
+  <ProtectedRoute>
+    <Layout>
+      <NewsletterManagement />
+    </Layout>
+  </ProtectedRoute>
+} />
+
+<Route path="/user-profiles" element={
+  <ProtectedRoute>
+    <Layout>
+      <UserProfilesManagement />
     </Layout>
   </ProtectedRoute>
 } />

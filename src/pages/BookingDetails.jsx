@@ -197,6 +197,33 @@ const BookingAddressDisplay = ({ address, booking }) => {
   )
 }
 
+const CancellationRequestStatus = ({ booking }) => {
+  if (!booking.cancelRequestPending) return null
+
+  return (
+    <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-md mb-6">
+      <div className="flex">
+        <div className="flex-shrink-0">
+          <Clock className="h-5 w-5 text-amber-600" />
+        </div>
+        <div className="ml-3">
+          <h3 className="text-sm font-medium text-amber-800">Cancellation Request Pending</h3>
+          <div className="mt-2 text-sm text-amber-700">
+            <p>
+              Your cancellation request has been submitted and is awaiting admin approval. Once approved, your booking will be cancelled and a refund of
+              ₹{booking.refundAmount?.toLocaleString() || "0"}
+              ({booking.refundPercentage || 0}% of total amount) will be processed according to our policy.
+            </p>
+            <p className="mt-2">
+              This usually takes 1-2 business days. We'll notify you by email when your request has been processed.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const BookingDetails = () => {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -320,9 +347,9 @@ const BookingDetails = () => {
     setBooking((prev) => ({ ...prev, processingCancel: true }))
 
     try {
-      console.log(`Attempting to cancel booking: ${bookingId}`)
+      console.log(`Submitting cancellation request for booking: ${bookingId}`)
 
-      const response = await fetch(`${API_BASE_URL}/api/bookings/${bookingId}/cancel`, {
+      const response = await fetch(`${API_BASE_URL}/api/cancel-requests`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${authToken}`,
@@ -330,6 +357,7 @@ const BookingDetails = () => {
           Accept: "application/json",
         },
         body: JSON.stringify({
+          bookingId: bookingId,
           reason: cancellationReason || "User initiated cancellation",
         }),
       })
@@ -348,41 +376,34 @@ const BookingDetails = () => {
 
       if (!response.ok) {
         console.error("Cancel API Error:", data)
-        throw new Error(data.error || `Cancellation failed (${response.status})`)
+        throw new Error(data.error || `Cancellation request failed (${response.status})`)
       }
 
       if (!data.success) {
-        throw new Error(data.error || "Cancellation failed")
+        throw new Error(data.error || "Cancellation request failed")
       }
 
-      console.log("Cancellation successful:", data)
+      console.log("Cancellation request successful:", data)
 
-      // Update booking status with the response from the server
+      // Update booking with cancellation pending status
       setBooking({
         ...booking,
         processingCancel: false,
-        status: "cancelled",
-        cancelReason: cancellationReason,
-        cancelledAt: new Date().toISOString(),
-        refundAmount: data.booking?.refundAmount || 0,
-        refundPercentage: data.booking?.refundPercentage || 0,
+        cancelRequestPending: true,
+        cancelRequestId: data.cancelRequest.id,
+        refundAmount: data.cancelRequest.refundAmount || 0,
+        refundPercentage: data.cancelRequest.refundPercentage || 0,
       })
 
       setCancelSuccess(true)
-      showToastNotification("Booking cancelled successfully")
+      showToastNotification("Cancellation request submitted successfully. Awaiting admin approval.")
 
       setTimeout(() => {
         setShowCancelModal(false)
         setIsCancelling(false)
-        navigate("/my-bookings", {
-          state: {
-            refresh: true,
-            message: "Booking cancelled successfully",
-          },
-        })
       }, 2000)
     } catch (err) {
-      console.error("Error cancelling booking:", err)
+      console.error("Error submitting cancellation request:", err)
       showToastNotification(`Error: ${err.message}`)
 
       // Remove processing state
@@ -520,24 +541,24 @@ const BookingDetails = () => {
 
     const formatPhoneNumber = (phone, countryCode) => {
       if (!phone) return "Not provided"
-      
+
       // Clean the phone number of any formatting
-      const cleanPhone = phone.replace(/\s+/g, '').replace(/[-+()]/g, '');
-      
+      const cleanPhone = phone.replace(/\s+/g, "").replace(/[-+()]/g, "")
+
       // Format for display with proper spacing
-      let formattedPhone;
+      let formattedPhone
       if (cleanPhone.length > 10) {
         // Format international numbers with spaces for readability
-        formattedPhone = cleanPhone.replace(/(\d{2})(\d{4})(\d{4})$/, '$1 $2 $3');
+        formattedPhone = cleanPhone.replace(/(\d{2})(\d{4})(\d{4})$/, "$1 $2 $3")
       } else if (cleanPhone.length === 10) {
         // Format 10-digit numbers for readability
-        formattedPhone = cleanPhone.replace(/(\d{3})(\d{3})(\d{4})$/, '$1 $2 $3');
+        formattedPhone = cleanPhone.replace(/(\d{3})(\d{3})(\d{4})$/, "$1 $2 $3")
       } else {
         // Just use the cleaned number if it doesn't match expected formats
-        formattedPhone = cleanPhone;
+        formattedPhone = cleanPhone
       }
-      
-      return `${countryCode} ${formattedPhone}`;
+
+      return `${countryCode} ${formattedPhone}`
     }
 
     return (
@@ -908,6 +929,9 @@ const BookingDetails = () => {
           </div>
         </div>
 
+        {/* Cancellation Request Status - New Section */}
+        {booking.cancelRequestPending && <CancellationRequestStatus booking={booking} />}
+
         {/* Booking Details */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* Guest Information - Enhanced with Contact Info */}
@@ -1071,13 +1095,22 @@ const BookingDetails = () => {
               <Home className="h-4 w-4 sm:h-5 sm:w-5" />
               Browse Villas
             </button>
-            {booking.status !== "cancelled" && (
+            {booking.status !== "cancelled" && !booking.cancelRequestPending && (
               <button
                 onClick={() => setShowCancelModal(true)}
                 className="flex-1 bg-red-50 text-red-600 border border-red-200 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm"
               >
                 <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                 Cancel Booking
+              </button>
+            )}
+            {booking.cancelRequestPending && (
+              <button
+                disabled
+                className="flex-1 bg-gray-100 text-gray-500 border border-gray-200 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg cursor-not-allowed flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm"
+              >
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
+                Cancellation Pending
               </button>
             )}
           </div>

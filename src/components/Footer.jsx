@@ -8,13 +8,16 @@ const Footer = () => {
     window.open('https://www.instagram.com/luxor_holiday_home_stays?igsh=c3lndHU2ZG1rYjM=', '_blank');
   };
 
+  
   const handleFacebookClick = () => {
     window.open('https://www.facebook.com/luxorholidayhomestays', '_blank');
   };
 
+
   const handleWhatsappClick = () => {
     window.open('https://wa.me/918015924647?text=Hi, I would like to know more about Luxor Holiday Home Stays', '_blank');
   };
+
 
   return (
     <footer className='bg-[#F6F9FC] text-gray-600 pt-12 px-6 md:px-16 lg:px-24 xl:px-32' data-component="footer">

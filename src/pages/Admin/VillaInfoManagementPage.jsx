@@ -1,5 +1,5 @@
 import React from 'react';
-import VillaInfoManagement from '../components/Adminpanel/VillaInfoManagement';
+import VillaInfoManagement from '../../components/Adminpanel/VillaInfoManagement';
 
 const VillaInfoManagementPage = () => {
   return <VillaInfoManagement />;
