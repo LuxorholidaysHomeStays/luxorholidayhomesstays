@@ -1,4 +1,5 @@
 "use client"
+
 import { useState, useEffect } from "react"
 import {
   Calendar,
@@ -13,6 +14,9 @@ import {
   Clock,
   MapPin,
   Phone,
+  Edit3,
+  Save,
+  X,
 } from "lucide-react"
 import UnifiedCalendar from "../VillaDetail/unified-calender.jsx"
 import { getPriceForDate } from "../../data/villa-pricing.jsx"
@@ -57,6 +61,11 @@ export default function EnhancedBookingForm({
   const [isLoadingSavedAddresses, setIsLoadingSavedAddresses] = useState(false)
   const [selectedSavedAddress, setSelectedSavedAddress] = useState("")
   const [showNewAddressForm, setShowNewAddressForm] = useState(true)
+
+  // New states for address editing
+  const [addressEditMode, setAddressEditMode] = useState(false)
+  const [hasAddressData, setHasAddressData] = useState(false)
+  const [originalAddress, setOriginalAddress] = useState({})
 
   const checkInTime = "14:00 (2:00 PM)"
   const checkOutTime = "12:00 (12:00 PM)"
@@ -225,6 +234,11 @@ export default function EnhancedBookingForm({
     onBookNow(bookingData)
   }
 
+  // Check if address has complete data
+  const checkAddressData = (addressData) => {
+    return addressData.street && addressData.country && addressData.state && addressData.city && addressData.zipCode
+  }
+
   useEffect(() => {
     fetchCountries()
   }, [])
@@ -238,6 +252,7 @@ export default function EnhancedBookingForm({
   useEffect(() => {
     if (initialAddress.street || initialAddress.country || initialAddress.city) {
       setAddress(initialAddress)
+      setHasAddressData(checkAddressData(initialAddress))
     }
   }, [initialAddress])
 
@@ -247,54 +262,57 @@ export default function EnhancedBookingForm({
     }
   }, [initialBookingStep])
 
+  // Check address data whenever address changes
+  useEffect(() => {
+    setHasAddressData(checkAddressData(address))
+  }, [address])
+
   // Add new useEffect to fetch user address when user is signed in
   useEffect(() => {
     if (isSignedIn && userData) {
-      fetchUserAddressInfo();
+      fetchUserAddressInfo()
     }
-  }, [isSignedIn, userData]);
-  
+  }, [isSignedIn, userData])
+
   // Function to fetch user address information from previous bookings or profile
   const fetchUserAddressInfo = async () => {
     try {
       // Don't fetch if we already have an address from props
       if (initialAddress.street || initialAddress.country || initialAddress.city) {
-        console.log("Using provided initial address:", initialAddress);
-        return;
+        console.log("Using provided initial address:", initialAddress)
+        return
       }
 
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://luxorstay-backend.vercel.app";
-      const token = localStorage.getItem('token');
-      
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://luxorstay-backend.vercel.app"
+      const token = localStorage.getItem("token")
       if (!token) {
-        console.log("No auth token available for fetching address");
-        return;
+        console.log("No auth token available for fetching address")
+        return
       }
-      
+
       const response = await axios.get(`${baseUrl}/api/bookings/user-address-info`, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
       if (response.data && response.data.success && response.data.addressInfo) {
-        console.log("Found user address info:", response.data.addressInfo);
-        setAddress(response.data.addressInfo);
-        
+        console.log("Found user address info:", response.data.addressInfo)
+        setAddress(response.data.addressInfo)
+        setHasAddressData(checkAddressData(response.data.addressInfo))
         // If we have country and state info, fetch the corresponding states and cities
         if (response.data.addressInfo.country) {
-          fetchStates(response.data.addressInfo.country);
-          
+          fetchStates(response.data.addressInfo.country)
           if (response.data.addressInfo.state) {
-            fetchCities(response.data.addressInfo.country, response.data.addressInfo.state);
+            fetchCities(response.data.addressInfo.country, response.data.addressInfo.state)
           }
         }
       }
     } catch (error) {
       // Just log the error but don't show to user since this is just an enhancement
-      console.error("Error fetching user address info:", error.response?.data || error.message);
+      console.error("Error fetching user address info:", error.response?.data || error.message)
     }
-  };
+  }
 
   const fetchCountries = async () => {
     setIsLoadingCountries(true)
@@ -312,7 +330,11 @@ export default function EnhancedBookingForm({
   }
 
   const fetchStates = async (country) => {
-    if (!country) return
+    if (!country) {
+      setStates([])
+      setCities([])
+      return
+    }
 
     setIsLoadingStates(true)
     setStates([])
@@ -328,16 +350,23 @@ export default function EnhancedBookingForm({
       const data = await response.json()
       if (data.data && data.data.states) {
         setStates(data.data.states)
+        console.log(`Fetched ${data.data.states.length} states for ${country}`)
+      } else {
+        console.warn("No states data received for country:", country)
       }
     } catch (error) {
       console.error("Error fetching states:", error)
+      setStates([]) // Ensure states is empty on error
     } finally {
       setIsLoadingStates(false)
     }
   }
 
   const fetchCities = async (country, state) => {
-    if (!country || !state) return
+    if (!country || !state) {
+      setCities([])
+      return
+    }
 
     setIsLoadingCities(true)
     setCities([])
@@ -352,9 +381,13 @@ export default function EnhancedBookingForm({
       const data = await response.json()
       if (data.data) {
         setCities(data.data)
+        console.log(`Fetched ${data.data.length} cities for ${state}, ${country}`)
+      } else {
+        console.warn("No cities data received for:", state, country)
       }
     } catch (error) {
       console.error("Error fetching cities:", error)
+      setCities([]) // Ensure cities is empty on error
     } finally {
       setIsLoadingCities(false)
     }
@@ -370,54 +403,55 @@ export default function EnhancedBookingForm({
       if (!token) return
 
       const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://luxorstay-backend.vercel.app"
-      
+
       // First try the new consolidated endpoint that includes both profile and booking addresses
       try {
         const addressResponse = await axios.get(`${baseUrl}/api/bookings/user-address-info`, {
           headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
         if (addressResponse.data && addressResponse.data.success && addressResponse.data.addressInfo) {
           // If we have a successful response with address info, use it
-          const addressInfo = addressResponse.data.addressInfo;
-          
+          const addressInfo = addressResponse.data.addressInfo
+
           // Create a single address entry from the consolidated info
-          const addressList = [{
-            id: "saved",
-            label: "Previous Booking Address",
-            street: addressInfo.street || "",
-            city: addressInfo.city || "",
-            state: addressInfo.state || "",
-            country: addressInfo.country || "",
-            zipCode: addressInfo.zipCode || "",
-            source: "saved",
-          }];
-          
-          setSavedAddresses(addressList);
-          setShowNewAddressForm(false);
-          
+          const addressList = [
+            {
+              id: "saved",
+              label: "Previous Booking Address",
+              street: addressInfo.street || "",
+              city: addressInfo.city || "",
+              state: addressInfo.state || "",
+              country: addressInfo.country || "",
+              zipCode: addressInfo.zipCode || "",
+              source: "saved",
+            },
+          ]
+
+          setSavedAddresses(addressList)
+          setShowNewAddressForm(false)
+
           // If this is the first time the form is loaded, set the address
           if (!address.street && !address.city) {
-            setAddress(addressInfo);
-            
+            setAddress(addressInfo)
+            setHasAddressData(checkAddressData(addressInfo))
             // Load the related states and cities
             if (addressInfo.country) {
-              fetchStates(addressInfo.country);
+              await fetchStates(addressInfo.country)
               if (addressInfo.state) {
-                fetchCities(addressInfo.country, addressInfo.state);
+                await fetchCities(addressInfo.country, addressInfo.state)
               }
             }
           }
-          
-          setIsLoadingSavedAddresses(false);
-          return;
+          setIsLoadingSavedAddresses(false)
+          return
         }
       } catch (error) {
-        console.log("New address endpoint not available or returned an error, falling back to legacy method");
+        console.log("New address endpoint not available or returned an error, falling back to legacy method")
       }
-      
+
       // Fall back to the original implementation if the new endpoint fails
       const bookingsResponse = await fetch(`${baseUrl}/api/bookings/user-bookings`, {
         headers: {
@@ -552,7 +586,7 @@ export default function EnhancedBookingForm({
     }
   }
 
-  const handleSavedAddressChange = (e) => {
+  const handleSavedAddressChange = async (e) => {
     const selectedId = e.target.value
     setSelectedSavedAddress(selectedId)
 
@@ -565,27 +599,103 @@ export default function EnhancedBookingForm({
         city: "",
         zipCode: "",
       })
+      setHasAddressData(false)
+      setAddressEditMode(true)
+      // Clear dropdowns
+      setStates([])
+      setCities([])
       return
     }
 
-    setShowNewAddressForm(true)
-
     const selectedAddress = savedAddresses.find((addr) => addr.id === selectedId)
     if (selectedAddress) {
-      setAddress({
+      console.log("Selected address:", selectedAddress)
+
+      // Set the address first
+      const newAddress = {
         street: selectedAddress.street || "",
         city: selectedAddress.city || "",
         state: selectedAddress.state || "",
         country: selectedAddress.country || "",
         zipCode: selectedAddress.zipCode || "",
-      })
-
-      if (selectedAddress.country) {
-        fetchStates(selectedAddress.country)
       }
 
-      if (selectedAddress.country && selectedAddress.state) {
-        fetchCities(selectedAddress.country, selectedAddress.state)
+      setAddress(newAddress)
+      setShowNewAddressForm(true)
+
+      // Check if we have complete address data
+      const isCompleteAddress = checkAddressData(newAddress)
+      setHasAddressData(isCompleteAddress)
+
+      // If country is missing but we have other address data,
+      // go directly to read-only mode and show what we have
+      if (!selectedAddress.country && (selectedAddress.city || selectedAddress.state)) {
+        console.log("Country missing but other address data exists, showing in read-only mode")
+        setAddressEditMode(false)
+        setHasAddressData(true) // Force to show in read-only mode even if incomplete
+        return
+      }
+
+      // If we have a country, proceed with normal dropdown population
+      if (selectedAddress.country) {
+        setAddressEditMode(false)
+
+        try {
+          console.log("Fetching states for country:", selectedAddress.country)
+          
+          // Set loading states
+          setIsLoadingStates(true)
+          setIsLoadingCities(true)
+          
+          // Clear existing data first
+          setStates([])
+          setCities([])
+          
+          // Fetch states
+          const statesResponse = await fetch("https://countriesnow.space/api/v0.1/countries/states", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ country: selectedAddress.country }),
+          })
+
+          const statesData = await statesResponse.json()
+          if (statesData.data && statesData.data.states) {
+            setStates(statesData.data.states)
+            console.log("States loaded:", statesData.data.states.length)
+          }
+          setIsLoadingStates(false)
+
+          // If we have a state, also fetch cities
+          if (selectedAddress.state) {
+            console.log("Fetching cities for state:", selectedAddress.state)
+            
+            const citiesResponse = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ 
+                country: selectedAddress.country, 
+                state: selectedAddress.state 
+              }),
+            })
+
+            const citiesData = await citiesResponse.json()
+            if (citiesData.data) {
+              setCities(citiesData.data)
+              console.log("Cities loaded:", citiesData.data.length)
+            }
+          }
+          setIsLoadingCities(false)
+
+        } catch (error) {
+          console.error("Error fetching location data:", error)
+          setIsLoadingStates(false)
+          setIsLoadingCities(false)
+        }
+      } else {
+        // No country data, but we might have partial address info
+        // Set to edit mode so user can complete the address
+        setAddressEditMode(true)
+        setHasAddressData(false)
       }
     }
   }
@@ -602,6 +712,39 @@ export default function EnhancedBookingForm({
       fetchCities(address.country, value)
       setAddress((prev) => ({ ...prev, city: "" }))
     }
+  }
+
+  const handleEditAddress = () => {
+    setOriginalAddress({ ...address })
+    setAddressEditMode(true)
+    // Fetch states and cities for current address
+    if (address.country) {
+      fetchStates(address.country)
+      if (address.state) {
+        setTimeout(() => {
+          fetchCities(address.country, address.state)
+        }, 500)
+      }
+    }
+  }
+
+  const handleSaveAddress = () => {
+    if (checkAddressData(address)) {
+      setAddressEditMode(false)
+      setHasAddressData(true)
+    } else {
+      Swal.fire({
+        icon: "warning",
+        title: "Incomplete Address",
+        text: "Please fill in all address fields before saving.",
+        confirmButtonColor: "#D4AF37",
+      })
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setAddress(originalAddress)
+    setAddressEditMode(false)
   }
 
   return (
@@ -928,13 +1071,25 @@ export default function EnhancedBookingForm({
           {bookingStep === 3 && (
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 rounded-xl p-4 border border-[#D4AF37]/20">
-                <div className="flex items-center gap-2 mb-3">
-                  <MapPin className="w-5 h-5 text-[#D4AF37]" />
-                  <h4 className="font-semibold text-gray-900 text-sm">Your Address Details</h4>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-[#D4AF37]" />
+                    <h4 className="font-semibold text-gray-900 text-sm">Your Address Details</h4>
+                  </div>
+                  {hasAddressData && !addressEditMode && (
+                    <button
+                      onClick={handleEditAddress}
+                      className="flex items-center gap-1 px-3 py-1 text-xs bg-[#D4AF37] text-white rounded-lg hover:bg-[#BFA181] transition-colors"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      Edit
+                    </button>
+                  )}
                 </div>
                 <p className="text-xs text-gray-600 mb-4">Please provide your address information for the booking</p>
 
-                {savedAddresses.length > 0 && (
+                {/* Show saved addresses dropdown only when no data or in edit mode */}
+                {(!hasAddressData || addressEditMode) && savedAddresses.length > 0 && (
                   <div className="space-y-2 mb-4">
                     <label className="text-sm font-medium text-gray-700">Saved Addresses</label>
                     <select
@@ -953,7 +1108,78 @@ export default function EnhancedBookingForm({
                   </div>
                 )}
 
-                {showNewAddressForm && (
+                {/* Show address data in read-only mode when data exists and not editing */}
+                {hasAddressData && !addressEditMode && (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 gap-3">
+                      <div className="p-3 bg-white rounded-lg border border-gray-200">
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                          Street Address
+                        </label>
+                        <p className="text-sm font-medium text-gray-900 mt-1">{address.street || "Not provided"}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 bg-white rounded-lg border border-gray-200">
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Country</label>
+                          <p className="text-sm font-medium text-gray-900 mt-1">
+                            {address.country || <span className="text-gray-400 italic">Not specified</span>}
+                          </p>
+                        </div>
+                        <div className="p-3 bg-white rounded-lg border border-gray-200">
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">State</label>
+                          <p className="text-sm font-medium text-gray-900 mt-1">
+                            {address.state || <span className="text-gray-400 italic">Not specified</span>}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 bg-white rounded-lg border border-gray-200">
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">City</label>
+                          <p className="text-sm font-medium text-gray-900 mt-1">
+                            {address.city || <span className="text-gray-400 italic">Not specified</span>}
+                          </p>
+                        </div>
+                        <div className="p-3 bg-white rounded-lg border border-gray-200">
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">ZIP Code</label>
+                          <p className="text-sm font-medium text-gray-900 mt-1">
+                            {address.zipCode || <span className="text-gray-400 italic">Not specified</span>}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Show a notice if country is missing */}
+                    {!address.country && (address.city || address.state) && (
+                      <div className="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <div className="flex items-center gap-2">
+                          <svg
+                            className="w-4 h-4 text-yellow-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                            />
+                          </svg>
+                          <div>
+                            <p className="text-sm font-medium text-yellow-800">Incomplete Address Data</p>
+                            <p className="text-xs text-yellow-700 mt-1">
+                              Country information is missing from your saved address. Click Edit to complete the address
+                              details.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Show form when no data or in edit mode */}
+                {(!hasAddressData || addressEditMode) && showNewAddressForm && (
                   <form className="space-y-4">
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-gray-700">Street Address</label>
@@ -1014,6 +1240,12 @@ export default function EnhancedBookingForm({
                             </option>
                           ))
                         )}
+                        {/* Show current state even if not in the list */}
+                        {address.state && !states.find(s => s.name === address.state) && !isLoadingStates && (
+                          <option key={address.state} value={address.state}>
+                            {address.state}
+                          </option>
+                        )}
                       </select>
                     </div>
 
@@ -1039,6 +1271,12 @@ export default function EnhancedBookingForm({
                             </option>
                           ))
                         )}
+                        {/* Show current city even if not in the list */}
+                        {address.city && !cities.includes(address.city) && !isLoadingCities && (
+                          <option key={address.city} value={address.city}>
+                            {address.city}
+                          </option>
+                        )}
                       </select>
                     </div>
 
@@ -1054,6 +1292,28 @@ export default function EnhancedBookingForm({
                         required
                       />
                     </div>
+
+                    {/* Save/Cancel buttons when in edit mode */}
+                    {addressEditMode && (
+                      <div className="flex gap-2 mt-4">
+                        <button
+                          type="button"
+                          onClick={handleSaveAddress}
+                          className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors text-sm"
+                        >
+                          <Save className="w-4 h-4" />
+                          Save Address
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCancelEdit}
+                          className="flex-1 flex items-center justify-center gap-2 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors text-sm"
+                        >
+                          <X className="w-4 h-4" />
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                   </form>
                 )}
               </div>
@@ -1061,7 +1321,7 @@ export default function EnhancedBookingForm({
               <div className="space-y-2 mt-4">
                 <button
                   onClick={() => {
-                    if (!address.street || !address.country || !address.state || !address.city || !address.zipCode) {
+                    if (!checkAddressData(address)) {
                       Swal.fire({
                         icon: "warning",
                         title: "Missing Information",

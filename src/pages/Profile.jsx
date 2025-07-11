@@ -85,7 +85,7 @@ const Profile = () => {
     { code: "+32", name: "Belgium", flag: "🇧🇪" },
     { code: "+351", name: "Portugal", flag: "🇵🇹" },
     { code: "+48", name: "Poland", flag: "🇵🇱" },
-    { code: "+420", name: "Czech Republic", flag: "🇨����" },
+    { code: "+420", name: "Czech Republic", flag: "🇨🇿" },
     { code: "+36", name: "Hungary", flag: "🇭🇺" },
     { code: "+30", name: "Greece", flag: "🇬🇷" },
   ]
@@ -134,6 +134,28 @@ const Profile = () => {
   const [countries, setCountries] = useState([])
   const [states, setStates] = useState([])
   const [cities, setCities] = useState([])
+  const [hasExistingData, setHasExistingData] = useState(false)
+  const [dataSource, setDataSource] = useState({
+    hasBookingData: false,
+    hasPhoneData: false,
+    hasProfileData: false,
+  })
+  const [showDataSourceInfo, setShowDataSourceInfo] = useState(false)
+
+  // Auto-hide success/error messages
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(""), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [error])
+
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => setSuccess(""), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [success])
 
   useEffect(() => {
     if (!authToken) {
@@ -247,12 +269,20 @@ const Profile = () => {
   const fetchUserProfile = async () => {
     try {
       setLoading(true)
+      setError("")
+
       const response = await axios.get(`${baseUrl}/api/profile`, {
         headers: { Authorization: `Bearer ${authToken}` },
       })
 
       if (response.data.success) {
-        const user = response.data.user
+        const { user, hasData, dataSource: dataSourceInfo } = response.data
+
+        setHasExistingData(hasData)
+        if (dataSourceInfo) {
+          setDataSource(dataSourceInfo)
+        }
+
         setProfileData({
           name: user.name || "",
           email: user.email || "",
@@ -265,10 +295,21 @@ const Profile = () => {
           zipCode: user.zipCode || "",
           profileImage: user.profileImage || "",
         })
+
+        if (hasData && dataSourceInfo) {
+          setShowDataSourceInfo(true)
+          setTimeout(() => setShowDataSourceInfo(false), 5000)
+        }
+
+        if (!hasData) {
+          setEditMode(true)
+          setSuccess("Please complete your profile information.")
+        }
       }
     } catch (error) {
       console.error("Error fetching profile:", error)
       setError("Failed to load profile data")
+      setEditMode(true)
     } finally {
       setLoading(false)
     }
@@ -304,83 +345,98 @@ const Profile = () => {
       setProfileData((prev) => ({ ...prev, city: "" }))
     }
   }
-  // Update the handleImageUpload function in your Profile.jsx
-const handleImageUpload = async (e) => {
-  try {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      setError('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
-      return;
-    }
-    
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Image size should be less than 5MB');
-      return;
-    }
-    
-    setUploadingImage(true);
-    setError('');
-    
-    // Convert file to base64
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const base64String = event.target.result;
-        
-        const response = await axios.post(
-          `${baseUrl}/api/profile/upload-image`, 
-          { imageData: base64String },
-          { 
-            headers: { 
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${authToken}` 
+
+  const handleImageUpload = async (e) => {
+    try {
+      const file = e.target.files[0]
+      if (!file) return
+
+      // Validate file type
+      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
+      if (!allowedTypes.includes(file.type)) {
+        setError("Please select a valid image file (JPEG, PNG, GIF, or WebP)")
+        return
+      }
+
+      // Validate file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Image size should be less than 5MB")
+        return
+      }
+
+      setUploadingImage(true)
+      setError("")
+
+      // Convert file to base64
+      const reader = new FileReader()
+      reader.onload = async (event) => {
+        try {
+          const base64String = event.target.result
+
+          const response = await axios.post(
+            `${baseUrl}/api/profile/upload-image`,
+            { imageData: base64String },
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${authToken}`,
+              },
+            },
+          )
+
+          if (response.data.success) {
+            // Update profile data with the base64 image
+            setProfileData((prev) => ({
+              ...prev,
+              profileImage: response.data.imageData,
+            }))
+
+            setSuccess("Profile image updated successfully")
+
+            // Update user data in context if needed
+            if (setUserData) {
+              setUserData((prev) => ({
+                ...prev,
+                profileImage: response.data.imageData,
+              }))
             }
           }
-        );
-        
-        if (response.data.success) {
-          // Store the base64 string directly
-          setProfileData(prev => ({
-            ...prev,
-            profileImage: response.data.imageData
-          }));
-          
-          setSuccess('Profile image updated successfully');
-          
-          // Update user data in context if needed
-          if (setUserData) {
-            setUserData(prev => ({
-              ...prev,
-              profileImage: response.data.imageData
-            }));
-          }
+        } catch (error) {
+          console.error("Error uploading image:", error)
+          setError(error.response?.data?.error || "Failed to upload image. Please try again.")
+        } finally {
+          setUploadingImage(false)
         }
-      } catch (error) {
-        console.error('Error uploading image:', error);
-        setError(error.response?.data?.error || 'Failed to upload image. Please try again.');
-      } finally {
-        setUploadingImage(false);
       }
-    };
-    
-    reader.onerror = () => {
-      setError('Error reading file');
-      setUploadingImage(false);
-    };
-    
-    reader.readAsDataURL(file);
-    
-  } catch (error) {
-    console.error('Error handling image upload:', error);
-    setError('Failed to process image. Please try again.');
-    setUploadingImage(false);
+
+      reader.onerror = () => {
+        setError("Error reading file")
+        setUploadingImage(false)
+      }
+
+      reader.readAsDataURL(file)
+    } catch (error) {
+      console.error("Error handling image upload:", error)
+      setError("Failed to process image. Please try again.")
+      setUploadingImage(false)
+    }
   }
-};
+
+  // Add debugging function to check image data
+  const debugImageData = () => {
+    console.log("Profile Image Debug Info:")
+    console.log("profileData.profileImage exists:", !!profileData.profileImage)
+    console.log("profileData.profileImage length:", profileData.profileImage?.length || 0)
+    console.log("profileData.profileImage starts with data:image:", profileData.profileImage?.startsWith("data:image/"))
+    console.log("First 100 chars:", profileData.profileImage?.substring(0, 100))
+  }
+
+  // Call this in useEffect to debug
+  useEffect(() => {
+    if (profileData.profileImage) {
+      debugImageData()
+    }
+  }, [profileData.profileImage])
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault()
@@ -397,6 +453,7 @@ const handleImageUpload = async (e) => {
       if (response.data.success) {
         setSuccess("Profile updated successfully!")
         setEditMode(false)
+        setHasExistingData(true)
         if (setUserData) {
           setUserData((prev) => ({ ...prev, ...profileData }))
         }
@@ -802,6 +859,76 @@ const handleImageUpload = async (e) => {
     </div>
   )
 
+  const DataSourceIndicator = () =>
+    showDataSourceInfo && (
+      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span className="text-sm font-medium text-blue-800">Data Source Information</span>
+          </div>
+          <button onClick={() => setShowDataSourceInfo(false)} className="text-blue-600 hover:text-blue-800">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="mt-2 text-sm text-blue-700">
+          <p>Your profile data was loaded from:</p>
+          <ul className="mt-1 space-y-1">
+            {dataSource.hasProfileData && (
+              <li className="flex items-center">
+                <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                Complete Profile Data
+              </li>
+            )}
+            {dataSource.hasBookingData && (
+              <li className="flex items-center">
+                <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+                Previous Booking Information
+              </li>
+            )}
+            {dataSource.hasPhoneData && (
+              <li className="flex items-center">
+                <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                Phone Registration Data
+              </li>
+            )}
+          </ul>
+          <p className="mt-2 text-xs">You can edit and update any information as needed.</p>
+        </div>
+      </div>
+    )
+
+  const NoDataPrompt = () =>
+    !hasExistingData && (
+      <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div className="flex items-center">
+          <svg className="w-6 h-6 text-yellow-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+          <div>
+            <h3 className="text-lg font-medium text-yellow-800">Complete Your Profile</h3>
+            <p className="text-sm text-yellow-700 mt-1">
+              No existing profile data found. Please fill in your information below to complete your profile.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -814,13 +941,23 @@ const handleImageUpload = async (e) => {
     <>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-yellow-50">
         {error && (
-          <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50">
-            {error}
+          <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50 max-w-md">
+            <div className="flex items-center justify-between">
+              <span className="text-sm">{error}</span>
+              <button onClick={() => setError("")} className="ml-2 text-red-500 hover:text-red-700">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
         {success && (
-          <div className="fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded z-50">
-            {success}
+          <div className="fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded z-50 max-w-md">
+            <div className="flex items-center justify-between">
+              <span className="text-sm">{success}</span>
+              <button onClick={() => setSuccess("")} className="ml-2 text-green-500 hover:text-green-700">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
 
@@ -854,18 +991,41 @@ const handleImageUpload = async (e) => {
               <div className="bg-white rounded-2xl shadow-lg overflow-hidden" data-aos="fade-right">
                 <div className="bg-gradient-to-r from-yellow-600 to-yellow-700 p-6 text-white">
                   <div className="text-center">
+                  
                     <div className="relative inline-block">
                       {profileData.profileImage ? (
                         <img
                           src={profileData.profileImage || "/placeholder.svg"}
                           alt="Profile"
                           className="w-20 h-20 rounded-full mx-auto mb-3 border-4 border-white/20 object-cover"
+                          onError={(e) => {
+                            console.error("Error loading profile image:", e)
+                            // Hide the broken image and show initials instead
+                            e.target.style.display = "none"
+                            const initialsDiv = e.target.parentNode.querySelector(".initials-fallback")
+                            if (initialsDiv) {
+                              initialsDiv.style.display = "flex"
+                            }
+                          }}
+                          onLoad={(e) => {
+                            console.log("Profile image loaded successfully")
+                            // Hide initials when image loads successfully
+                            const initialsDiv = e.target.parentNode.querySelector(".initials-fallback")
+                            if (initialsDiv) {
+                              initialsDiv.style.display = "none"
+                            }
+                          }}
                         />
-                      ) : (
-                        <div className="w-20 h-20 rounded-full mx-auto mb-3 bg-white/20 flex items-center justify-center text-2xl font-bold border-4 border-white/20">
-                          {getInitials(profileData.name)}
-                        </div>
-                      )}
+                      ) : null}
+
+                      <div
+                        className={`initials-fallback w-20 h-20 rounded-full mx-auto mb-3 bg-white/20 flex items-center justify-center text-2xl font-bold border-4 border-white/20 ${
+                          profileData.profileImage ? "hidden" : "flex"
+                        }`}
+                      >
+                        {getInitials(profileData.name)}
+                      </div>
+
                       {editMode && (
                         <div className="absolute -bottom-1 -right-1">
                           <label className="cursor-pointer">
@@ -914,6 +1074,7 @@ const handleImageUpload = async (e) => {
                         </div>
                       )}
                     </div>
+                    
                     <h3 className="text-lg font-semibold">{profileData.name || "User"}</h3>
                     <p className="text-yellow-100 text-sm">{displayEmail}</p>
                     {editMode && <p className="text-yellow-200 text-xs mt-1">Click camera icon to change photo</p>}
@@ -974,23 +1135,28 @@ const handleImageUpload = async (e) => {
                   <div className="p-6 border-b border-gray-200">
                     <div className="flex items-center justify-between">
                       <h2 className="text-2xl font-bold text-gray-800">Profile Information</h2>
-                      <button
-                        onClick={() => setEditMode(!editMode)}
-                        className="flex items-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
-                      >
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                          />
-                        </svg>
-                        {editMode ? "Cancel" : "Edit Profile"}
-                      </button>
+                      {hasExistingData && (
+                        <button
+                          onClick={() => setEditMode(!editMode)}
+                          className="flex items-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+                        >
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                            />
+                          </svg>
+                          {editMode ? "Cancel" : "Edit Profile"}
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="p-6">
+                    <DataSourceIndicator />
+                    <NoDataPrompt />
+
                     <form onSubmit={handleUpdateProfile} className="space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
@@ -1086,7 +1252,8 @@ const handleImageUpload = async (e) => {
                                         value={otpCode}
                                         onChange={(e) => setOtpCode(e.target.value)}
                                         className="w-full px-4 py-2 border rounded-lg"
-                                        placeholder="Enter code"/>
+                                        placeholder="Enter code"
+                                      />
                                       <button
                                         type="button"
                                         onClick={verifyEmailOtp}
@@ -1289,7 +1456,28 @@ const handleImageUpload = async (e) => {
                         </div>
                       </div>
 
-                      {!editMode && (
+                      {(!hasExistingData || editMode) && (
+                        <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                          {hasExistingData && (
+                            <button
+                              type="button"
+                              onClick={resetForm}
+                              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          )}
+                          <button
+                            type="submit"
+                            disabled={updating}
+                            className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-lg hover:from-yellow-700 hover:to-yellow-800 disabled:opacity-50 transition-colors"
+                          >
+                            {updating ? "Saving..." : hasExistingData ? "Save Changes" : "Complete Profile"}
+                          </button>
+                        </div>
+                      )}
+
+                      {hasExistingData && !editMode && (
                         <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                           <h3 className="text-sm font-medium text-yellow-800 mb-2">Contact Information</h3>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -1310,25 +1498,6 @@ const handleImageUpload = async (e) => {
                               <span className="ml-2 text-gray-800">{profileData.state || "Not provided"}</span>
                             </div>
                           </div>
-                        </div>
-                      )}
-
-                      {editMode && (
-                        <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-                          <button
-                            type="button"
-                            onClick={resetForm}
-                            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="submit"
-                            disabled={updating}
-                            className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-lg hover:from-yellow-700 hover:to-yellow-800 disabled:opacity-50 transition-colors"
-                          >
-                            {updating ? "Updating..." : "Save Changes"}
-                          </button>
                         </div>
                       )}
                     </form>

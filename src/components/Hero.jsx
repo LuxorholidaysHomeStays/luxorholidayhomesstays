@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { FaCalendarAlt, FaUsers, FaMapMarkerAlt, FaUtensils, FaWifi, FaSwimmingPool, FaStar } from "react-icons/fa"
 import { FiChevronDown } from "react-icons/fi"
 import DatePicker from "react-datepicker"
@@ -434,6 +434,24 @@ const useNavbarHeight = () => {
 }
 
 const PremiumLocationsModal = ({ isOpen, onClose }) => {
+  const navigate = useNavigate(); // Add navigate hook here
+  
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('modal-open');
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = 'unset';
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+  
   if (!isOpen) return null;
   
   // Location data
@@ -442,116 +460,155 @@ const PremiumLocationsModal = ({ isOpen, onClose }) => {
       city: "Chennai",
       description: "Experience luxury living in Chennai's most exclusive neighborhoods with stunning coastal views and elegant villas designed for maximum comfort.",
       highlights: ["Beachfront Properties", "Private Pools", "Elite Neighborhoods", "Exclusive Amenities"],
-      image: "/chennai-luxury.jpg" // Replace with actual image path
+      image: "/api/placeholder/400/300" // Using placeholder for now
     },
     {
       city: "Pondicherry",
       description: "Discover the French colonial charm of Pondicherry with our premium villas featuring serene garden spaces and refined architectural details.",
       highlights: ["Colonial Architecture", "Tranquil Gardens", "Heritage Locations", "Beach Proximity"],
-      image: "/pondicherry-luxury.jpg" // Replace with actual image path
+      image: "/api/placeholder/400/300" // Using placeholder for now
     }
   ];
 
   return (
-    <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
-        onClick={onClose}
-      ></div>
-      
-      {/* Modal Content */}
-      <motion.div
-        className="relative w-full max-w-4xl bg-gradient-to-br from-gray-900 to-black rounded-2xl overflow-hidden border border-[#D4AF37]/40 shadow-[0_0_30px_rgba(212,175,55,0.3)]"
-        initial={{ scale: 0.9, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        transition={{ type: "spring", damping: 25 }}
-      >
-        {/* Close button */}
-        <button 
-          className="absolute top-4 right-4 text-white bg-black/40 hover:bg-[#D4AF37]/80 p-2 rounded-full z-10 transition-colors"
-          onClick={onClose}
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          style={{ zIndex: 9999 }} // Ensure highest z-index
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-        
-        {/* Header */}
-        <div className="bg-gradient-to-r from-[#D4AF37] to-[#BFA181] py-6 px-8 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold text-black">Premium Locations</h2>
-          <p className="text-black/80 mt-1">Discover our exclusive villas in the most sought-after destinations</p>
-        </div>
-        
-        {/* Locations grid */}
-        <div className="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {premiumLocations.map((location, index) => (
-            <motion.div
-              key={location.city}
-              className="bg-black/50 backdrop-blur-sm rounded-xl overflow-hidden border border-[#D4AF37]/30 hover:border-[#D4AF37] transition-all group"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 + 0.2 }}
-              whileHover={{ 
-                y: -5,
-                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px -5px rgba(212, 175, 55, 0.5)"
-              }}
+          {/* Backdrop */}
+          <motion.div 
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
+            onClick={onClose}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          />
+          
+          {/* Modal Content */}
+          <motion.div
+            className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900 to-black rounded-2xl border border-[#D4AF37]/40 shadow-[0_0_50px_rgba(212,175,55,0.4)]"
+            initial={{ scale: 0.9, y: 20, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.9, y: 20, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          >
+            {/* Close button */}
+            <button 
+              className="absolute top-4 right-4 text-white bg-black/60 hover:bg-[#D4AF37]/80 p-2 rounded-full z-10 transition-all duration-200 hover:scale-110"
+              onClick={onClose}te
             >
-              <div 
-                className="h-48 bg-cover bg-center relative" 
-                style={{
-                  backgroundImage: `url(${location.image || "/placeholder-location.jpg"})`
-                }}
+              <X className="h-6 w-6" />
+            </button>
+            
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#D4AF37] to-[#BFA181] py-8 px-8 text-center">
+              <motion.h2 
+                className="text-3xl sm:text-4xl font-bold text-black"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
-                <div className="absolute bottom-0 left-0 p-4">
-                  <h3 className="text-2xl font-bold text-white">{location.city}</h3>
-                </div>
-              </div>
-              
-              <div className="p-5">
-                <p className="text-gray-300 mb-4">{location.description}</p>
-                
-                <h4 className="text-[#D4AF37] font-medium mb-3">Highlights:</h4>
-                <ul className="grid grid-cols-2 gap-2">
-                  {location.highlights.map((highlight, i) => (
-                    <li key={i} className="flex items-center text-sm text-white">
-                      <div className="w-2 h-2 bg-[#D4AF37] rounded-full mr-2"></div>
-                      {highlight}
-                    </li>
-                  ))}
-                </ul>
-                
-                <div className="mt-5 flex justify-end">
-                  <button 
-                    className="px-4 py-2 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-black rounded-full text-sm font-medium hover:opacity-90 transition-opacity"
-                    onClick={() => {
-                      onClose();
-                      // You can navigate to search results with the location filter
-                      navigate(`/search-results?location=${location.city}`);
+                Premium Locations
+              </motion.h2>
+              <motion.p 
+                className="text-black/80 mt-2 text-lg"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                Discover our exclusive villas in the most sought-after destinations
+              </motion.p>
+            </div>
+            
+            {/* Locations grid */}
+            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+              {premiumLocations.map((location, index) => (
+                <motion.div
+                  key={location.city}
+                  className="bg-black/60 backdrop-blur-sm rounded-xl overflow-hidden border border-[#D4AF37]/30 hover:border-[#D4AF37] transition-all duration-300 group"
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 + 0.4 }}
+                  whileHover={{ 
+                    y: -8,
+                    boxShadow: "0 20px 40px -10px rgba(0, 0, 0, 0.4), 0 0 20px -5px rgba(212, 175, 55, 0.6)"
+                  }}
+                >
+                  {/* Location Image */}
+                  <div 
+                    className="h-56 bg-cover bg-center relative" 
+                    style={{
+                      backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.7)), url(${location.image})`
                     }}
                   >
-                    View Villas
-                  </button>
-                </div>
+                    <div className="absolute bottom-0 left-0 p-6">
+                      <h3 className="text-3xl font-bold text-white mb-2">{location.city}</h3>
+                      <div className="w-12 h-1 bg-[#D4AF37] rounded-full"></div>
+                    </div>
+                  </div>
+                  
+                  {/* Location Details */}
+                  <div className="p-6">
+                    <p className="text-gray-300 mb-6 leading-relaxed">{location.description}</p>
+                    
+                    <h4 className="text-[#D4AF37] font-semibold mb-4 text-lg">Highlights:</h4>
+                    <div className="grid grid-cols-2 gap-3 mb-6">
+                      {location.highlights.map((highlight, i) => (
+                        <div key={i} className="flex items-center text-sm text-white">
+                          <div className="w-2 h-2 bg-[#D4AF37] rounded-full mr-3 flex-shrink-0"></div>
+                          <span>{highlight}</span>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Action Button */}
+                    <div className="flex justify-end">
+                      <button 
+                        className="px-6 py-3 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-black rounded-full font-semibold hover:opacity-90 transition-all duration-200 hover:scale-105 shadow-lg"
+                        onClick={() => {
+                          onClose();
+                          // Navigate to search results with the location filter
+                          navigate(`/search-results?location=${location.city}`);
+                        }}
+                      >
+                        View Villas →
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+            
+            {/* Footer */}
+            <div className="px-8 pb-8 text-center border-t border-[#D4AF37]/20">
+              <div className="pt-6">
+                <motion.p 
+                  className="text-[#D4AF37]/90 text-sm mb-2"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  Need personalized assistance?
+                </motion.p>
+                <motion.p 
+                  className="text-white font-semibold"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.7 }}
+                >
+                  Contact us at <span className="text-[#D4AF37]">+91 8015924647</span>
+                </motion.p>
               </div>
-            </motion.div>
-          ))}
-        </div>
-        
-        {/* Footer */}
-        <div className="px-6 sm:px-8 pb-6 sm:pb-8 text-center">
-          <p className="text-[#D4AF37]/80 text-sm">
-            For personalized booking assistance, contact us at +91 8015924647
-          </p>
-        </div>
-      </motion.div>
-    </motion.div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
