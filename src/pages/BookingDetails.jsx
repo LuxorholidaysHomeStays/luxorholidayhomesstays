@@ -520,8 +520,24 @@ const BookingDetails = () => {
 
     const formatPhoneNumber = (phone, countryCode) => {
       if (!phone) return "Not provided"
-      const cleanPhone = phone.replace(/^\+\d{1,4}\s?/, "")
-      return `${countryCode} ${cleanPhone}`
+      
+      // Clean the phone number of any formatting
+      const cleanPhone = phone.replace(/\s+/g, '').replace(/[-+()]/g, '');
+      
+      // Format for display with proper spacing
+      let formattedPhone;
+      if (cleanPhone.length > 10) {
+        // Format international numbers with spaces for readability
+        formattedPhone = cleanPhone.replace(/(\d{2})(\d{4})(\d{4})$/, '$1 $2 $3');
+      } else if (cleanPhone.length === 10) {
+        // Format 10-digit numbers for readability
+        formattedPhone = cleanPhone.replace(/(\d{3})(\d{3})(\d{4})$/, '$1 $2 $3');
+      } else {
+        // Just use the cleaned number if it doesn't match expected formats
+        formattedPhone = cleanPhone;
+      }
+      
+      return `${countryCode} ${formattedPhone}`;
     }
 
     return (
@@ -607,7 +623,7 @@ const BookingDetails = () => {
               </div>
             ) : (
               <div>
-                <span className="font-medium">Contact Information</span>: Combined from booking details and user profile
+                <span className="font-medium">Contact Information</span>: contact Details
               </div>
             )}
           </div>
