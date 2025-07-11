@@ -7,7 +7,7 @@ import Swal from "sweetalert2"
 import AOS from "aos"
 import "aos/dist/aos.css"
 import axios from "axios"
-import { auth } from "../utils/firebase"
+import { auth } from "../utils/otp"
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth"
 
 const getInitials = (name) => {
