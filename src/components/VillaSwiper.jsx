@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Home, Users, Maximize, MapPin, Star } from "
 import { useNavigate } from "react-router-dom"
 import { API_BASE_URL } from "../config/api"
 
-// Amrith Palace Images
+// // Amrith Palace Images
 import AP1 from "/AmrithPalace/AP1.jpg"
 import AP2 from "/AmrithPalace/AP2.jpg"
 import AP3 from "/AmrithPalace/AP3.jpg"
@@ -321,8 +321,6 @@ const VillaSwiper = () => {
   const [error, setError] = useState(null)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
-  const [isGalleryOpen, setIsGalleryOpen] = useState(false)
-  const [selectedVilla, setSelectedVilla] = useState(null)
   const [isMobile, setIsMobile] = useState(false)
 
   const touchStartX = useRef(0)
@@ -1022,47 +1020,8 @@ const VillaSwiper = () => {
     }
   }
 
-  const GalleryModal = ({ villa, onClose }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50 p-2 sm:p-4">
-      <div className="relative bg-white p-3 sm:p-4 rounded-lg max-w-6xl w-full max-h-[95vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg sm:text-xl font-bold text-gray-800 ml-2">{villa.roomType}</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full p-2 text-xl z-10 leading-none transition-colors"
-            aria-label="Close gallery"
-          >
-            &times;
-          </button>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-          {(villa.allImages || villa.images).map((img, index) => (
-            <img
-              key={index}
-              src={img || "/placeholder.svg"}
-              alt={`${villa.roomType} view ${index + 1}`}
-              className="w-full h-auto object-cover rounded-lg shadow-md hover:opacity-90 transition-opacity"
-              loading="lazy"
-            />
-          ))}
-        </div>
-        <div className="mt-4 bg-gray-50 p-3 rounded-lg">
-          <p className="text-sm text-gray-600 mb-2">{villa.description}</p>
-          <div className="flex flex-wrap gap-1.5">
-            {villa.amenities.slice(0, 6).map((amenity, idx) => (
-              <span key={idx} className="text-xs bg-white px-2 py-1 rounded-full border border-gray-200 text-gray-700">
-                {amenity}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-
   return (
     <div className="min-h-screen py-12 px-0 sm:px-4 w-full bg-white">
-      {isGalleryOpen && selectedVilla && <GalleryModal villa={selectedVilla} onClose={() => setIsGalleryOpen(false)} />}
       <div className="w-full max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8 md:mb-16 px-4">
@@ -1134,17 +1093,6 @@ const VillaSwiper = () => {
                       <div className="absolute top-4 left-4 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-white rounded-lg text-xs px-2 py-1 font-medium">
                         {villa.hotel.city}
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setSelectedVilla(villa)
-                          setIsGalleryOpen(true)
-                        }}
-                        className="absolute bottom-4 right-4 bg-black/50 text-white px-3 py-1 rounded-lg text-xs sm:text-sm hover:bg-black/70 transition-colors"
-                        aria-label={`View all photos of ${villa.roomType}`}
-                      >
-                        View Photos
-                      </button>
                     </div>
                     <div className="p-4 sm:p-6">
                       <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-1 sm:mb-2">{villa.roomType}</h3>
