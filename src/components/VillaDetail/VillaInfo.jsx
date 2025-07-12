@@ -259,18 +259,21 @@ export default function VillaInfo ({ villa, villaPricing }) {
         const defaultDescription =
           villaDescriptions[villa?.name] || villa?.longDescription || villa?.description || "No description available."
           
-        return (
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">About this place</h2>
+        return (            <div className="bg-white rounded-lg p-8 shadow-md">
+            <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center">
+              <span className="w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center mr-3">
+                <Home className="h-4 w-4 text-white" />
+              </span>
+              About this place
+            </h2>
             <div className="text-gray-700 leading-relaxed text-lg">
               <p className="mb-6">
                 {showFullDescription
                   ? defaultDescription
                   : defaultDescription.substring(0, 300) + "..."}
-              </p>
-              <button
+              </p>                <button
                 onClick={() => setShowFullDescription(!showFullDescription)}
-                className="text-blue-600 hover:text-blue-700 font-semibold underline transition-colors"
+                className="text-[#D4AF37] hover:text-[#BFA181] font-semibold underline transition-colors"
               >
                 {showFullDescription ? "Show less" : "Show more"}
               </button>
@@ -280,8 +283,13 @@ export default function VillaInfo ({ villa, villaPricing }) {
 
       case "amenities":
         return (
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-sm border border-[#D4AF37]/20">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6">What this place offers</h2>
+          <div className="bg-white rounded-lg p-8 shadow-md">
+            <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center">
+              <span className="w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center mr-3">
+                <Star className="h-4 w-4 text-white" />
+              </span>
+              What this place offers
+            </h2>
             
             {/* Simple list view of amenities */}
             <div className="mb-8">
@@ -318,9 +326,14 @@ export default function VillaInfo ({ villa, villaPricing }) {
 
       case "location":
         return (
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">Where you'll be</h2>
-            <div className="rounded-2xl overflow-hidden h-80 shadow-lg mb-6">
+          <div className="bg-white rounded-lg p-8 shadow-md">
+            <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center">
+              <span className="w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center mr-3">
+                <MapPin className="h-4 w-4 text-white" />
+              </span>
+              Where you'll be
+            </h2>
+            <div className="rounded-lg overflow-hidden h-80 shadow-lg mb-6">
               {villaLocation.mapUrl ? (
                 // Extract Google Maps embed URL from the shared URL
                 <iframe
@@ -353,7 +366,7 @@ export default function VillaInfo ({ villa, villaPricing }) {
             
             <div className="space-y-4">
               <div className="flex items-center gap-3 text-gray-600">
-                <MapPin className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                <MapPin className="h-5 w-5 text-[#D4AF37] flex-shrink-0" />
                 <span className="font-medium">{villaLocation.address}</span>
               </div>
               
@@ -374,7 +387,7 @@ export default function VillaInfo ({ villa, villaPricing }) {
                   href={villaLocation.mapUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
+                  className="inline-flex items-center gap-2 text-[#D4AF37] hover:text-[#BFA181] font-medium"
                 >
                   <MapPin className="h-4 w-4" />
                   View on Google Maps
@@ -388,22 +401,27 @@ export default function VillaInfo ({ villa, villaPricing }) {
         return (
           <div className="space-y-6">
             {/* Cancellation Policy */}
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <button
                 onClick={() => setShowCancellationPolicy(!showCancellationPolicy)}
-                className="w-full p-8 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                className="w-full p-8 text-left flex items-center justify-between hover:bg-gray-50/50 transition-colors"
               >
-                <h2 className="text-2xl font-bold text-gray-900">Cancellation Policy</h2>
+                <div className="flex items-center">
+                  <span className="w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center mr-3">
+                    <Shield className="h-4 w-4 text-white" />
+                  </span>
+                  <h2 className="text-2xl font-bold text-gray-900">Cancellation Policy</h2>
+                </div>
                 <ChevronDown
-                  className={`h-6 w-6 text-gray-500 transition-transform ${showCancellationPolicy ? "rotate-180" : ""}`}
+                  className={`h-6 w-6 text-[#D4AF37] transition-transform ${showCancellationPolicy ? "rotate-180" : ""}`}
                 />
               </button>
 
               {showCancellationPolicy && (
                 <div className="px-8 pb-8">
-                  <div className="overflow-hidden rounded-2xl border border-gray-200">
+                  <div className="overflow-hidden rounded-lg border border-gray-200">
                     <table className="w-full">
-                      <thead className="bg-gradient-to-r from-blue-50 to-blue-100">
+                      <thead className="bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10">
                         <tr>
                           <th className="px-6 py-4 text-left font-semibold text-gray-900">Timeframe</th>
                           <th className="px-6 py-4 text-left font-semibold text-gray-900">Policy</th>
@@ -430,33 +448,46 @@ export default function VillaInfo ({ villa, villaPricing }) {
             </div>
 
             {/* Things to Know */}
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <button
                 onClick={() => setShowThingsToKnow(!showThingsToKnow)}
-                className="w-full p-8 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                className="w-full p-8 text-left flex items-center justify-between hover:bg-gray-50/50 transition-colors"
               >
-                <h2 className="text-2xl font-bold text-gray-900">Things to Know</h2>
+                <div className="flex items-center">
+                  <span className="w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </span>
+                  <h2 className="text-2xl font-bold text-gray-900">Things to Know</h2>
+                </div>
                 <ChevronDown
-                  className={`h-6 w-6 text-gray-500 transition-transform ${showThingsToKnow ? "rotate-180" : ""}`}
+                  className={`h-6 w-6 text-[#D4AF37] transition-transform ${showThingsToKnow ? "rotate-180" : ""}`}
                 />
               </button>
 
               {showThingsToKnow && (
                 <div className="px-8 pb-8">
                   <div className="space-y-4">
-                    <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
+                    <div className="flex items-start gap-4 p-5 bg-gray-50 rounded-lg">
+                      <div className="w-6 h-6 bg-[#D4AF37]/20 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
+                        <div className="w-2 h-2 rounded-full bg-[#D4AF37]"></div>
+                      </div>
                       <span className="text-gray-700">
                         Security deposit of ₹{villaPricing?.securityDeposit?.toLocaleString() || "20,000"}
                         will be collected and refunded within 72 hours of checkout.
                       </span>
                     </div>
-                    <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
+                    <div className="flex items-start gap-4 p-5 bg-gray-50 rounded-lg">
+                      <div className="w-6 h-6 bg-[#D4AF37]/20 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
+                        <div className="w-2 h-2 rounded-full bg-[#D4AF37]"></div>
+                      </div>
                       <span className="text-gray-700">Check-in: 2:00 PM | Check-out: 11:00 AM</span>
                     </div>
-                    <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
+                    <div className="flex items-start gap-4 p-5 bg-gray-50 rounded-lg">
+                      <div className="w-6 h-6 bg-[#D4AF37]/20 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
+                        <div className="w-2 h-2 rounded-full bg-[#D4AF37]"></div>
+                      </div>
                       <span className="text-gray-700">Smoking is not allowed inside the property</span>
                     </div>
                   </div>
@@ -474,23 +505,32 @@ export default function VillaInfo ({ villa, villaPricing }) {
   return (
     <div className="space-y-6">
       {/* Section Navigation - Mobile/Desktop Responsive */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-[#D4AF37]/20 p-2">
-        <div className="flex overflow-x-auto scrollbar-hide gap-2">
+      <div className="bg-gradient-to-r from-white/80 to-gray-100/80 backdrop-blur-sm p-2 rounded-xl shadow-md">
+        <div className="flex overflow-x-auto scrollbar-hide gap-1 justify-center">
           {sections.map((section) => {
             const IconComponent = section.icon
+            const isActive = activeSection === section.id
             return (
-              <button
-                key={section.id}
-                onClick={() => setActiveSection(section.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl whitespace-nowrap transition-all duration-200 ${
-                  activeSection === section.id
-                    ? "bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-white shadow-md"
-                    : "hover:bg-gray-100"
-                }`}
-              >
-                <IconComponent className="h-5 w-5" />
-                <span className="font-medium">{section.label}</span>
-              </button>
+              <div key={section.id} className="relative">
+                <button
+                  onClick={() => setActiveSection(section.id)}
+                  className={`flex items-center gap-3 px-6 py-3 rounded-lg transition-all duration-300 ${
+                    isActive
+                      ? "bg-[#D4AF37] text-white shadow-lg transform -translate-y-0.5"
+                      : "bg-white/70 text-gray-500 hover:bg-[#D4AF37]/10 hover:text-[#D4AF37] shadow"
+                  }`}
+                >
+                  <IconComponent className={`h-5 w-5`} />
+                  <span className={`font-medium text-sm ${isActive ? 'font-bold' : ''}`}>{section.label}</span>
+                  
+                  {/* Right chevron for active tab */}
+                  {isActive && (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             )
           })}
         </div>

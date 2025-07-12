@@ -231,12 +231,108 @@ export default function VillaDetails() {
     }
   };
   
-  // When user signs in, fetch their address
+  // Function to check if villa is in user's favorites
+  const checkIfVillaIsSaved = async () => {
+    if (!isSignedIn || !authToken) return;
+    
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://luxorstay-backend.vercel.app";
+      const response = await axios.get(`${baseUrl}/api/users/favorites`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`
+        }
+      });
+      
+      if (response.data && response.data.success) {
+        const favorites = response.data.favorites || [];
+        const isFavorite = favorites.some(fav => 
+          (fav._id === (villa._id || villa.id)) || (fav.id === (villa._id || villa.id))
+        );
+        setIsSaved(isFavorite);
+      }
+    } catch (error) {
+      console.error("Error checking favorites:", error.response?.data || error.message);
+    }
+  };
+
+  // Function to toggle save/unsave villa
+  const handleSaveVilla = async () => {
+    if (!isSignedIn) {
+      Swal.fire({
+        icon: "info",
+        title: "Login Required",
+        text: "Please log in to save this villa to your favorites.",
+        confirmButtonColor: "#D4AF37",
+      }).then(() => {
+        navigate("/sign-in?redirect=" + encodeURIComponent(window.location.pathname));
+      });
+      return;
+    }
+
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://luxorstay-backend.vercel.app";
+      
+      if (isSaved) {
+        // Remove from favorites
+        await axios.delete(`${baseUrl}/api/users/favorites/${villa._id || villa.id}`, {
+          headers: {
+            Authorization: `Bearer ${authToken}`
+          }
+        });
+        
+        setIsSaved(false);
+        Swal.fire({
+          icon: "success",
+          title: "Removed from Favorites",
+          text: "Villa has been removed from your favorites.",
+          confirmButtonColor: "#D4AF37",
+          timer: 2000,
+          showConfirmButton: false
+        });
+      } else {
+        // Add to favorites
+        await axios.post(`${baseUrl}/api/users/favorites`, {
+          villaId: villa._id || villa.id,
+          villaName: villa.name,
+          villaLocation: villa.location,
+          villaPrice: villa.price,
+          villaImage: villa.images && villa.images.length > 0 ? villa.images[0] : null
+        }, {
+          headers: {
+            Authorization: `Bearer ${authToken}`
+          }
+        });
+        
+        setIsSaved(true);
+        Swal.fire({
+          icon: "success",
+          title: "Added to Favorites",
+          text: "Villa has been added to your favorites. You can view it in your profile.",
+          confirmButtonColor: "#D4AF37",
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    } catch (error) {
+      console.error("Error updating favorites:", error.response?.data || error.message);
+      Swal.fire({
+        icon: "error",
+        title: "Operation Failed",
+        text: "There was a problem updating your favorites. Please try again.",
+        confirmButtonColor: "#D4AF37",
+      });
+    }
+  };
+  
+  // When user signs in, fetch their address and check if villa is saved
   useEffect(() => {
     if (isSignedIn && authToken) {
       fetchUserAddress();
+      if (villa && (villa._id || villa.id)) {
+        checkIfVillaIsSaved();
+      }
     }
-  }, [isSignedIn, authToken]);
+  }, [isSignedIn, authToken, villa]);
   
   const fetchVillaDetails = async () => {
     try {
@@ -722,7 +818,7 @@ export default function VillaDetails() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Enhanced Header - Always Sticky */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] backdrop-blur-md shadow-lg">
+      <div className="fixed top-0 left-0 right-0 z-50  backdrop-blur-md shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
           {/* Navigation & Actions */}
           <div className="flex items-center justify-between mb-3">
@@ -731,38 +827,38 @@ export default function VillaDetails() {
                 onClick={() => navigate("/rooms")}
                 className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 transition-all duration-200 group backdrop-blur-sm"
               >
-                <ArrowLeft className="h-4 w-4 text-white group-hover:-translate-x-1 transition-transform" />
-                <span className="hidden sm:inline font-medium text-white">Back</span>
+                <ArrowLeft className="h-4 w-4 text-[#D4AF37] group-hover:-translate-x-1 transition-transform" />
+                <span className="hidden sm:inline font-medium text-[#D4AF37]">Back</span>
               </button>
 
               {/* Breadcrumb */}
-              <div className="hidden md:flex items-center gap-2 text-sm text-white/80">
-                <button onClick={() => navigate("/")} className="hover:text-white transition-colors">
+              <div className="hidden md:flex items-center gap-2 text-sm text-[#D4AF37]/80">
+                <button onClick={() => navigate("/")} className="hover:text-[#D4AF37] transition-colors">
                   Home
                 </button>
-                <ChevronRight className="h-3 w-3" />
-                <button onClick={() => navigate("/rooms")} className="hover:text-white transition-colors">
+                <ChevronRight className="h-3 w-3 text-[#D4AF37]/80" />
+                <button onClick={() => navigate("/rooms")} className="hover:text-[#D4AF37] transition-colors">
                   Villas
                 </button>
-                <ChevronRight className="h-3 w-3" />
-                <span className="text-white font-medium truncate max-w-[200px]">{villa.name}</span>
+                <ChevronRight className="h-3 w-3 text-[#D4AF37]/80" />
+                <span className="text-[#D4AF37] font-medium truncate max-w-[200px]">{villa.name}</span>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setIsSaved(!isSaved)}
+                onClick={handleSaveVilla}
                 className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 transition-all duration-200 group backdrop-blur-sm"
               >
                 <Heart
                   className={`h-4 w-4 transition-all ${
-                    isSaved ? "fill-red-500 text-red-500" : "text-white group-hover:text-red-300"
+                    isSaved ? "fill-red-500 text-red-500" : "text-[#D4AF37] group-hover:text-red-300"
                   }`}
                 />
-                <span className="font-medium text-white hidden sm:inline">Save</span>
+                <span className="font-medium text-white hidden sm:inline">{isSaved ? "Saved" : "Save"}</span>
               </button>
               <button className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm">
-                <Share className="h-4 w-4 text-white" />
+                <Share className="h-4 w-4 text-[#D4AF37]" />
                 <span className="font-medium text-white hidden sm:inline">Share</span>
               </button>
             </div>
@@ -770,21 +866,21 @@ export default function VillaDetails() {
 
           {/* Villa Title & Info */}
           <div className="space-y-2">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white leading-tight">{villa.name}</h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#D4AF37] leading-tight">{villa.name}</h1>
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <div className="flex items-center gap-1 bg-white/20 rounded-lg px-2 py-1 backdrop-blur-sm">
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
                     className={`h-3 w-3 ${
-                      i < Math.floor(villa.rating || 4.5) ? "text-yellow-300 fill-current" : "text-white/50"
+                      i < Math.floor(villa.rating || 4.5) ? "text-yellow-300 fill-current" : "text-[#D4AF37]/50"
                     }`}
                   />
                 ))}
-                <span className="font-semibold ml-1 text-white">{villa.rating || 4.5}</span>
-                <span className="text-white/80">({Math.floor(Math.random() * 50) + 20})</span>
+                <span className="font-semibold ml-1 text-[#D4AF37]">{villa.rating || 4.5}</span>
+                <span className="text-[#D4AF37]/80">({Math.floor(Math.random() * 50) + 20})</span>
               </div>
-              <div className="text-white/90 bg-white/20 rounded-lg px-2 py-1 backdrop-blur-sm flex items-center gap-1">
+              <div className="text-[#D4AF37]/90 bg-white/20 rounded-lg px-2 py-1 backdrop-blur-sm flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
                 {villa.location}
               </div>
@@ -804,8 +900,8 @@ export default function VillaDetails() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
         <div className="bg-white rounded-2xl shadow-lg p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] rounded-lg flex items-center justify-center">
-              <Users className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+              <Users className="w-5 h-5 text-[#D4AF37]" />
             </div>
             <div>
               <p className="text-xs text-gray-500">Guests</p>
@@ -813,8 +909,8 @@ export default function VillaDetails() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] rounded-lg flex items-center justify-center">
-              <Bed className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+              <Bed className="w-5 h-5 text-[#D4AF37]" />
             </div>
             <div>
               <p className="text-xs text-gray-500">Bedrooms</p>
@@ -822,8 +918,8 @@ export default function VillaDetails() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] rounded-lg flex items-center justify-center">
-              <Bath className="w-5 h-5 text-white" />
+            <div className="w-10 h-10  rounded-lg flex items-center justify-center">
+              <Bath className="w-5 h-5 text-[#D4AF37]" />
             </div>
             <div>
               <p className="text-xs text-gray-500">Bathrooms</p>
@@ -831,8 +927,8 @@ export default function VillaDetails() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">₹</span>
+            <div className="w-10 h-10  rounded-lg flex items-center justify-center">
+              <span className="text-[#D4AF37] font-bold text-sm">₹</span>
             </div>
             <div>
               <p className="text-xs text-gray-500">From</p>

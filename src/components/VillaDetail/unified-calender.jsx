@@ -44,6 +44,30 @@ export default function UnifiedCalendar({
 
     const dayOfWeek = date.getDay();
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // 0 is Sunday, 6 is Saturday
+    
+    // Find a fallback price for the villa
+    const getFallbackPrice = () => {
+      if (!villa.name) return isWeekend ? 60000 : 40000; // Default fallback
+      
+      // Check for exact match in fallback prices
+      if (villaFallbackPrices[villa.name]) {
+        return isWeekend ? villaFallbackPrices[villa.name].weekend : villaFallbackPrices[villa.name].weekday;
+      }
+      
+      // Check for partial name match
+      for (const [villaName, pricing] of Object.entries(villaFallbackPrices)) {
+        if (villa.name.toLowerCase().includes(villaName.toLowerCase())) {
+          return isWeekend ? pricing.weekend : pricing.weekday;
+        }
+      }
+      
+      // If we have weekday price but no weekend price
+      if (isWeekend && villa.price && villa.price > 0) {
+        return Math.round(villa.price * 1.5);
+      }
+      
+      return isWeekend ? 60000 : 40000; // Last resort default
+    };
 
     // Debug log to identify the issue
     console.log('Villa data for pricing:', {
@@ -64,18 +88,14 @@ export default function UnifiedCalendar({
       else if (villa.weekendPrice && villa.weekendPrice > 0) {
         return Number(villa.weekendPrice);
       }
-      // Then try fallback prices
-      else if (villa.name && villaFallbackPrices[villa.name]) {
-        return villaFallbackPrices[villa.name].weekend;
-      }
-      // Last resort: 1.5x weekday price
+      // Use fallback pricing
       else {
-        return Number(villa.price) * 1.5;
+        return getFallbackPrice();
       }
     }
 
-    // For weekdays, return the regular price
-    return Number(villa.price);
+    // For weekdays, return the regular price or fallback if price is 0
+    return Number(villa.price) > 0 ? Number(villa.price) : getFallbackPrice();
   };
 
   useEffect(() => {
@@ -231,7 +251,7 @@ export default function UnifiedCalendar({
                 key={index}
                 className={`
                   relative flex flex-col items-center justify-center rounded-lg cursor-pointer 
-                  min-h-[50px] transition-all duration-200 select-none border-2
+                  min-h-[45px] transition-all duration-200 select-none border
                   ${!isCurrentMonth ? "opacity-40" : ""}
                   ${isPast
                     ? "bg-gray-100 text-gray-400 cursor-not-allowed border-transparent opacity-60"
@@ -283,10 +303,13 @@ export default function UnifiedCalendar({
 
   useEffect(() => {
     if (isVisible && typeof document !== 'undefined' && document.body) {
+      // Simple approach: just prevent background scrolling
       document.body.style.overflow = "hidden"
     }
+    
     return () => {
       if (typeof document !== 'undefined' && document.body) {
+        // Restore normal scrolling
         document.body.style.overflow = ""
       }
     }
@@ -297,9 +320,15 @@ export default function UnifiedCalendar({
   return (
     <div
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4"
-      style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
+      style={{ 
+        position: "fixed", 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        bottom: 0
+      }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden relative z-[10000]">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-[95%] sm:w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden relative z-[10000]">
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-[#D4AF37] to-[#BFA181]">
           <div>
             <h2 className="text-xl font-bold text-white">Select your dates</h2>
@@ -364,49 +393,76 @@ export default function UnifiedCalendar({
           </button>
         </div>
 
-        <div className="p-4 overflow-y-auto max-h-[60vh]">
-          <div className="flex gap-6">
-            {renderCalendar(0)}
-            <div className="hidden lg:block">{renderCalendar(1)}</div>
+        <div className="px-2 py-3 overflow-y-auto max-h-[45vh] sm:max-h-[55vh]">
+          <div className="flex gap-4 md:gap-6 flex-col md:flex-row justify-center">
+            <div className="w-full md:max-w-[260px]">{renderCalendar(0)}</div>
+            <div className="hidden lg:block w-full md:max-w-[260px]">{renderCalendar(1)}</div>
           </div>
         </div>
 
-        <div className="p-4 border-t border-gray-200 bg-gray-50">
-          <div className="flex flex-wrap items-center justify-between">
-            <div className="text-sm text-gray-600">
+        <div className="p-2 pt-1 border-t border-gray-200 bg-gray-50">
+          <div className="flex flex-col items-center">
+            {/* Selection display */}
+            <div className="text-sm text-gray-700 w-full text-center mb-1">
               {tempCheckIn && tempCheckOut && (
-                <span>
-                  {new Date(tempCheckIn).toLocaleDateString("en-US", { month: "short", day: "numeric" })} -{" "}
-                  {new Date(tempCheckOut).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                </span>
+                <div className="flex items-center justify-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#D4AF37]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span className="font-medium">
+                    {new Date(tempCheckIn).toLocaleDateString("en-US", { month: "short", day: "numeric" })} -{" "}
+                    {new Date(tempCheckOut).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </span>
+                </div>
               )}
             </div>
 
             {/* Villa pricing info */}
             {villa && (
-              <div className="text-xs bg-gray-100 px-3 py-1 rounded-full flex items-center mr-auto ml-2 my-2">
-                <span className="text-gray-600 mr-1">Pricing:</span>
-                <span className="font-medium text-gray-700 mr-2">Weekday: {formatPrice(villa.price || 0)}</span>
-                <span className="font-medium text-yellow-700">Weekend: {formatPrice(villa.weekendprice || villa.weekendPrice || 0)} ★</span>
+              <div className="bg-gray-50 px-3 py-1 rounded-lg flex flex-wrap items-center justify-center w-full max-w-[250px] mb-3 border border-gray-200">
+                <div className="flex items-center w-full justify-center gap-3">
+                  <div className="flex items-center">
+                    <span className="text-xs text-gray-500 mr-1">Weekday:</span>
+                    <span className="text-sm font-medium text-gray-700">{formatPrice(villa.price || getPriceForDate(new Date(new Date().setDate(new Date().getDate() + 1))) || 0)}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="text-xs text-gray-500 mr-1">Weekend:</span>
+                    <span className="text-sm font-medium text-yellow-700">
+                      {formatPrice(villa.weekendprice || villa.weekendPrice || getPriceForDate(new Date(new Date().setDate(new Date().getDate() + (7 - new Date().getDay())))))}
+                      <span className="text-[8px] ml-0.5 text-yellow-600">★</span>
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
 
-            <div className="flex gap-2 ml-auto">
+            {/* BUTTONS SECTION - Always visible on all devices */}
+            <div className="flex gap-3 w-full justify-center mt-2 sticky bottom-0 z-10 py-2 bg-gray-50">
               <button
                 onClick={() => {
                   setTempCheckIn("")
                   setTempCheckOut("")
                   setSelectionMode("checkin")
                 }}
-                className="px-3 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors text-sm"
+                className="w-[30%] max-w-[120px] py-2 text-gray-700 hover:text-gray-900 font-medium text-base border border-gray-300 rounded-lg hover:border-[#D4AF37] bg-white hover:bg-gray-50 transition-all duration-200"
               >
-                Clear
+                <span className="flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Clear
+                </span>
               </button>
               <button
                 onClick={onClose}
-                className="px-4 py-2 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-white rounded-lg hover:from-[#BFA181] hover:to-[#D4AF37] transition-colors font-medium text-sm"
+                className="w-[30%] max-w-[120px] py-2 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-white rounded-lg hover:from-[#BFA181] hover:to-[#D4AF37] font-medium text-base transition-all duration-200 hover:shadow-lg"
               >
-                Close
+                <span className="flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Done
+                </span>
               </button>
             </div>
           </div>

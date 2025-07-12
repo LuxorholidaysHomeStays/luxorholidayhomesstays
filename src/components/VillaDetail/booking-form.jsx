@@ -105,6 +105,26 @@ export default function EnhancedBookingForm({
     }
   }
 
+  // If weekendPrice is still 0, try to use fallback pricing
+  if (weekendPrice === 0 || !weekendPrice) {
+    // Find a matching villa in our fallback pricing 
+    for (const [villaName, pricing] of Object.entries(villaFallbackPricing)) {
+      if (villa?.name && villa.name.toLowerCase().includes(villaName.toLowerCase())) {
+        weekendPrice = pricing.weekend;
+        // Also set the weekday price if needed
+        if (weekdayPrice === 0) {
+          weekdayPrice = pricing.weekday;
+        }
+        break;
+      }
+    }
+    
+    // If still no weekend price, use a multiplier on weekday price
+    if ((weekendPrice === 0 || !weekendPrice) && weekdayPrice > 0) {
+      weekendPrice = Math.round(weekdayPrice * 1.5);
+    }
+  }
+
   console.log("Booking form prices:", {
     villaName: villa?.name,
     weekdayPrice: weekdayPrice,

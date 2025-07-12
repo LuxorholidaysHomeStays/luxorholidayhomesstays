@@ -922,7 +922,7 @@ const AllRooms = () => {
   return (
     <div className="min-h-screen bg-white">
       {/* Innovative Header Section */}
-      <div className="relative h-40 overflow-hidden bg-gradient-to-r from-gray-50 to-white">
+      <div className="relative h-40 overflow-hidden bg-gradient-to-r from-white-50 to-white">
         <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10"></div>
         <div className="absolute inset-0 "></div>
         <div className="relative max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
@@ -954,7 +954,6 @@ const AllRooms = () => {
             </div>
           </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#D4AF37]/20 to-transparent"></div>
       </div>
 
       {/* Main Content */}
@@ -966,7 +965,7 @@ const AllRooms = () => {
             self-start transition-all duration-300 filter-sidebar hide-scrollbar"
           >
             <div
-              className="rounded-2xl shadow-lg p-3 sm:p-5 border border-[#D4AF37]/20
+              className="rounded-sm shadow-lg p-3 sm:p-5 border border-[#D4AF37]/20
               backdrop-blur-sm hover:shadow-xl transition-all duration-500"
               style={{
                 background: "linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.95) 100%)",
@@ -977,7 +976,7 @@ const AllRooms = () => {
               {/* Destination Filter with Clean Design */}
               <div className="mb-4 sm:mb-6 group">
                 <div
-                  className="bg-white/50 rounded-xl p-2 sm:p-4 border border-[#D4AF37]/30 hover:border-[#D4AF37]
+                  className="bg-white/50 rounded-sm p-2 sm:p-4 border border-[#D4AF37]/30 hover:border-[#D4AF37]
                   hover:shadow-lg transition-all duration-300"
                 >
                   <button
@@ -985,7 +984,7 @@ const AllRooms = () => {
                     className="flex items-center justify-between w-full text-left font-semibold"
                   >
                     <div className="flex items-center gap-1.5 sm:gap-3">
-                      <div className="p-1 sm:p-2 bg-[#D4AF37] rounded-lg">
+                      <div className="p-1 sm:p-2 bg-[#D4AF37] rounded-sm">
                         <svg
                           className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-black"
                           fill="none"
@@ -1066,8 +1065,8 @@ const AllRooms = () => {
           </div>
 
           {/* Villa Grid with Enhanced Design */}
-          <div className="flex-1">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3 gap-3 sm:gap-5 lg:gap-8">
+          <div className="flex-1 max-w-[1300px]">
+            <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 lg:gap-10">
               {filteredVillas &&
                 filteredVillas.map((villa, idx) => {
                   const images = villa.images || []
@@ -1095,8 +1094,8 @@ const AllRooms = () => {
                   return (
                     <div
                       key={villa.id || villa._id}
-                      className="bg-white/90 rounded-3xl shadow-lg overflow-hidden hover:shadow-2xl
-                      transition-all duration-500 cursor-pointer transform hover:-translate-y-2
+                      className="bg-white/90 rounded-3xl shadow-lg overflow-hidden hover:shadow-xl
+                      transition-all duration-500 cursor-pointer w-full
                       animate-fadeInUp group border border-[#D4AF37]/20 backdrop-blur-sm"
                       style={{
                         animationDelay,
@@ -1109,7 +1108,7 @@ const AllRooms = () => {
                           <img
                             src={images[currentImageIndex] || "/placeholder.svg"}
                             alt={`${villa.name} ${currentImageIndex + 1}`}
-                            className="object-cover h-full w-full transform group-hover:scale-110
+                            className="object-cover h-full w-full
                             transition-all duration-700 ease-out"
                             onError={(e) => {
                               // Try to get a fallback image if this one fails to load
@@ -1155,7 +1154,7 @@ const AllRooms = () => {
                         )}
                       </div>
 
-                      <div className="p-4 sm:p-6">
+                      <div className="p-4 sm:p-8">
                         <div className="flex items-start justify-between mb-2 sm:mb-4">
                           <div className="flex-1 mr-2">
                             <h3
@@ -1198,8 +1197,8 @@ const AllRooms = () => {
 
                         <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-2 sm:mb-4">
                           <span
-                            className="flex items-center bg-gradient-to-r from-blue-50 to-indigo-50
-                          px-1.5 sm:px-3 py-0.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium text-blue-700 border border-blue-200/50"
+                            className="flex items-center bg-gradient-to-r from-amber-50 to-yellow-50
+                          px-1.5 sm:px-3 py-0.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium text-amber-800 border border-amber-200/50"
                           >
                             <svg
                               className="w-2 h-2 sm:w-3 sm:h-3 mr-0.5 sm:mr-1.5"
@@ -1217,8 +1216,8 @@ const AllRooms = () => {
                             {villa.guests} Guests
                           </span>
                           <span
-                            className="flex items-center bg-gradient-to-r from-green-50 to-emerald-50
-                          px-1.5 sm:px-3 py-0.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium text-green-700 border border-green-200/50"
+                            className="flex items-center bg-gradient-to-r from-amber-50 to-yellow-50
+                          px-1.5 sm:px-3 py-0.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium text-amber-800 border border-amber-200/50"
                           >
                             <svg
                               className="w-2 h-2 sm:w-3 sm:h-3 mr-0.5 sm:mr-1.5"
@@ -1246,14 +1245,12 @@ const AllRooms = () => {
                           </div>
                           <motion.button
                             className="text-base sm:text-lg font-medium tracking-wider px-3 sm:px-4 py-1.5 sm:py-2
-                          bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-black rounded-lg sm:rounded-xl
-                          hover:from-[#E5C048] hover:to-[#CDB292] transition-all duration-300
-                          flex items-center group shadow-lg hover:shadow-xl hover:scale-105"
+                          bg-[#D4AF37] text-white rounded-sm
+                          hover:bg-[#E5C048] transition-all duration-300
+                          flex items-center group shadow-md hover:shadow-lg"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, delay: 0.2 }}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
                             onClick={(e) => handleViewVilla(e, villa, true)}
                           >
                             View Details
