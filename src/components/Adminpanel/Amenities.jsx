@@ -16,7 +16,7 @@ const Amenities = () => {
   const [amenities, setAmenities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showForm, setShowForm] = useState(false); // Changed from showModal
   const [editingAmenity, setEditingAmenity] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -106,7 +106,7 @@ const Amenities = () => {
     });
   };
 
-  const openModal = (amenity = null) => {
+  const openForm = (amenity = null) => { // Renamed from openModal
     if (amenity) {
       setEditingAmenity(amenity);
       setFormData({
@@ -122,11 +122,11 @@ const Amenities = () => {
         amenities: ['']
       });
     }
-    setShowModal(true);
+    setShowForm(true); // Changed from setShowModal
   };
 
-  const closeModal = () => {
-    setShowModal(false);
+  const closeForm = () => { // Renamed from closeModal
+    setShowForm(false); // Changed from setShowModal
     setEditingAmenity(null);
   };
 
@@ -175,7 +175,7 @@ const Amenities = () => {
             : 'New amenity created successfully!'
         });
         fetchAmenities();
-        closeModal();
+        closeForm(); // Changed from closeModal
       } else {
         throw new Error(data.error || 'Operation failed');
       }
@@ -239,13 +239,134 @@ const Amenities = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Villa Amenities Management</h1>
         <button
-          onClick={() => openModal()}
+          onClick={() => {
+            if (showForm && !editingAmenity) {
+              setShowForm(false);
+            } else {
+              openForm();
+            }
+          }}
           className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded-md flex items-center"
         >
-          <PlusIcon className="h-5 w-5 mr-1" />
-          Add New Amenity
+          {showForm && !editingAmenity ? (
+            <>
+              <XMarkIcon className="h-5 w-5 mr-1" />
+              Cancel
+            </>
+          ) : (
+            <>
+              <PlusIcon className="h-5 w-5 mr-1" />
+              Add New Amenity
+            </>
+          )}
         </button>
       </div>
+
+      {/* Add/Edit Amenity Form - Inline */}
+      {showForm && (
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 mb-6">
+          <div className="border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+            <h2 className="text-xl font-bold text-gray-800">
+              {editingAmenity ? 'Edit Amenity' : 'Add New Amenity'}
+            </h2>
+            <button 
+              onClick={closeForm}
+              className="text-gray-400 hover:text-gray-600"
+              type="button"
+            >
+              <XMarkIcon className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="p-6">
+            <form onSubmit={handleSubmit}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Villa Name
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Amenities
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addAmenityField}
+                    className="text-yellow-600 hover:text-yellow-700 text-xs flex items-center"
+                  >
+                    <PlusIcon className="h-4 w-4 mr-1" />
+                    Add More
+                  </button>
+                </div>
+
+                {formData.amenities.map((amenity, index) => (
+                  <div key={index} className="flex items-center mt-2">
+                    <input
+                      type="text"
+                      value={amenity}
+                      onChange={(e) => handleAmenityChange(index, e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      placeholder="Enter amenity"
+                    />
+                    {formData.amenities.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeAmenityField(index)}
+                        className="ml-2 text-red-500 hover:text-red-700"
+                      >
+                        <XMarkIcon className="h-5 w-5" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={closeForm}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md flex items-center"
+                >
+                  <CheckIcon className="h-5 w-5 mr-1" />
+                  {editingAmenity ? 'Update' : 'Save'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Search and Filter */}
       <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -274,6 +395,7 @@ const Amenities = () => {
         </div>
       </div>
 
+      {/* Content: Loading / Error / Empty State / Data Table */}
       {loading ? (
         <div className="text-center py-10">
           <div className="spinner"></div>
@@ -290,8 +412,25 @@ const Amenities = () => {
           </button>
         </div>
       ) : filteredAmenities.length === 0 ? (
-        <div className="text-center py-10">
-          <p className="text-gray-600">No amenities found.</p>
+        <div className="bg-white rounded-xl p-10 text-center border border-gray-200">
+          <HomeIcon className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-lg font-medium text-gray-900">
+            {searchTerm || locationFilter ? 'No matching amenities found' : 'No amenities found'}
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">
+            {searchTerm || locationFilter ? 
+              'Try adjusting your filters' : 
+              'Get started by adding your first villa amenity'}
+          </p>
+          {!searchTerm && !locationFilter && !showForm && (
+            <button
+              onClick={() => openForm()}
+              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600"
+            >
+              <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+              Add Amenity
+            </button>
+          )}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg shadow">
@@ -338,7 +477,7 @@ const Amenities = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
-                      onClick={() => openModal(amenity)}
+                      onClick={() => openForm(amenity)}
                       className="text-indigo-600 hover:text-indigo-900 mr-4"
                     >
                       <PencilIcon className="h-5 w-5" />
@@ -354,106 +493,6 @@ const Amenities = () => {
               ))}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {/* Modal for Add/Edit */}
-      {showModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800">
-                {editingAmenity ? 'Edit Amenity' : 'Add New Amenity'}
-              </h2>
-              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
-                <XMarkIcon className="h-6 w-6" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Villa Name
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  required
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Location
-                </label>
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  required
-                />
-              </div>
-
-              <div className="mb-4">
-                <div className="flex justify-between items-center mb-1">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Amenities
-                  </label>
-                  <button
-                    type="button"
-                    onClick={addAmenityField}
-                    className="text-yellow-600 hover:text-yellow-700 text-xs flex items-center"
-                  >
-                    <PlusIcon className="h-4 w-4 mr-1" />
-                    Add More
-                  </button>
-                </div>
-
-                {formData.amenities.map((amenity, index) => (
-                  <div key={index} className="flex items-center mt-2">
-                    <input
-                      type="text"
-                      value={amenity}
-                      onChange={(e) => handleAmenityChange(index, e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                      placeholder="Enter amenity"
-                    />
-                    {formData.amenities.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeAmenityField(index)}
-                        className="ml-2 text-red-500 hover:text-red-700"
-                      >
-                        <XMarkIcon className="h-5 w-5" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md flex items-center"
-                >
-                  <CheckIcon className="h-5 w-5 mr-1" />
-                  {editingAmenity ? 'Update' : 'Save'}
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
     </div>

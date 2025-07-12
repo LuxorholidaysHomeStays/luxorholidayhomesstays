@@ -16,7 +16,7 @@ const Newsletter = () => {
   const [subscribers, setSubscribers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showForm, setShowForm] = useState(false); // Changed from showModal
   const [email, setEmail] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -92,8 +92,8 @@ const Newsletter = () => {
           message: 'Subscriber added successfully!'
         });
         setEmail('');
-        setShowModal(false);
-        fetchSubscribers();
+        setShowForm(false); // Changed from setShowModal
+        fetchSubscribers(); // Reload the subscriber list
       } else {
         throw new Error(data.error || 'Failed to add subscriber');
       }
@@ -186,11 +186,20 @@ const Newsletter = () => {
         <h1 className="text-2xl font-bold text-gray-800">Newsletter Subscribers</h1>
         <div className="flex space-x-3">
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => setShowForm(!showForm)} // Toggle form visibility
             className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded-md flex items-center"
           >
-            <PlusIcon className="h-5 w-5 mr-1" />
-            Add Subscriber
+            {showForm ? (
+              <>
+                <XMarkIcon className="h-5 w-5 mr-1" />
+                Cancel
+              </>
+            ) : (
+              <>
+                <PlusIcon className="h-5 w-5 mr-1" />
+                Add Subscriber
+              </>
+            )}
           </button>
           <button
             onClick={exportSubscribers}
@@ -201,6 +210,57 @@ const Newsletter = () => {
           </button>
         </div>
       </div>
+
+      {/* Add Subscriber Form - Inline */}
+      {showForm && (
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 mb-6">
+          <div className="border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-gray-800">Add New Subscriber</h2>
+            <button
+              onClick={() => setShowForm(false)}
+              className="text-gray-400 hover:text-gray-500"
+              type="button"
+            >
+              <XMarkIcon className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="p-6">
+            <form onSubmit={handleAddSubscriber} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  placeholder="Enter email address"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md flex items-center"
+                >
+                  <CheckIcon className="h-5 w-5 mr-1" />
+                  Add Subscriber
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Search */}
       <div className="mb-6">
@@ -238,6 +298,15 @@ const Newsletter = () => {
           <p className="text-gray-600">
             {searchTerm ? 'No subscribers matching your search.' : 'No subscribers found. Add your first subscriber!'}
           </p>
+          {!searchTerm && !showForm && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600"
+            >
+              <PlusIcon className="h-5 w-5 mr-1" />
+              Add Subscriber
+            </button>
+          )}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg shadow">
@@ -305,53 +374,6 @@ const Newsletter = () => {
               ))}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {/* Modal for Add Subscriber */}
-      {showModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800">Add New Subscriber</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
-                <XMarkIcon className="h-6 w-6" />
-              </button>
-            </div>
-
-            <form onSubmit={handleAddSubscriber}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  placeholder="Enter email address"
-                  required
-                />
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md flex items-center"
-                >
-                  <CheckIcon className="h-5 w-5 mr-1" />
-                  Add Subscriber
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
     </div>
