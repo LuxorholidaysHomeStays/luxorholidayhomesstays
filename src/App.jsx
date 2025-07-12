@@ -141,7 +141,7 @@ function App() {
     <AuthProvider>
       <ToastProvider>
         <SEOHead {...getDefaultSEO()} />
-        <div>
+        <div className="w-full max-w-[100vw] overflow-x-hidden">
           {!isOwnerPath && <Navbar />}
           <div className='min-h-[90vh] pt-[3rem] md:pt-[4rem]'>
             <Routes>
@@ -306,7 +306,9 @@ function App() {
                 boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3), 0 0 10px rgba(37, 211, 102, 0.5)',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                pointerEvents: 'auto',
+                touchAction: 'manipulation'
               }}
               aria-label="Contact us on WhatsApp"
             >

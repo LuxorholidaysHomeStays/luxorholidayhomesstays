@@ -7,623 +7,220 @@
     
     <!-- Preload critical resources -->
     <link rel="preload" href="/src/index.css" as="style">
-    <link rel="preload" href="/logo.png" as="image" type="image/png">
+    <link rel="preload" href="/logo.png" as="image" type="image/png" fetchpriority="high">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="sitemap" type="application/xml" title="Sitemap" href="/BingSiteAuth.xml" />
     <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
 
-    <!-- Luxury Preloader Styles -->
     <style>
-      /* Prevent white flash immediately */
+      @import url('https://fonts.googleapis.com/css?family=Concert+One');
+      @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap');
+      
+      /* Base styles */
       html, body {
         margin: 0;
         padding: 0;
-        background: #000000 !important;
+      
         font-family: 'Georgia', serif;
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
+        overflow-y: auto;
+        position: relative;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
       
-      /* Only hide overflow when preloader is active */
-      body.preloader-active {
-        overflow: hidden !important;
-      }
-      
-      body:not(.content-loaded) {
-        overflow: hidden !important;
-      }
-      
-      #luxuryPreloader {
+      /* Preloader styles */
+      #preloader {
         position: fixed;
         top: 0;
         left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 999999;
-        transition: opacity 0.4s ease-out;
-        opacity: 1;
-        visibility: visible;
-        transform: translateZ(0);
-        backface-visibility: hidden;
-      }
-      
-      .luxury-loader-container {
+        width: 100%;
+        height: 100%;
+        background-color: #000000;
+        z-index: 9999;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        text-align: center;
-        padding: 20px;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+        overflow: hidden;
+        will-change: opacity, visibility;
+        content-visibility: auto;
       }
       
-      .luxury-logo {
-        width: 120px;
+      .preloader-content {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transform-style: preserve-3d;
+        animation: wobble 8s ease-in-out infinite;
+        transform-origin: center center;
+        width: 100%;
+        max-width: 900px;
+        padding: 0 20px;
         height: auto;
-        filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.5));
-        margin-bottom: 30px;
-        transform: translateZ(0);
-        backface-visibility: hidden;
-        opacity: 1;
-        visibility: visible;
-        display: block;
-        animation: luxuryGlow 3s ease-in-out infinite;
-        /* Ensure immediate visibility on all devices */
-        min-height: 50px;
-        object-fit: contain;
-        /* Force immediate display to prevent loading delays */
-        will-change: transform, opacity;
-        transition: none;
-        /* Fallback background for instant visibility */
-        background: linear-gradient(135deg, #D4AF37 0%, #F0E6CA 50%, #D4AF37 100%);
-        background-size: contain;
-        background-repeat: no-repeat;
-        background-position: center;
-        border-radius: 8px;
+        min-height: 300px;
       }
       
-      /* Elegant progress ring */
-      .progress-ring {
+      /* Logo styling */
+      .logo-container {
         width: 120px;
         height: 120px;
-        margin: 25px auto;
-        position: relative;
-        /* Ensure immediate visibility */
-        opacity: 1;
-        visibility: visible;
-        will-change: transform;
-        transition: none;
-      }
-      
-      .progress-ring svg {
-        width: 100%;
-        height: 100%;
-        transform: rotate(-90deg);
-        filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.3));
-        /* Immediate display */
-        opacity: 1;
-        visibility: visible;
-      }
-      
-      /* Progress percentage text with luxury styling */
-      .progress-percentage {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: #D4AF37;
-        font-size: 20px;
-        font-weight: 600;
-        font-family: 'Georgia', serif;
-        text-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
-        letter-spacing: 1px;
-      }
-      
-      .progress-ring-bg {
-        fill: none;
-        stroke: rgba(255, 255, 255, 0.08);
-        stroke-width: 3;
-      }
-      
-      .progress-ring-progress {
-        fill: none;
-        stroke: url(#goldGradient);
-        stroke-width: 3;
-        stroke-linecap: round;
-        stroke-dasharray: 377;
-        stroke-dashoffset: 377;
-        animation: progressRing 3s ease-out forwards;
-        filter: drop-shadow(0 0 5px rgba(212, 175, 55, 0.6));
-      }
-      
-      /* Premium loading dots animation */
-      .loading-dots {
         display: flex;
-        justify-content: center;
         align-items: center;
-        margin-top: 15px;
-        gap: 8px;
+        justify-content: center;
+        margin-bottom: 20px;
       }
       
-      .dot {
-        width: 8px;
-        height: 8px;
-        background: linear-gradient(45deg, #D4AF37, #F0E6CA);
-        border-radius: 50%;
-        animation: dotPulse 1.5s ease-in-out infinite;
-        box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
-      }
-      
-      .dot:nth-child(1) { animation-delay: 0s; }
-      .dot:nth-child(2) { animation-delay: 0.2s; }
-      .dot:nth-child(3) { animation-delay: 0.4s; }
-      .dot:nth-child(4) { animation-delay: 0.6s; }
-      .dot:nth-child(5) { animation-delay: 0.8s; }
-      
-      /* Luxury text - stable positioning */
-      .luxury-text {
-        color: #D4AF37;
-        font-size: 18px;
-        font-weight: 400;
-        letter-spacing: 4px;
-        margin: 20px 0 8px 0;
-        text-transform: uppercase;
-        text-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
-        font-family: 'Georgia', serif;
-        line-height: 1.2;
-        height: 22px;
-        display: block;
-      }
-      
-      .luxury-subtitle {
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 13px;
-        font-weight: 300;
-        letter-spacing: 2px;
-        margin: 8px 0 15px 0;
-        opacity: 0.9;
-        font-family: 'Georgia', serif;
-        line-height: 1.2;
-        height: 16px;
-        display: block;
-        font-style: italic;
-      }
-      
-      /* Floating particles effect */
-      .particles {
-        position: absolute;
+      .preloader-logo {
         width: 100%;
-        height: 100%;
-        overflow: hidden;
-        pointer-events: none;
+        height: auto;
+        object-fit: contain;
+        filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.6));
+        animation: pulse-logo 1.5s infinite alternate;
+        will-change: filter;
+        transform: translateZ(0);
       }
       
-      .particle {
-        position: absolute;
-        width: 2px;
-        height: 2px;
-        background: #D4AF37;
-        border-radius: 50%;
-        animation: float 8s ease-in-out infinite;
-        opacity: 0.6;
-      }
-      
-      .particle:nth-child(1) { left: 10%; animation-delay: 0s; }
-      .particle:nth-child(2) { left: 20%; animation-delay: 1s; }
-      .particle:nth-child(3) { left: 30%; animation-delay: 2s; }
-      .particle:nth-child(4) { left: 40%; animation-delay: 3s; }
-      .particle:nth-child(5) { left: 50%; animation-delay: 4s; }
-      .particle:nth-child(6) { left: 60%; animation-delay: 5s; }
-      .particle:nth-child(7) { left: 70%; animation-delay: 6s; }
-      .particle:nth-child(8) { left: 80%; animation-delay: 7s; }
-      .particle:nth-child(9) { left: 90%; animation-delay: 1.5s; }
-      
-      /* Keyframe animations */
-      @keyframes luxuryGlow {
-        0%, 100% { 
-          filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.5));
-        }
-        50% { 
-          filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.8));
-        }
-      }
-      
-      @keyframes progressRing {
-        0% { 
-          stroke-dashoffset: 377;
-        }
-        100% { 
-          stroke-dashoffset: 0;
-        }
-      }
-      
-      @keyframes dotPulse {
-        0%, 100% {
-          transform: scale(1);
-          opacity: 0.6;
-        }
-        50% {
-          transform: scale(1.3);
-          opacity: 1;
-        }
-      }
-      
-      @keyframes float {
-        0%, 100% { 
-          transform: translateY(100vh) scale(0);
-          opacity: 0;
-        }
-        10% {
-          opacity: 0.6;
-          transform: scale(1);
-        }
-        90% {
-          opacity: 0.6;
-          transform: scale(1);
+      @keyframes pulse-logo {
+        0% {
+          filter: drop-shadow(0 0 5px rgba(212, 175, 55, 0.5));
         }
         100% {
-          transform: translateY(-10vh) scale(0);
-          opacity: 0;
+          filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.8));
         }
       }
       
-      /* Hide preloader */
-      .luxury-preloader-hide {
+      /* Gold circular loader */
+      .loader {
+        width: 60px;
+        aspect-ratio: 1;
+        border: 8px solid #8a7203;
+        border-radius: 50%;
+        position: relative;
+        transform: rotate(45deg);
+        margin: 20px auto;
+        filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.6));
+        will-change: transform;
+        box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.5);
+      }
+      
+      .loader::before {
+        content: "";
+        position: absolute;
+        inset: -8px;
+        border-radius: 50%;
+        border: 8px solid #D4AF37;
+        animation: l18 1.5s infinite linear;
+        filter: drop-shadow(0 0 5px gold);
+      }
+      
+      @keyframes l18 {
+          0%   {clip-path:polygon(50% 50%,0 0,0    0,0    0   ,0    0   ,0    0   )}
+          25%  {clip-path:polygon(50% 50%,0 0,100% 0,100% 0   ,100% 0   ,100% 0   )}
+          50%  {clip-path:polygon(50% 50%,0 0,100% 0,100% 100%,100% 100%,100% 100%)}
+          75%  {clip-path:polygon(50% 50%,0 0,100% 0,100% 100%,0    100%,0    100%)}
+          100% {clip-path:polygon(50% 50%,0 0,100% 0,100% 100%,0    100%,0    0   )}
+      }
+      
+      /* Gold Text Animation */
+      .luxor-title {
+        position: relative;
+        margin-bottom: 30px;
+        text-align: center;
+      }
+      
+      .luxor-title h1 {
+        display: block;
+        font: 700 3.5em 'Playfair Display', serif;
+        text-transform: uppercase;
+        color: #D4AF37;
+        text-shadow: 0 0 15px rgba(212, 175, 55, 0.7);
+        margin: 0;
+        padding: 0;
+        white-space: nowrap;
+        animation: glow 4s ease-in-out infinite;
+        transform: translateZ(0);
+        will-change: text-shadow;
+      }
+      
+      @keyframes glow {
+        0%, 100% {
+          text-shadow: 0 0 15px rgba(212, 175, 55, 0.7);
+        }
+        50% {
+          text-shadow: 0 0 20px rgba(212, 175, 55, 0.9);
+        }
+      }
+      
+      .luxor-subtitle {
+        font-family: 'Georgia', serif;
+        font-size: 1em;
+        color: #D4AF37;
+        margin-top: 20px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        text-shadow: 0 0 5px rgba(212, 175, 55, 0.6);
+        animation: subtitleGlow 2s ease-in-out infinite alternate;
+        transform: translateZ(0);
+        will-change: text-shadow;
+      }
+      
+      @keyframes subtitleGlow {
+        from {
+          text-shadow: 0 0 5px rgba(212, 175, 55, 0.5);
+        }
+        to {
+          text-shadow: 0 0 8px rgba(212, 175, 55, 0.8);
+        }
+      }
+      
+      @keyframes wobble {
+        0%,100%{ transform: rotate3d(1, 1, 0, 4deg); }
+        25%{ transform: rotate3d(-1, 1, 0, 4deg); }
+        50%{ transform: rotate3d(-1, -1, 0, 4deg); }
+        75%{ transform: rotate3d(1, -1, 0, 4deg); }
+      }
+      
+      .preloader-hide {
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
       }
       
-      /* Content reveal */
+      /* Root element styling for smooth transition */
       #root {
         opacity: 0;
-        transition: opacity 0.4s ease-in;
-        transform: translateZ(0);
-        backface-visibility: hidden;
+        transition: opacity 0.3s ease;
       }
       
-      body.content-loaded #root {
-        opacity: 1;
-      }
-      
-      body.content-loaded {
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        background: inherit;
-      }
-      
-      /* Ensure normal scrolling after preloader */
-      body.content-loaded, 
-      html.content-loaded {
-        overflow: visible !important;
-      }
-      
-      /* Mobile responsiveness */
+      /* Responsive styling */
       @media (max-width: 768px) {
-        .luxury-loader-container {
-          padding: 15px;
-          min-height: 100vh;
-          width: 100%;
+        .luxor-title h1 {
+          font-size: 2.2em;
         }
         
-        .luxury-logo {
-          width: 100px;
-          margin-bottom: 20px;
-          min-height: 40px;
-          /* Enhanced mobile display */
-          will-change: transform, opacity;
-          transition: none;
-          /* Mobile fallback styling */
-          background: linear-gradient(135deg, #D4AF37 0%, #F0E6CA 50%, #D4AF37 100%);
-          background-size: contain;
-          background-repeat: no-repeat;
-          background-position: center;
-          border-radius: 6px;
+        .luxor-subtitle {
+          font-size: 0.8em;
         }
         
-        .progress-ring {
-          width: 100px;
-          height: 100px;
-          margin: 20px auto;
-          /* Mobile sync fix */
-          opacity: 1;
-          visibility: visible;
-          will-change: transform;
-          transition: none;
-        }
-        
-        .progress-ring svg circle {
-          stroke-width: 2.5;
-        }
-        
-        .progress-percentage {
-          font-size: 16px;
-          font-weight: 600;
-        }
-        
-        .loading-dots {
-          margin-top: 12px;
-          gap: 6px;
-        }
-        
-        .loading-dots .dot {
-          width: 6px;
-          height: 6px;
-        }
-        
-        .luxury-text {
-          font-size: 14px;
-          letter-spacing: 2px;
-          height: 18px;
-          margin: 15px 0 6px 0;
-        }
-        
-        .luxury-subtitle {
-          font-size: 11px;
-          letter-spacing: 1.5px;
-          height: 14px;
-          margin: 6px 0 10px 0;
-        }
-        
-        .particles .particle {
-          width: 1.5px;
-          height: 1.5px;
+        .loader {
+          width: 40px;
+          margin: 60px auto 30px;
         }
       }
       
       @media (max-width: 480px) {
-        .luxury-loader-container {
-          padding: 10px;
-          min-height: 100vh;
-          width: 100%;
-        }
-        
-        .luxury-logo {
-          width: 85px;
-          margin-bottom: 18px;
-          /* Enhanced small mobile display */
-          background: linear-gradient(135deg, #D4AF37 0%, #F0E6CA 50%, #D4AF37 100%);
-          background-size: contain;
-          background-repeat: no-repeat;
-          background-position: center;
-          border-radius: 5px;
-          will-change: transform, opacity;
-          transition: none;
-        }
-        
-        .progress-ring {
-          width: 90px;
-          height: 90px;
-          margin: 18px auto;
-          /* Small mobile sync fix */
-          opacity: 1;
-          visibility: visible;
-          will-change: transform;
-          transition: none;
-        }
-        
-        .progress-ring svg {
-          filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.3));
-        }
-        
-        .progress-ring svg circle.progress-ring-bg {
-          stroke-width: 2;
-        }
-        
-        .progress-ring svg circle.progress-ring-progress {
-          stroke-width: 2;
-        }
-        
-        .progress-percentage {
-          font-size: 15px;
-          font-weight: 600;
-          letter-spacing: 0.5px;
-        }
-        
-        .loading-dots {
-          margin-top: 10px;
-          gap: 5px;
-        }
-        
-        .loading-dots .dot {
-          width: 5px;
-          height: 5px;
-        }
-        
-        .luxury-text {
-          font-size: 13px;
-          letter-spacing: 1.5px;
-          height: 16px;
-          margin: 12px 0 5px 0;
-        }
-        
-        .luxury-subtitle {
-          font-size: 10px;
-          letter-spacing: 1px;
-          height: 12px;
-          margin: 5px 0 8px 0;
-        }
-        
-        .particles .particle {
-          width: 1px;
-          height: 1px;
-        }
-      }
-      
-      /* Extra small mobile devices */
-      @media (max-width: 375px) {
-        .luxury-loader-container {
-          padding: 8px;
-        }
-        
-        .luxury-logo {
-          width: 75px;
-          margin-bottom: 15px;
-          /* Extra small mobile optimization */
-          background: linear-gradient(135deg, #D4AF37 0%, #F0E6CA 50%, #D4AF37 100%);
-          background-size: contain;
-          background-repeat: no-repeat;
-          background-position: center;
-          border-radius: 4px;
-          will-change: transform, opacity;
-          transition: none;
-        }
-        
-        .progress-ring {
-          width: 80px;
-          height: 80px;
-          margin: 15px auto;
-          /* Extra small mobile sync */
-          opacity: 1;
-          visibility: visible;
-          will-change: transform;
-          transition: none;
-        }
-        
-        .progress-percentage {
-          font-size: 14px;
-        }
-        
-        .luxury-text {
-          font-size: 12px;
-          letter-spacing: 1px;
-          margin: 10px 0 4px 0;
-        }
-        
-        .luxury-subtitle {
-          font-size: 9px;
-          letter-spacing: 0.5px;
-          margin: 4px 0 6px 0;
-        }
-        
-        .loading-dots {
-          gap: 4px;
-        }
-        
-        .loading-dots .dot {
-          width: 4px;
-          height: 4px;
-        }
-      }
-      
-      /* High-end devices */
-      @media (min-width: 1920px) {
-        .luxury-logo {
-          width: 150px;
-          margin-bottom: 40px;
-        }
-        
-        .luxury-text {
-          font-size: 20px;
-          letter-spacing: 5px;
-          height: 26px;
-          margin: 24px 0 10px 0;
-        }
-        
-        .luxury-subtitle {
-          font-size: 15px;
-          letter-spacing: 3px;
-          height: 19px;
-          margin: 10px 0 18px 0;
-        }
-        
-        .progress-ring {
-          width: 140px;
-          height: 140px;
-        }
-        
-        .progress-percentage {
-          font-size: 24px;
-        }
-        
-        .loading-dots .dot {
-          width: 10px;
-          height: 10px;
+        .luxor-title h1 {
+          font-size: 1.8em;
         }
       }
     </style>
-    
-    <!-- Luxury preloader initialization -->
-    <script>
-      // Set dark background immediately to prevent white flash
-      document.documentElement.style.background = '#000000';
-      document.body.style.background = '#000000';
-      document.body.classList.add('preloader-active');
-      
-      // Force immediate display of preloader elements
-      document.addEventListener('DOMContentLoaded', function() {
-        const preloader = document.getElementById('luxuryPreloader');
-        const logo = document.querySelector('.luxury-logo');
-        const progressRing = document.querySelector('.progress-ring');
-        
-        if (preloader) {
-          preloader.style.opacity = '1';
-          preloader.style.visibility = 'visible';
-        }
-        
-        if (logo) {
-          logo.style.opacity = '1';
-          logo.style.visibility = 'visible';
-          logo.style.display = 'block';
-          // Ensure immediate fallback background
-          logo.style.background = 'linear-gradient(135deg, #D4AF37 0%, #F0E6CA 50%, #D4AF37 100%)';
-          logo.style.backgroundSize = 'contain';
-          logo.style.backgroundRepeat = 'no-repeat';
-          logo.style.backgroundPosition = 'center';
-          logo.style.borderRadius = '8px';
-        }
-        
-        if (progressRing) {
-          progressRing.style.opacity = '1';
-          progressRing.style.visibility = 'visible';
-        }
-      });
-      
-      // Preload logo for instant display with immediate fallback
-      const logoPreload = new Image();
-      const logoElement = document.querySelector('.luxury-logo');
-      
-      // Set immediate fallback styling
-      if (logoElement) {
-        logoElement.style.opacity = '1';
-        logoElement.style.visibility = 'visible';
-        logoElement.style.display = 'block';
-        // Keep gradient background visible initially
-        logoElement.style.background = 'linear-gradient(135deg, #D4AF37 0%, #F0E6CA 50%, #D4AF37 100%)';
-        logoElement.style.backgroundSize = 'contain';
-        logoElement.style.backgroundRepeat = 'no-repeat';
-        logoElement.style.backgroundPosition = 'center';
-      }
-      
-      logoPreload.onload = function() {
-        if (logoElement) {
-          // Only remove background once image loads successfully
-          logoElement.style.background = 'none';
-          logoElement.src = '/logo.png';
-        }
-      };
-      logoPreload.onerror = function() {
-        // Keep gradient background if logo fails to load
-        console.warn('Logo failed to load, using fallback styling');
-        if (logoElement) {
-          logoElement.style.background = 'linear-gradient(135deg, #D4AF37 0%, #F0E6CA 50%, #D4AF37 100%)';
-        }
-      };
-      // Start loading immediately
-      logoPreload.src = '/logo.png';
-      
-      // Ensure scroll is restored after preloader
-      window.addEventListener('load', function() {
-        setTimeout(function() {
-          document.body.classList.remove('preloader-active');
-          document.body.classList.add('content-loaded');
-          document.documentElement.classList.add('content-loaded');
-          document.body.style.overflow = '';
-          document.body.style.overflowY = 'auto';
-          document.body.style.overflowX = 'hidden';
-        }, 3100); // Slightly after preloader ends
-      });
-    </script>
     
     <!-- Primary Meta Tags -->
     <title>Luxor Holiday Home Stays | Luxury Villas in Chennai & Pondicherry</title>
@@ -633,20 +230,20 @@
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://luxorholiday.com/">
+    <meta property="og:url" content="https://www.luxorholidayhomestays.com/">
     <meta property="og:title" content="Luxor Holiday Home Stays | Luxury Villas in Chennai & Pondicherry">
     <meta property="og:description" content="Experience premium luxury villa stays in Chennai and Pondicherry with Luxor Holiday Home Stays. Book our exclusive villas with private pools, beachfront views and luxury amenities.">
     <meta property="og:image" content="/AmrithPalace/AP1.jpg">
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://luxorholiday.com/">
+    <meta property="twitter:url" content="https://www.luxorholidayhomestays.com/">
     <meta property="twitter:title" content="Luxor Holiday Home Stays | Luxury Villas in Chennai & Pondicherry">
     <meta property="twitter:description" content="Experience premium luxury villa stays in Chennai and Pondicherry with Luxor Holiday Home Stays. Book our exclusive villas with private pools, beachfront views and luxury amenities.">
     <meta property="twitter:image" content="/AmrithPalace/AP1.jpg">
     
     <!-- Canonical URL -->
-    <link rel="canonical" href="https://luxorholiday.com/">
+    <link rel="canonical" href="https://www.luxorholidayhomestays.com/">
     
     <!-- Geo Tags -->
     <meta name="geo.region" content="IN">
@@ -665,8 +262,8 @@
         "@context": "https://schema.org",
         "@type": "Organization",
         "name": "Luxor Holiday Home Stays",
-        "url": "https://luxorholiday.com",
-        "logo": "https://luxorholiday.com/logo.png",
+        "url": "https://www.luxorholidayhomestays.com",
+        "logo": "https://www.luxorholidayhomestays.com/logo.png",
         "sameAs": [
           "https://www.facebook.com/luxorholidaystays",
           "https://www.instagram.com/luxorholiday",
@@ -725,236 +322,61 @@
   </head>
   <body>
     <!-- Luxury Preloader -->
-    <div id="luxuryPreloader">
-      <!-- Floating particles background -->
-      <div class="particles">
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-      </div>
-      
-      <div class="luxury-loader-container">
-        <!-- Logo with luxury glow effect -->
-        <img src="/logo.png" alt="Luxor Holiday Home Stays" class="luxury-logo" />
-        
-        <!-- Elegant progress ring -->
-        <div class="progress-ring">
-          <svg viewBox="0 0 120 120">
-            <defs>
-              <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" style="stop-color:#D4AF37;stop-opacity:1" />
-                <stop offset="30%" style="stop-color:#F0E6CA;stop-opacity:1" />
-                <stop offset="70%" style="stop-color:#D4AF37;stop-opacity:1" />
-                <stop offset="100%" style="stop-color:#BFA181;stop-opacity:1" />
-              </linearGradient>
-            </defs>
-            <circle class="progress-ring-bg" cx="60" cy="60" r="55"></circle>
-            <circle class="progress-ring-progress" cx="60" cy="60" r="55"></circle>
-          </svg>
-          <div class="progress-percentage" id="progressPercentage">1%</div>
+    <div id="preloader">
+      <div class="preloader-content">
+        <!-- Logo Image -->
+        <div class="logo-container">
+          <img src="/logo.png" alt="Luxor Logo" class="preloader-logo" />
         </div>
         
-        <!-- Premium loading dots -->
-        <div class="loading-dots">
-          <div class="dot"></div>
-          <div class="dot"></div>
-          <div class="dot"></div>
-          <div class="dot"></div>
-          <div class="dot"></div>
+        <!-- Golden Circular Loader -->
+        <div class="loader"></div>
+        
+        <!-- Gold Glowing Text -->
+        <div class="luxor-title">
+          <h1>LUXOR HOLIDAY HOME STAYS</h1>
         </div>
         
-        <!-- Luxury text -->
-        <div class="luxury-text">Luxury Awaits</div>
-        <div class="luxury-subtitle">Crafting Your Perfect Villa Experience</div>
+        <!-- Subtitle -->
+        <div class="luxor-subtitle">Luxury Villa Experiences</div>
       </div>
     </div>
     
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     
-    <!-- Luxury Preloader Control Script -->
     <script>
+      // Preloader control
+      // Immediate execution to ensure logo is visible as fast as possible
       (function() {
-        let isContentReady = false;
-        let progressInterval;
-        
-        // Ensure immediate visibility of all preloader elements
-        function ensurePreloaderVisibility() {
-          const preloader = document.getElementById('luxuryPreloader');
-          const logo = document.querySelector('.luxury-logo');
-          const progressRing = document.querySelector('.progress-ring');
-          const progressPercentage = document.getElementById('progressPercentage');
-          
-          if (preloader) {
-            preloader.style.display = 'flex';
-            preloader.style.opacity = '1';
-            preloader.style.visibility = 'visible';
-          }
-          
-          if (logo) {
-            logo.style.opacity = '1';
-            logo.style.visibility = 'visible';
-            logo.style.display = 'block';
-            // Ensure fallback background is immediately visible
-            logo.style.background = 'linear-gradient(135deg, #D4AF37 0%, #F0E6CA 50%, #D4AF37 100%)';
-            logo.style.backgroundSize = 'contain';
-            logo.style.backgroundRepeat = 'no-repeat';
-            logo.style.backgroundPosition = 'center';
-            logo.style.borderRadius = '8px';
-          }
-          
-          if (progressRing) {
-            progressRing.style.opacity = '1';
-            progressRing.style.visibility = 'visible';
-          }
-          
-          if (progressPercentage) {
-            progressPercentage.style.opacity = '1';
-            progressPercentage.style.visibility = 'visible';
-          }
-        }
-        
-        // Animate percentage counter with premium effects
-        function animateProgress() {
-          // Ensure visibility first
-          ensurePreloaderVisibility();
-          
-          const progressElement = document.getElementById('progressPercentage');
-          if (!progressElement) return;
-          
-          // Start immediately from 1% to avoid showing 0 for too long
-          let currentProgress = 1;
-          const duration = 2900; // Slightly less than 3 seconds to finish before preloader hides
-          const increment = 99 / (duration / 30); // Update every 30ms for smoother animation
-          
-          // Set initial 1% immediately
-          progressElement.textContent = '1%';
-          
-          progressInterval = setInterval(() => {
-            currentProgress += increment;
-            if (currentProgress >= 100) {
-              currentProgress = 100;
-              clearInterval(progressInterval);
-              
-              // Add completion effect
-              setTimeout(() => {
-                progressElement.style.transform = 'translate(-50%, -50%) scale(1.1)';
-                progressElement.style.textShadow = '0 0 25px rgba(212, 175, 55, 0.8)';
-                setTimeout(() => {
-                  progressElement.style.transform = 'translate(-50%, -50%) scale(1)';
-                  progressElement.style.textShadow = '0 0 15px rgba(212, 175, 55, 0.5)';
-                }, 200);
-              }, 100);
-            }
-            
-            // Add subtle animation to percentage changes
-            const displayProgress = Math.round(currentProgress);
-            progressElement.textContent = displayProgress + '%';
-            
-            // Add subtle scale effect on milestone numbers
-            if (displayProgress % 25 === 0 && displayProgress > 0) {
-              progressElement.style.transform = 'translate(-50%, -50%) scale(1.05)';
-              setTimeout(() => {
-                progressElement.style.transform = 'translate(-50%, -50%) scale(1)';
-              }, 150);
-            }
-          }, 30);
-        }
-        
-        function hideLuxuryPreloader() {
-          if (isContentReady) return;
-          isContentReady = true;
-          
-          // Clear progress interval
-          if (progressInterval) {
-            clearInterval(progressInterval);
-          }
-          
-          const preloader = document.getElementById('luxuryPreloader');
-          const body = document.body;
-          const html = document.documentElement;
-          
-          // Immediately restore scrolling
-          body.classList.remove('preloader-active');
-          body.classList.add('content-loaded');
-          html.classList.add('content-loaded');
-          body.style.overflow = '';
-          body.style.overflowY = 'auto';
-          body.style.overflowX = 'hidden';
-          
-          if (preloader) {
-            // Smooth fade out without scaling
-            preloader.classList.add('luxury-preloader-hide');
-            
-            // Remove preloader after fade completes
-            setTimeout(() => {
-              if (preloader.parentNode) {
-                preloader.parentNode.removeChild(preloader);
-              }
-            }, 400);
-          }
-        }
-        
-        // Initialize immediately when DOM is ready
-        function initializePreloader() {
-          ensurePreloaderVisibility();
-          // Start progress animation immediately
-          setTimeout(() => {
-            animateProgress();
-          }, 100); // Small delay to ensure elements are rendered
-        }
-        
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', initializePreloader);
-        } else {
-          // DOM is already ready
-          initializePreloader();
-        }
-        
-        // Show preloader for exactly 3 seconds
-        const showTime = 3000; // Fixed 3 seconds for all devices
-        
-        // Wait for page load
-        window.addEventListener('load', () => {
-          setTimeout(hideLuxuryPreloader, showTime);
-        });
-        
-        // Fallback - force hide after exactly 3 seconds
-        setTimeout(hideLuxuryPreloader, 3000);
-        
-        // Global function for external control
-        window.hideLuxuryPreloader = hideLuxuryPreloader;
-        
-        <!-- Enhanced mobile experience -->
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        if (isMobile) {
-          // Force immediate display and animation on mobile
-          setTimeout(() => {
-            ensurePreloaderVisibility();
-            animateProgress();
-          }, 50);
-          
-          // Disable zoom and improve touch
-          document.addEventListener('touchstart', function(e) {
-            if (e.touches.length > 1) {
-              e.preventDefault();
-            }
-          }, { passive: false });
-          
-          // Prevent pull-to-refresh during preloader
-          document.addEventListener('touchmove', function(e) {
-            if (!isContentReady) {
-              e.preventDefault();
-            }
-          }, { passive: false });
+        const preloader = document.getElementById('preloader');
+        if (preloader) {
+          preloader.style.display = 'flex';
+          // Force black background during loading
+          document.documentElement.style.backgroundColor = '#000000';
+          document.body.style.backgroundColor = '#000000';
         }
       })();
+      
+      window.addEventListener('load', function() {
+        const preloader = document.getElementById('preloader');
+        const root = document.getElementById('root');
+        
+        if (preloader && root) {
+          // Show content immediately for better user experience
+          setTimeout(function() {
+            preloader.classList.add('preloader-hide');
+            root.style.opacity = '1';
+            
+            // Hide completely after transition completes
+            setTimeout(function() {
+              preloader.style.display = 'none';
+              // Keep the black background
+              document.body.style.backgroundColor = '#000000';
+            }, 200);
+          }, 200);
+        }
+      });
     </script>
   </body>
 </html>
