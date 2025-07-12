@@ -16,9 +16,10 @@ import {
   MagnifyingGlassIcon,
   ArrowPathIcon
 } from "@heroicons/react/24/outline"
-
+import { useNavigate } from "react-router-dom"
 const UserManagement = () => {
   const [users, setUsers] = useState([])
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [showForm, setShowForm] = useState(false) // Changed from showCreateModal
@@ -244,6 +245,8 @@ const UserManagement = () => {
           user._id === newUser._id ? {...user, _id: data._id} : user
         ));
       }
+      window.location.reload();
+    // Reload to fetch updated user list
     } catch (error) {
       console.error("Error creating user:", error);
       addToast("Error connecting to server", "error");
