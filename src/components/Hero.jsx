@@ -10,8 +10,7 @@ import { useNavigate } from "react-router-dom"
 import backgroundVideo from "../assets/About/v.mp4"
 import { Popover } from "@headlessui/react"
 import { Minus, Plus, Users, X } from "lucide-react"
-import '../styles/Home/Hero/PremiumLocationsModal.css'
-// import './PremiumLocationsModalFix.css'
+
 
 // Booking form component to be reused in mobile and desktop
 const BookingFormSection = ({
@@ -27,9 +26,6 @@ const BookingFormSection = ({
   setAdults,
   setChildren,
   setInfants,
-  showLocationDropdown,
-  setShowLocationDropdown,
-  locationDropdownRef,
   handleLocationSelect,
   locations,
   error,
@@ -37,6 +33,7 @@ const BookingFormSection = ({
   handleSearch,
   amenities,
   datePickerWrapperStyles,
+  isMobile,
   isDesktop = false
 }) => {
   return (
@@ -86,14 +83,14 @@ const BookingFormSection = ({
             <div className="text-sm text-[#D4AF37]/80 mb-1">Starting from</div>
             <div className="text-xl font-bold text-white">
               ₹15,000
-              <span className="text-base font-normal text-gray-300 ml-1">/ night</span>
+              <span className="text-base font-normal text-[#D4AF37]/80 ml-1">/ night</span>
             </div>
             <div className="flex justify-center gap-2 mt-1 text-xs">
-              <div className="text-gray-300">
-                Weekdays: <span className="font-semibold text-white">₹15,000</span>
+              <div className="text-[#D4AF37]/70">
+                Weekdays: <span className="font-semibold text-[#D4AF37]">₹15,000</span>
               </div>
-              <div className="text-gray-300">
-                Weekends: <span className="font-semibold text-white">₹25,000</span>
+              <div className="text-[#D4AF37]/70">
+                Weekends: <span className="font-semibold text-[#D4AF37]">₹25,000</span>
               </div>
             </div>
           </div>
@@ -113,12 +110,12 @@ const BookingFormSection = ({
                   onChange={(date) => handleDateChange(date, "checkIn")}
                   onCalendarOpen={() => setDatePickerOpen(true)}
                   onCalendarClose={() => setDatePickerOpen(false)}
-                  className="w-full p-2 bg-black/40 text-white border border-[#D4AF37]/30 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent hero-gold-focus"
+                  className="w-full p-2 bg-black/40 text-[#D4AF37] border border-[#D4AF37]/30 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent hero-gold-focus"
                   placeholderText="Select date"
                   dateFormat="yyyy-MM-dd"
                   minDate={new Date()}
                   popperClassName="z-[1000]"
-                  popperPlacement="bottom-start"
+                  popperPlacement={isMobile ? "top-start" : "bottom-start"}
                   required
                 />
               </div>
@@ -133,7 +130,7 @@ const BookingFormSection = ({
                   onChange={(date) => handleDateChange(date, "checkOut")}
                   onCalendarOpen={() => setDatePickerOpen(true)}
                   onCalendarClose={() => setDatePickerOpen(false)}
-                  className="w-full p-2 bg-black/40 text-white border border-[#D4AF37]/30 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent hero-gold-focus"
+                  className="w-full p-2 bg-black/40 text-[#D4AF37] border border-[#D4AF37]/30 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent hero-gold-focus"
                   placeholderText="Select date"
                   dateFormat="yyyy-MM-dd"
                   minDate={
@@ -142,7 +139,7 @@ const BookingFormSection = ({
                       : new Date(new Date().getTime() + 86400000)
                   }
                   popperClassName="z-[1000]"
-                  popperPlacement="bottom-start"
+                  popperPlacement={isMobile ? "top-start" : "bottom-start"}
                   required
                 />
               </div>
@@ -151,15 +148,15 @@ const BookingFormSection = ({
             {searchParams.checkIn && searchParams.checkOut && (
               <div className="bg-[#D4AF37]/10 rounded-xl p-3 border border-[#D4AF37]/20">
                 <div className="text-center">
-                  <div className="text-[#D4AF37] font-semibold">
+                  <div className="text-[#D4AF37] font-semibold text-lg">
                     {totalNights} night{totalNights > 1 ? "s" : ""} selected
                   </div>
-                  <div className="text-sm text-gray-300 mt-1">
+                  <div className="text-sm text-[#D4AF37]/90 mt-1 font-medium">
                     {new Date(searchParams.checkIn).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
                     })}{" "}
-                    to{" "}
+                    <span className="text-white/70">to</span>{" "}
                     {new Date(searchParams.checkOut).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
@@ -181,16 +178,16 @@ const BookingFormSection = ({
                 {({ open }) => (
                   <>
                     <Popover.Button className="w-full flex justify-between items-center border border-[#D4AF37]/30 bg-black/40 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent hero-gold-focus">
-                      <span>{adults + children + infants} Guests</span>
-                      <FiChevronDown className={`transition-transform ${open ? "rotate-180" : ""}`} />
+                      <span><span className="text-[#D4AF37] font-medium">{adults + children + infants}</span> Guests</span>
+                      <FiChevronDown className={`transition-transform text-[#D4AF37] ${open ? "rotate-180" : ""}`} />
                     </Popover.Button>
                     <Popover.Panel className="absolute z-20 mt-2 w-full max-w-full bg-gray-900 rounded-xl shadow-2xl p-4 space-y-4 left-0 border border-[#D4AF37]/20">
                       <div className="space-y-3">
                         {/* Adults */}
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="font-medium text-white">Adults</div>
-                            <div className="text-xs text-gray-400">Age 13+</div>
+                            <div className="font-medium text-[#D4AF37]">Adults</div>
+                            <div className="text-xs text-[#D4AF37]/70">Age 13+</div>
                           </div>
                           <div className="flex items-center gap-3">
                             <button
@@ -201,7 +198,7 @@ const BookingFormSection = ({
                             >
                               <Minus className="h-4 w-4" />
                             </button>
-                            <span className="w-6 text-center text-white">{adults}</span>
+                            <span className="w-6 text-center text-[#D4AF37] font-medium">{adults}</span>
                             <button
                               type="button"
                               className="p-1 rounded-full border border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10"
@@ -214,8 +211,8 @@ const BookingFormSection = ({
                         {/* Children */}
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="font-medium text-white">Children</div>
-                            <div className="text-xs text-gray-400">Age 3-12</div>
+                            <div className="font-medium text-[#D4AF37]">Children</div>
+                            <div className="text-xs text-[#D4AF37]/70">Age 3-12</div>
                           </div>
                           <div className="flex items-center gap-3">
                             <button
@@ -226,7 +223,7 @@ const BookingFormSection = ({
                             >
                               <Minus className="h-4 w-4" />
                             </button>
-                            <span className="w-6 text-center text-white">{children}</span>
+                            <span className="w-6 text-center text-[#D4AF37] font-medium">{children}</span>
                             <button
                               type="button"
                               className="p-1 rounded-full border border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10"
@@ -239,8 +236,8 @@ const BookingFormSection = ({
                         {/* Infants */}
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="font-medium text-white">Infants</div>
-                            <div className="text-xs text-gray-400">Under 2</div>
+                            <div className="font-medium text-[#D4AF37]">Infants</div>
+                            <div className="text-xs text-[#D4AF37]/70">Under 2</div>
                           </div>
                           <div className="flex items-center gap-3">
                             <button
@@ -251,7 +248,7 @@ const BookingFormSection = ({
                             >
                               <Minus className="h-4 w-4" />
                             </button>
-                            <span className="w-6 text-center text-white">{infants}</span>
+                            <span className="w-6 text-center text-[#D4AF37] font-medium">{infants}</span>
                             <button
                               type="button"
                               className="p-1 rounded-full border border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10"
@@ -268,55 +265,42 @@ const BookingFormSection = ({
               </Popover>
             </div>
 
-            {/* Location with custom dropdown */}
-            <div className="relative" ref={locationDropdownRef}>
+            {/* Location with Popover component (matching Guests style) */}
+            <div>
               <label htmlFor="destination" className="block text-[#D4AF37] text-sm font-medium mb-1">
                 <FaMapMarkerAlt className="inline mr-2 text-[#D4AF37]" /> Location
               </label>
-              <button
-                type="button"
-                onClick={() => setShowLocationDropdown(!showLocationDropdown)}
-                className="w-full p-2 bg-black/40 text-white border border-[#D4AF37]/30 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent flex justify-between items-center hero-gold-focus touch-manipulation"
-                style={{ WebkitTapHighlightColor: 'transparent' }}
-              >
-                <span>{searchParams.destination || "Select location"}</span>
-                <FiChevronDown className={`transition-transform ${showLocationDropdown ? "rotate-180" : ""}`} />
-              </button>
-              
-              {showLocationDropdown && (
-                <div
-                  className="absolute z-30 mt-1 w-full rounded-md bg-gray-900 shadow-lg border border-[#D4AF37]/30 overflow-hidden hero-location-option"
-                  style={{ 
-                    WebkitTapHighlightColor: 'transparent',
-                    touchAction: 'manipulation'
-                  }}
-                >
-                  <div className="max-h-60 overflow-auto py-1">
-                    {locations.map((location) => (
-                      <button
-                        key={location}
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          handleLocationSelect(location)
-                        }}
-                        onTouchStart={(e) => {
-                          e.preventDefault()
-                          handleLocationSelect(location)
-                        }}
-                        className={`w-full px-4 py-3 text-left hover:bg-[#D4AF37]/20 transition-colors touch-manipulation ${searchParams.destination === location ? 'bg-[#D4AF37]/30 text-[#D4AF37]' : 'text-gray-300'}`}
-                        style={{ 
-                          WebkitTapHighlightColor: 'transparent',
-                          minHeight: '44px' // Better touch target size for mobile
-                        }}
-                      >
-                        {location}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <Popover className="relative">
+                {({ open }) => (
+                  <>
+                    <Popover.Button className="w-full flex justify-between items-center border border-[#D4AF37]/30 bg-black/40 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent hero-gold-focus">
+                      <span>{searchParams.destination ? <span className="text-[#D4AF37] font-medium">{searchParams.destination}</span> : "Select location"}</span>
+                      <FiChevronDown className={`transition-transform text-[#D4AF37] ${open ? "rotate-180" : ""}`} />
+                    </Popover.Button>
+                    <Popover.Panel className="absolute z-20 mt-2 w-full max-w-full bg-gray-900 rounded-xl shadow-2xl p-4 space-y-4 left-0 border border-[#D4AF37]/20">
+                      <div className="space-y-2">
+                        {locations.map((location) => (
+                          <button
+                            key={location}
+                            type="button"
+                            onClick={() => handleLocationSelect(location)}
+                            className={`w-full px-3 py-2 rounded-lg text-left transition-colors ${
+                              searchParams.destination === location 
+                                ? 'bg-gradient-to-r from-[#D4AF37]/30 to-[#D4AF37]/10 text-[#D4AF37] font-bold' 
+                                : 'text-[#D4AF37]/90 hover:bg-[#D4AF37]/20 active:bg-[#D4AF37]/30'
+                            }`}
+                          >
+                            <div className="flex items-center">
+                              <FaMapMarkerAlt className="mr-2.5 text-[#D4AF37] h-4 w-4" />
+                              {location}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </Popover.Panel>
+                  </>
+                )}
+              </Popover>
               
               {/* Hidden input for form validation */}
               <input 
@@ -342,9 +326,9 @@ const BookingFormSection = ({
           {/* Added perks/amenities */}
           <div className="flex flex-wrap gap-2 justify-center">
             {amenities.map((amenity, index) => (
-              <div key={index} className="flex items-center text-xs text-white bg-[#D4AF37]/10 px-2 py-1 rounded-full border border-[#D4AF37]/20">
+              <div key={index} className="flex items-center text-xs text-[#D4AF37] bg-[#D4AF37]/10 px-3 py-1.5 rounded-full border border-[#D4AF37]/30 shadow-lg shadow-[#D4AF37]/5">
                 <span className="mr-1.5 text-[#D4AF37]">{amenity.icon}</span>
-                <span>{amenity.name}</span>
+                <span className="font-medium">{amenity.name}</span>
               </div>
             ))}
           </div>
@@ -376,7 +360,7 @@ const BookingFormSection = ({
                     <path
                       className="opacity-75"
                       fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      d="M4 12a8 8 0 008-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
                   Searching...
@@ -435,415 +419,6 @@ const useNavbarHeight = () => {
   return navbarHeight
 }
 
-const PremiumLocationsModal = ({ isOpen, onClose, clickPosition = null }) => {
-  const navigate = useNavigate(); // Add navigate hook here
-  
-  // Get the navbar height to position the modal correctly
-  const navbarHeight = useNavbarHeight();
-  
-  // Track if we're on mobile
-  const [isMobile, setIsMobile] = useState(false);
-  
-  // Reference to the modal content for scrolling
-  const modalContentRef = useRef(null);
-  
-  // Detect mobile devices
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-  
-  // Scroll modal to ensure it's visible when opened
-  useEffect(() => {
-    if (isOpen && modalContentRef.current && isMobile) {
-      // For mobile, ensure modal is in view regardless of scroll position
-      setTimeout(() => {
-        modalContentRef.current.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center'
-        });
-      }, 100);
-    }
-  }, [isOpen, isMobile]);
-  
-  useEffect(() => {
-    // Store the scroll position
-    let scrollPosition = 0;
-    
-    if (isOpen) {
-      // Save current scroll position
-      scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
-      
-      // Only prevent body scrolling on desktop, allow scrolling on mobile
-      if (!isMobile) {
-        // Add class to body to prevent scrolling on desktop only
-        document.body.classList.add('modal-open');
-        document.body.style.overflow = 'hidden';
-        document.body.style.position = 'fixed';
-        document.body.style.top = `-${scrollPosition}px`;
-        document.body.style.width = '100%';
-        document.body.style.left = '0';
-        document.body.style.right = '0';
-      } else {
-        // On mobile, add a class but don't prevent scrolling
-        document.body.classList.add('modal-open-mobile');
-      }
-      
-      // Add dynamic CSS for navbar height adjustment
-      const modalStyle = document.createElement('style');
-      modalStyle.setAttribute('data-premium-modal-style', '');
-      
-      // Different styling for mobile and desktop
-      if (isMobile) {
-        modalStyle.textContent = `
-          .premium-locations-modal {
-            align-items: center !important;
-            padding-top: 0 !important;
-          }
-          .premium-locations-modal-content {
-            margin-top: 60px !important;
-            max-height: 85vh !important;
-          }
-        `;
-      } else {
-        modalStyle.textContent = `
-          .premium-locations-modal {
-            padding-top: ${navbarHeight + 20}px !important;
-            align-items: flex-start !important;
-          }
-          .premium-locations-modal-content {
-            max-height: calc(90vh - ${navbarHeight + 20}px) !important;
-          }
-        `;
-      }
-      
-      document.head.appendChild(modalStyle);
-      
-      // Reset modal scroll position to top when opened
-      setTimeout(() => {
-        if (modalContentRef.current) {
-          modalContentRef.current.scrollTop = 0;
-        }
-      }, 100);
-      
-      // Set focus to the modal content to improve accessibility
-      setTimeout(() => {
-        const modalElement = document.querySelector('.premium-locations-modal-content');
-        if (modalElement) {
-          modalElement.focus();
-        }
-      }, 100);
-      
-      // Add listener for escape key to close modal
-      const handleEsc = (event) => {
-        if (event.key === 'Escape') {
-          onClose();
-        }
-      };
-      document.addEventListener('keydown', handleEsc);
-      
-      return () => {
-        document.removeEventListener('keydown', handleEsc);
-      };
-    } else {
-      // Restore scroll position when closing
-      const scrollY = document.body.style.top;
-      document.body.classList.remove('modal-open');
-      
-      // Add a force-scroll class to ensure scrolling is enabled
-      document.documentElement.classList.add('force-scroll');
-      document.body.classList.add('force-scroll');
-      
-      // Reset all body styles
-      document.body.style.position = '';
-      document.body.style.width = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.overflow = '';
-      
-      // First ensure scroll restoration works
-      if (scrollY) {
-        const scrollPx = Math.abs(parseInt(scrollY || '0', 10));
-        window.scrollTo(0, scrollPx);
-      }
-      
-      // Force scrolling to work again with a slight delay
-      setTimeout(() => {
-        // Remove force-scroll class after everything is reset
-        document.documentElement.classList.remove('force-scroll');
-        document.body.classList.remove('force-scroll');
-        
-        // Force a redraw/reflow to ensure scrolling works
-        document.body.style.display = 'none';
-        void document.body.offsetHeight; // Force reflow
-        document.body.style.display = '';
-        
-        // Ensure we're at the right position
-        if (scrollY) {
-          const scrollPx = Math.abs(parseInt(scrollY || '0', 10));
-          window.scrollTo(0, scrollPx);
-        }
-      }, 100);
-    }
-    
-    // Cleanup on unmount
-    return () => {
-      // Remove modal class
-      document.body.classList.remove('modal-open');
-      document.documentElement.classList.remove('force-scroll');
-      document.body.classList.remove('force-scroll');
-      
-      // Reset all body styles completely
-      document.body.style.position = '';
-      document.body.style.width = '';
-      document.body.style.overflow = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      
-      // Force body to be scrollable again
-      document.body.style.overflow = 'auto';
-      document.documentElement.style.overflow = 'auto';
-      
-      // Ensure scrolling is restored properly with a force refresh
-      setTimeout(() => {
-        // Force a redraw/reflow
-        document.body.style.display = 'none';
-        void document.body.offsetHeight; // Force reflow
-        document.body.style.display = '';
-        
-        // Scroll to current position to ensure scrolling works
-        window.scrollTo(0, window.scrollY);
-      }, 100);
-      
-      // Remove any added styles
-      const modalStyle = document.querySelector('style[data-premium-modal-style]');
-      if (modalStyle) {
-        modalStyle.remove();
-      }
-      
-      // Re-enable navigation elements if needed
-      const navElements = document.querySelectorAll(
-        '.swiper, .carousel, .slider, [class*="swiper"], [class*="carousel"], [class*="slider"], ' +
-        'button[aria-label*="slide"], button[class*="nav"], [class*="navigation"], ' + 
-        '[class*="ChevronLeft"], [class*="ChevronRight"], ' +
-        'button[aria-label*="Go to slide"]'
-      );
-      
-      navElements.forEach(el => {
-        // Restore original values
-        el.style.zIndex = el.dataset.originalZIndex || '';
-        el.style.pointerEvents = el.dataset.originalPointerEvents || '';
-        el.style.opacity = el.dataset.originalOpacity || '';
-        el.style.visibility = el.dataset.originalVisibility || '';
-      });
-    };
-  }, [isOpen, onClose, navbarHeight]);
-  
-  if (!isOpen) return null;
-  
-  // Location data
-  const premiumLocations = [
-    {
-      city: "Chennai",
-      description: "Experience luxury living in Chennai's most exclusive neighborhoods with stunning coastal views and elegant villas designed for maximum comfort.",
-      highlights: ["Beachfront Properties", "Private Pools", "Elite Neighborhoods", "Exclusive Amenities"],
-      image: "/AmrithPalace/AP1.jpg" // Chennai image from AmrithPalace folder
-    },
-    {
-      city: "Pondicherry",
-      description: "Discover the French colonial charm of Pondicherry with our premium villas featuring serene garden spaces and refined architectural details.",
-      highlights: ["Colonial Architecture", "Tranquil Gardens", "Heritage Locations", "Beach Proximity"],
-      image: "/eastcoastvilla/EC1.jpg" // Pondicherry image from eastcoastvilla folder
-    }
-  ];
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <div 
-          className="premium-locations-modal" 
-          onClick={(e) => {
-            // Close modal only if clicking directly on the container or backdrop, not its children
-            if (e.target.classList.contains('premium-locations-modal') || 
-                e.target.classList.contains('premium-locations-modal-backdrop')) {
-              onClose();
-            }
-          }}
-          style={{
-            paddingTop: isMobile ? '0px' : `${navbarHeight + 20}px`,
-            alignItems: isMobile ? 'center' : 'flex-start',
-            justifyContent: 'center'
-          }}
-          aria-modal="true"
-          role="dialog"
-        >
-          {/* Backdrop - removed onClick from here to prevent double triggering */}
-          <motion.div 
-            className="premium-locations-modal-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          />
-          
-          {/* Modal Content - Positioned according to click on mobile */}
-          <motion.div
-            ref={modalContentRef}
-            className="w-full max-w-5xl overflow-y-auto premium-locations-modal-content scrollbar-hide"
-            style={isMobile ? {
-              maxHeight: '90vh',
-              margin: '0 auto',
-              marginTop: '60px', // Added fixed top margin for mobile
-              marginBottom: '20px'
-            } : {
-              maxHeight: `calc(90vh - ${navbarHeight + 20}px)`
-            }}
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            tabIndex="-1"
-            onClick={(e) => e.stopPropagation()} // Prevent clicks inside modal from closing it
-          >
-            {/* Close button */}
-            <button 
-              className="absolute top-4 right-4 text-white bg-black hover:bg-[#D4AF37]/80 p-2 rounded-full z-10 transition-all duration-200 hover:scale-110 close-button"
-              onClick={onClose}
-              aria-label="Close premium locations modal"
-              style={{
-                boxShadow: "0 0 15px rgba(212, 175, 55, 0.7)",
-                border: "2px solid rgba(212, 175, 55, 0.8)",
-                backgroundColor: "rgba(0, 0, 0, 0.8)"
-              }}
-            >
-              <X className="h-6 w-6" />
-            </button>
-            
-            {/* Header */}
-            <div className="bg-gradient-to-r from-[#D4AF37] to-[#BFA181] py-6 sm:py-8 px-6 sm:px-8 text-center">
-              <motion.h2 
-                className="text-2xl sm:text-3xl md:text-4xl font-bold text-black"
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                Premium Locations
-              </motion.h2>
-              <motion.p 
-                className="text-black/80 mt-2 text-sm sm:text-base md:text-lg"
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
-                Discover our exclusive villas in the most sought-after destinations
-              </motion.p>
-            </div>
-            
-            {/* Locations grid - Responsive padding and gap */}
-            <div className="p-4 sm:p-6 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
-              {premiumLocations.map((location, index) => (
-                <motion.div
-                  key={location.city}
-                  className="bg-black/60 backdrop-blur-sm rounded-xl overflow-hidden border border-[#D4AF37]/30 hover:border-[#D4AF37] transition-all duration-300 group flex flex-col h-full"
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 + 0.4 }}
-                  whileHover={{ 
-                    y: -5,
-                    boxShadow: "0 15px 30px -10px rgba(0, 0, 0, 0.4), 0 0 20px -5px rgba(212, 175, 55, 0.6)"
-                  }}
-                >
-                  {/* Location Image - Responsive height */}
-                  <div 
-                    className="h-40 sm:h-48 md:h-56 bg-cover bg-center relative" 
-                    style={{
-                      backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.7)), url(${location.image})`
-                    }}
-                  >
-                    <div className="absolute bottom-0 left-0 p-4 sm:p-6">
-                      <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">{location.city}</h3>
-                      <div className="w-12 h-1 bg-[#D4AF37] rounded-full"></div>
-                    </div>
-                  </div>
-                  
-                  {/* Location Details - Improved spacing for better readability */}
-                  <div className="p-4 sm:p-6 flex-grow flex flex-col">
-                    <p className="text-gray-300 mb-4 sm:mb-6 leading-relaxed text-sm sm:text-base">{location.description}</p>
-                    
-                    <h4 className="text-[#D4AF37] font-semibold mb-3 sm:mb-4 text-base sm:text-lg">Highlights:</h4>
-                    <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-6">
-                      {location.highlights.map((highlight, i) => (
-                        <div key={i} className="flex items-center text-xs sm:text-sm text-white">
-                          <div className="w-2 h-2 bg-[#D4AF37] rounded-full mr-2 sm:mr-3 flex-shrink-0"></div>
-                          <span>{highlight}</span>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {/* Action Button - More touch-friendly on mobile */}
-                    <div className="flex justify-end mt-auto">
-                      <button 
-                        className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-black rounded-full font-semibold hover:opacity-90 transition-all duration-200 hover:scale-105 shadow-lg text-sm sm:text-base"
-                        onClick={() => {
-                          onClose();
-                          // Navigate to search results with the location filter
-                          navigate(`/search-results?location=${location.city}`);
-                        }}
-                      >
-                        View Villas →
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-            
-            {/* Footer - Responsive padding and font sizes */}
-            <div className="px-4 sm:px-8 pb-6 sm:pb-8 text-center border-t border-[#D4AF37]/20">
-              <div className="pt-4 sm:pt-6">
-                <motion.p 
-                  className="text-[#D4AF37]/90 text-xs sm:text-sm mb-2"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 }}
-                >
-                  Need personalized assistance?
-                </motion.p>
-                <motion.p 
-                  className="text-white font-semibold text-sm sm:text-base mb-6"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.7 }}
-                >
-                  Contact us at <span className="text-[#D4AF37]">+91 8015924647</span>
-                </motion.p>
-                
-                {/* Bottom close button */}
-                <motion.button
-                  className="mx-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-black/80 text-white rounded-full border border-[#D4AF37]/50 hover:bg-[#D4AF37]/20 transition-all duration-200"
-                  onClick={onClose}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.8 }}
-                >
-                  <X className="h-4 w-4" />
-                  <span className="text-sm">Close</span>
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
-  );
-};
-
 const Hero = () => {
   const navbarHeight = useNavbarHeight()
   const navigate = useNavigate()
@@ -873,8 +448,6 @@ const Hero = () => {
   const [videoLoaded, setVideoLoaded] = useState(true) // Set to true to skip video loading
   const [showLocationDropdown, setShowLocationDropdown] = useState(false)
   const [loadingTimeout, setLoadingTimeout] = useState(false)
-  const [showPremiumLocations, setShowPremiumLocations] = useState(false);
-  const [clickPosition, setClickPosition] = useState(null);
 
   // Add local state for guests
   const [adults, setAdults] = useState(1)
@@ -883,6 +456,17 @@ const Hero = () => {
 
   // DatePicker z-index management
   const [datePickerOpen, setDatePickerOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  
+  // Check for mobile screen size
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // Typewriter effect for "Comfort"
   useEffect(() => {
@@ -895,19 +479,7 @@ const Hero = () => {
     }
   }, [displayText])
   
-  // Close location dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (locationDropdownRef.current && !locationDropdownRef.current.contains(event.target)) {
-        setShowLocationDropdown(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
+  // No longer need the custom location dropdown handling as we're using Popover
 
   // Sync guest state with searchParams
   useEffect(() => {
@@ -936,11 +508,21 @@ const Hero = () => {
   }
 
   const handleLocationSelect = (location) => {
-    setSearchParams({
-      ...searchParams,
+    // Update the destination in searchParams
+    setSearchParams((prev) => ({
+      ...prev,
       destination: location
-    })
-    setShowLocationDropdown(false)
+    }))
+    
+    // Add haptic feedback for mobile devices if available
+    if (window.navigator && window.navigator.vibrate) {
+      window.navigator.vibrate(50) // Short vibration for feedback
+    }
+    
+    // Dismiss keyboard on mobile
+    if (document.activeElement) {
+      document.activeElement.blur()
+    }
   }
 
   const handleSearch = async (e) => {
@@ -992,7 +574,7 @@ const Hero = () => {
 
   // Handle mobile devices and call preloader hide
   useEffect(() => {
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
     
     // Set a timeout to hide loading if video takes too long
     const loadingTimer = setTimeout(() => {
@@ -1050,6 +632,9 @@ const Hero = () => {
   const datePickerWrapperStyles = {
     position: "relative",
     zIndex: datePickerOpen ? 1000 : 1,
+    ...(isMobile && {
+      position: "static", // This helps with positioning the calendar above on mobile
+    })
   }
   
   // Custom styles for Hero component only - SCOPED to avoid navbar conflicts
@@ -1071,11 +656,33 @@ const Hero = () => {
     /* Gold gradient for buttons */
     .hero-gold-gradient {
       background: linear-gradient(to right, #D4AF37, #BFA181);
+      box-shadow: 0 4px 15px -3px rgba(212, 175, 55, 0.3), 0 2px 5px -2px rgba(212, 175, 55, 0.2);
     }
     
     /* Gold text */
     .hero-gold-text {
       color: #D4AF37;
+    }
+    
+    /* Luxury gold styling */
+    .luxury-gold {
+      color: #D4AF37;
+      text-shadow: 0 0 2px rgba(212, 175, 55, 0.2);
+    }
+    
+    .luxury-gold-bg {
+      background: linear-gradient(45deg, #BF953F, #FCF6BA, #B38728, #FBF5B7, #AA771C);
+      background-size: 200% 200%;
+      animation: goldShimmer 2s infinite;
+      -webkit-background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 5px rgba(212, 175, 55, 0.2);
+    }
+    
+    @keyframes goldShimmer {
+      0% {background-position: 0% 50%}
+      50% {background-position: 100% 50%}
+      100% {background-position: 0% 50%}
     }
     
     /* Custom styles for form inputs */
@@ -1093,6 +700,20 @@ const Hero = () => {
     .hero-gold-focus:focus {
       border-color: #D4AF37 !important;
       box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.25) !important;
+    }
+    
+    /* Calendar gold styling */
+    .react-datepicker-wrapper input::placeholder {
+      color: rgba(212, 175, 55, 0.7) !important;
+    }
+    
+    /* Navigation arrows */
+    .react-datepicker__navigation-icon::before {
+      border-color: #D4AF37 !important;
+    }
+    
+    .react-datepicker__navigation:hover *::before {
+      border-color: #D4AF37 !important;
     }
     
     /* 3D Tilt animation */
@@ -1118,21 +739,76 @@ const Hero = () => {
       -webkit-backdrop-filter: none !important;
       background-color: #111 !important;
       z-index: 999999 !important;
-    }
-    
-    .hero-location-option button {
-      -webkit-tap-highlight-color: transparent !important;
-      tap-highlight-color: transparent !important;
-      user-select: none;
-      -webkit-user-select: none;
-      touch-action: manipulation;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
     }
     
     /* Better mobile touch targets */
     @media (max-width: 768px) {
+      .hero-location-option {
+        position: fixed !important;
+        left: 3vw !important;
+        right: 3vw !important;
+        width: 94vw !important;
+        max-height: 80vh !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        border-radius: 16px !important;
+        box-shadow: 0 5px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(212, 175, 55, 0.2) !important;
+        border: 2px solid rgba(212, 175, 55, 0.3) !important;
+      }
+      
+      /* Location buttons */
       .hero-location-option button {
-        min-height: 48px;
-        font-size: 16px; /* Prevents zoom on iOS */
+        min-height: 64px !important;
+        font-size: 20px !important; /* Even larger for better visibility */
+        padding: 1rem !important;
+        border-bottom: 1px solid rgba(212, 175, 55, 0.1) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        -webkit-tap-highlight-color: rgba(212, 175, 55, 0.3) !important;
+      }
+      
+      .hero-location-option button:last-child {
+        border-bottom: none !important;
+      }
+      
+      /* Improved feedback for touch */
+      .hero-location-option button:active {
+        background-color: rgba(212, 175, 55, 0.4) !important;
+        transform: scale(0.98);
+      }
+    }
+    
+    /* Animation for selection success */
+    .location-selection-success {
+      animation: locationSelectionPulse 0.3s ease-in-out;
+    }
+    
+    @keyframes locationSelectionPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
+    
+    /* Make sure buttons are truly interactive */
+    button {
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    
+    /* Location dropdown - mobile specific fixes */
+    .location-dropdown {
+      display: block !important; /* Force display */
+    }
+    
+    @media (max-width: 640px) {
+      .location-dropdown {
+        margin-top: 0 !important; /* Remove margin on mobile */
       }
     }
     
@@ -1150,27 +826,86 @@ const Hero = () => {
       border-radius: 0.5rem !important;
       overflow: hidden !important;
       z-index: 1000 !important;
+      color: #D4AF37 !important;
+    }
+    
+    /* Mobile date picker position fixes */
+    @media (max-width: 767px) {
+      .react-datepicker-popper[data-placement^="top"] {
+        margin-bottom: 10px !important;
+      }
+      
+      .react-datepicker__triangle {
+        display: none !important; /* Hide the triangle on mobile */
+      }
+      
+      /* Ensure the calendar is properly positioned above input */
+      .react-datepicker-popper {
+        transform: translate3d(0, 0, 0) !important;
+        position: fixed !important;
+        bottom: auto !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 90% !important;
+        max-width: 320px !important;
+      }
     }
     
     .react-datepicker__header {
       background-color: #111 !important;
-      border-bottom: 1px solid #333 !important;
+      border-bottom: 1px solid #D4AF37 !important;
       padding-top: 10px !important;
       padding-bottom: 8px !important;
     }
     
-    .react-datepicker_day-name, .react-datepickerday, .react-datepicker_time-name {
-      color: #fff !important;
+    /* Gold styling for day names in calendar header */
+    .react-datepicker__day-name {
+      color: #D4AF37 !important;
+      font-weight: 600 !important;
     }
     
-    .react-datepicker_day:hover, .react-datepicker_month-text:hover, 
-    .react-datepicker_quarter-text:hover, .react-datepicker_year-text:hover {
+    /* Gold styling for month and year in header */
+    .react-datepicker__current-month, 
+    .react-datepicker-year-header {
+      color: #D4AF37 !important;
+      font-weight: bold !important;
+    }
+    
+    /* Regular days styling */
+    .react-datepicker__day {
+      color: #D4AF37 !important;
+      border-radius: 50% !important;
+    }
+    
+    /* Outside month days styling */
+    .react-datepicker__day--outside-month {
+      color: #D4AF37 !important;
+      opacity: 0.5 !important;
+    }
+    
+    /* Hover effects */
+    .react-datepicker__day:hover, 
+    .react-datepicker__month-text:hover, 
+    .react-datepicker__quarter-text:hover, 
+    .react-datepicker__year-text:hover {
       background-color: rgba(212, 175, 55, 0.2) !important;
+      color: #D4AF37 !important;
     }
     
-    .react-datepicker_day--selected, .react-datepickerday--in-selecting-range, .react-datepicker_day--in-range {
+    /* Selected day styling */
+    .react-datepicker__day--selected, 
+    .react-datepicker__day--in-selecting-range, 
+    .react-datepicker__day--in-range {
       background-color: #D4AF37 !important;
       color: #000 !important;
+      font-weight: bold !important;
+    }
+    
+    /* Today's date highlight */
+    .react-datepicker__day--today {
+      border: 1px solid #D4AF37 !important;
+      background-color: rgba(212, 175, 55, 0.1) !important;
+      font-weight: bold !important;
     }
     
     /* Responsive font sizes for better mobile display */
@@ -1253,7 +988,7 @@ const Hero = () => {
                 transition={{ duration: 0.8, delay: 0.3 }}
               >
                 Your Kingdom of{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-[#F0E6CA] hero-typewriter-cursor">{displayText}</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#BF953F] via-[#D4AF37] to-[#F0E6CA] hero-typewriter-cursor" style={{textShadow: "0 0 5px rgba(212, 175, 55, 0.3)"}}>{displayText}</span>
               </motion.h1>
               <motion.p
                 className="text-sm sm:text-base md:text-lg mb-6 sm:mb-8 text-gray-200 max-w-md leading-relaxed"
@@ -1290,6 +1025,7 @@ const Hero = () => {
                   handleSearch={handleSearch}
                   amenities={amenities}
                   datePickerWrapperStyles={datePickerWrapperStyles}
+                  isMobile={isMobile}
                 />
               </div>
               
@@ -1303,43 +1039,8 @@ const Hero = () => {
                 <h3 className="text-lg font-medium text-[#D4AF37]">Villa Highlights</h3>
                 
                 {/* Feature Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Feature 1: Premium Locations */}
-                  <motion.div
-                    className="bg-black/30 backdrop-blur-sm border border-[#D4AF37]/20 rounded-2xl p-4 hover:border-[#D4AF37]/40 transition-all group cursor-pointer"
-                    whileHover={{ 
-                      scale: 1.02, 
-                      boxShadow: "0 0 15px rgba(212, 175, 55, 0.15)" 
-                    }}
-                    onClick={(e) => {
-                      // Capture click position for mobile modal positioning
-                      setClickPosition({
-                        x: e.clientX,
-                        y: e.clientY,
-                        scrollY: window.scrollY
-                      });
-                      setShowPremiumLocations(true);
-                    }}
-                  >
-                    <div className="flex items-center mb-3">
-                      <div className="rounded-full bg-gradient-to-r from-[#D4AF37] to-[#BFA181] p-2 mr-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-black" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <h4 className="font-semibold text-white">Premium Locations</h4>
-                    </div>
-                    <div className="flex items-center justify-between ml-10">
-                      <p className="text-xs text-gray-300">Stunning views in Chennai and Pondicherry's most desirable areas</p>
-                      <span className="text-[#D4AF37] group-hover:translate-x-1 transition-transform">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </span>
-                    </div>
-                  </motion.div>
-                  
-                  {/* Feature 2: Virtual Tour */}
+                <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
+                  {/* Feature 1: Virtual Tour */}
                   <motion.div
                     className="bg-black/30 backdrop-blur-sm border border-[#D4AF37]/20 rounded-2xl p-4 hover:border-[#D4AF37]/40 transition-all group cursor-pointer"
                     whileHover={{ 
@@ -1399,6 +1100,7 @@ const Hero = () => {
                 handleSearch={handleSearch}
                 amenities={amenities}
                 datePickerWrapperStyles={datePickerWrapperStyles}
+                isMobile={isMobile}
                 isDesktop={true}
               />
             </div>
@@ -1439,13 +1141,6 @@ const Hero = () => {
           )}
         </motion.button>
       </motion.div>
-
-      {/* Premium Locations Modal - Initially hidden */}
-      <PremiumLocationsModal 
-        isOpen={showPremiumLocations}
-        onClose={() => setShowPremiumLocations(false)}
-        clickPosition={clickPosition}
-      />
     </div>
   )
 }
