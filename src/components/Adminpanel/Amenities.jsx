@@ -1,156 +1,88 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../../config/api';
 import { useAuth } from '../../context/AuthContext';
-import { useToast } from '../../context/ToastContext';
 import {
-  PencilIcon,
-  TrashIcon,
-  PlusIcon,
   XMarkIcon,
-  CheckIcon,
-  HomeIcon,
-  BuildingOfficeIcon
+  PlusIcon,
+  TrashIcon,
+  PencilIcon,
+  PhotoIcon,
 } from '@heroicons/react/24/outline';
 
 const Amenities = () => {
   const [amenities, setAmenities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showForm, setShowForm] = useState(false); // Changed from modal to inline form
   const [editingAmenity, setEditingAmenity] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  
+  const { authToken } = useAuth();
+  
   const [formData, setFormData] = useState({
     name: '',
-    location: '',
-    amenities: ['']
+    description: '',
+    icon: '',
+    category: 'general',
+    featured: false
   });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [locationFilter, setLocationFilter] = useState('');
-  const [uniqueLocations, setUniqueLocations] = useState([]);
 
-  const { authToken } = useAuth();
-  const { addToast } = useToast();
-
+  // Show success/error messages
+  const [notification, setNotification] = useState({ show: false, message: '', type: '' });
+  
   useEffect(() => {
     fetchAmenities();
   }, []);
-
+  
   const fetchAmenities = async () => {
     try {
       setLoading(true);
-      setError(null);
-
       const response = await fetch(`${API_BASE_URL}/api/admin/amenities`, {
-        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${authToken}`,
+        },
       });
-
+      
       if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
+        throw new Error('Failed to fetch amenities');
       }
-
+      
       const data = await response.json();
-
-      if (data.success) {
-        setAmenities(data.amenities);
-        
-        // Extract unique locations for filtering
-        const locations = [...new Set(data.amenities.map(item => item.location))];
-        setUniqueLocations(locations);
-      } else {
-        throw new Error(data.error || 'Failed to fetch amenities');
-      }
-    } catch (err) {
-      console.error('Error fetching amenities:', err);
-      setError(err.message || 'Failed to fetch amenities');
-      addToast({
-        type: 'error',
-        message: 'Failed to load amenities. Please try again.'
-      });
-    } finally {
+      setAmenities(data.amenities || []);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching amenities:', error);
+      showNotification('Error loading amenities', 'error');
       setLoading(false);
     }
   };
-
+  
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value,
     });
   };
-
-  const handleAmenityChange = (index, value) => {
-    const updatedAmenities = [...formData.amenities];
-    updatedAmenities[index] = value;
+  
+  const resetForm = () => {
     setFormData({
-      ...formData,
-      amenities: updatedAmenities
+      name: '',
+      description: '',
+      icon: '',
+      category: 'general',
+      featured: false
     });
-  };
-
-  const addAmenityField = () => {
-    setFormData({
-      ...formData,
-      amenities: [...formData.amenities, '']
-    });
-  };
-
-  const removeAmenityField = (index) => {
-    const updatedAmenities = formData.amenities.filter((_, i) => i !== index);
-    setFormData({
-      ...formData,
-      amenities: updatedAmenities
-    });
-  };
-
-  const openModal = (amenity = null) => {
-    if (amenity) {
-      setEditingAmenity(amenity);
-      setFormData({
-        name: amenity.name,
-        location: amenity.location,
-        amenities: [...amenity.amenities]
-      });
-    } else {
-      setEditingAmenity(null);
-      setFormData({
-        name: '',
-        location: '',
-        amenities: ['']
-      });
-    }
-    setShowModal(true);
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
     setEditingAmenity(null);
   };
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Filter out empty amenities
-    const filteredAmenities = formData.amenities.filter(item => item.trim() !== '');
-    
-    if (filteredAmenities.length === 0) {
-      addToast({
-        type: 'error',
-        message: 'Please add at least one amenity'
-      });
-      return;
-    }
-
-    const submitData = {
-      ...formData,
-      amenities: filteredAmenities
-    };
-
     try {
-      const url = editingAmenity 
+      setLoading(true);
+      
+      const url = editingAmenity
         ? `${API_BASE_URL}/api/admin/amenities/${editingAmenity._id}`
         : `${API_BASE_URL}/api/admin/amenities`;
       
@@ -159,300 +91,365 @@ const Amenities = () => {
       const response = await fetch(url, {
         method,
         headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify(submitData)
+        body: JSON.stringify(formData),
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        addToast({
-          type: 'success',
-          message: editingAmenity 
-            ? 'Amenity updated successfully!' 
-            : 'New amenity created successfully!'
-        });
-        fetchAmenities();
-        closeModal();
-      } else {
-        throw new Error(data.error || 'Operation failed');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to save amenity');
       }
-    } catch (err) {
-      console.error('Error submitting amenity:', err);
-      addToast({
-        type: 'error',
-        message: err.message || 'Failed to save amenity. Please try again.'
-      });
+      
+      showNotification(
+        `Amenity ${editingAmenity ? 'updated' : 'created'} successfully!`,
+        'success'
+      );
+      
+      setShowForm(false);
+      resetForm();
+      fetchAmenities();
+    } catch (error) {
+      console.error('Error saving amenity:', error);
+      showNotification(error.message || 'Failed to save amenity', 'error');
+    } finally {
+      setLoading(false);
     }
   };
-
+  
+  const handleEdit = (amenity) => {
+    setEditingAmenity(amenity);
+    setFormData({
+      name: amenity.name || '',
+      description: amenity.description || '',
+      icon: amenity.icon || '',
+      category: amenity.category || 'general',
+      featured: amenity.featured || false
+    });
+    setShowForm(true);
+  };
+  
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this amenity? This action cannot be undone.')) {
-      return;
-    }
-
     try {
+      setLoading(true);
+      
       const response = await fetch(`${API_BASE_URL}/api/admin/amenities/${id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${authToken}`,
+        },
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        addToast({
-          type: 'success',
-          message: 'Amenity deleted successfully!'
-        });
-        fetchAmenities();
-      } else {
-        throw new Error(data.error || 'Failed to delete amenity');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete amenity');
       }
-    } catch (err) {
-      console.error('Error deleting amenity:', err);
-      addToast({
-        type: 'error',
-        message: err.message || 'Failed to delete amenity. Please try again.'
-      });
+      
+      showNotification('Amenity deleted successfully!', 'success');
+      setConfirmDelete(null);
+      fetchAmenities();
+    } catch (error) {
+      console.error('Error deleting amenity:', error);
+      showNotification(error.message || 'Failed to delete amenity', 'error');
+    } finally {
+      setLoading(false);
     }
   };
-
-  // Filter amenities based on search term and location
-  const filteredAmenities = amenities.filter(amenity => {
-    const matchesSearchTerm = searchTerm === '' || 
-      amenity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      amenity.amenities.some(item => item.toLowerCase().includes(searchTerm.toLowerCase()));
+  
+  const toggleNewForm = () => {
+    setShowForm(!showForm);
+    resetForm();
+  };
+  
+  // Filter amenities based on search term
+  const filteredAmenities = amenities.filter((amenity) =>
+    amenity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    amenity.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    amenity.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  const showNotification = (message, type) => {
+    setNotification({
+      show: true,
+      message,
+      type,
+    });
     
-    const matchesLocation = locationFilter === '' || 
-      amenity.location.toLowerCase() === locationFilter.toLowerCase();
-    
-    return matchesSearchTerm && matchesLocation;
-  });
+    setTimeout(() => {
+      setNotification({ show: false, message: '', type: '' });
+    }, 3000);
+  };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Villa Amenities Management</h1>
-        <button
-          onClick={() => openModal()}
-          className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded-md flex items-center"
-        >
-          <PlusIcon className="h-5 w-5 mr-1" />
-          Add New Amenity
-        </button>
-      </div>
-
-      {/* Search and Filter */}
-      <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
+          <h1 className="text-3xl font-bold text-gray-900">Amenities Management</h1>
+          <p className="text-gray-600">Create and manage villa amenities</p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <input
             type="text"
             placeholder="Search amenities..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 w-full sm:w-60"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-        </div>
-        <div>
-          <select
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-            value={locationFilter}
-            onChange={(e) => setLocationFilter(e.target.value)}
+          <button
+            onClick={toggleNewForm}
+            className="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 transition-colors duration-300 flex items-center justify-center"
           >
-            <option value="">All Locations</option>
-            {uniqueLocations.map((location, index) => (
-              <option key={index} value={location}>
-                {location}
-              </option>
-            ))}
-          </select>
+            {showForm && !editingAmenity ? (
+              <>
+                <XMarkIcon className="h-5 w-5 mr-2" />
+                Cancel
+              </>
+            ) : (
+              <>
+                <PlusIcon className="h-5 w-5 mr-2" />
+                Add Amenity
+              </>
+            )}
+          </button>
         </div>
       </div>
 
-      {loading ? (
-        <div className="text-center py-10">
-          <div className="spinner"></div>
-          <p className="mt-2 text-gray-600">Loading amenities...</p>
-        </div>
-      ) : error ? (
-        <div className="text-center py-10">
-          <p className="text-red-500">{error}</p>
-          <button
-            onClick={fetchAmenities}
-            className="mt-4 bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded-md"
-          >
-            Try Again
-          </button>
-        </div>
-      ) : filteredAmenities.length === 0 ? (
-        <div className="text-center py-10">
-          <p className="text-gray-600">No amenities found.</p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-lg shadow">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Villa Name
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Location
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amenities
-                </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredAmenities.map((amenity) => (
-                <tr key={amenity._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <BuildingOfficeIcon className="h-5 w-5 text-yellow-500 mr-3" />
-                      <div className="text-sm font-medium text-gray-900">{amenity.name}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <HomeIcon className="h-5 w-5 text-gray-400 mr-2" />
-                      <div className="text-sm text-gray-500">{amenity.location}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-1">
-                      {amenity.amenities.map((item, index) => (
-                        <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-yellow-100 text-yellow-800">
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => openModal(amenity)}
-                      className="text-indigo-600 hover:text-indigo-900 mr-4"
-                    >
-                      <PencilIcon className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(amenity._id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Notification */}
+      {notification.show && (
+        <div 
+          className={`p-4 rounded-md ${
+            notification.type === 'success' 
+              ? 'bg-green-100 text-green-700 border border-green-400' 
+              : 'bg-red-100 text-red-700 border border-red-400'
+          }`}
+        >
+          {notification.message}
         </div>
       )}
+      
+      {/* Add/Edit Amenity Form - Inline */}
+      {showForm && (
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 mb-6">
+          <div className="border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-gray-800">
+              {editingAmenity ? "Edit Amenity" : "Add New Amenity"}
+            </h2>
+            <button
+              onClick={() => {
+                setShowForm(false);
+                resetForm();
+              }}
+              className="text-gray-400 hover:text-gray-500"
+              type="button"
+            >
+              <XMarkIcon className="h-5 w-5" />
+            </button>
+          </div>
 
-      {/* Modal for Add/Edit */}
-      {showModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800">
-                {editingAmenity ? 'Edit Amenity' : 'Add New Amenity'}
-              </h2>
-              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
-                <XMarkIcon className="h-6 w-6" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Villa Name
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  required
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Location
-                </label>
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  required
-                />
-              </div>
-
-              <div className="mb-4">
-                <div className="flex justify-between items-center mb-1">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Amenities
+          <div className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Amenity Name
                   </label>
-                  <button
-                    type="button"
-                    onClick={addAmenityField}
-                    className="text-yellow-600 hover:text-yellow-700 text-xs flex items-center"
-                  >
-                    <PlusIcon className="h-4 w-4 mr-1" />
-                    Add More
-                  </button>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    placeholder="e.g., Swimming Pool"
+                  />
                 </div>
-
-                {formData.amenities.map((amenity, index) => (
-                  <div key={index} className="flex items-center mt-2">
-                    <input
-                      type="text"
-                      value={amenity}
-                      onChange={(e) => handleAmenityChange(index, e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                      placeholder="Enter amenity"
-                    />
-                    {formData.amenities.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeAmenityField(index)}
-                        className="ml-2 text-red-500 hover:text-red-700"
-                      >
-                        <XMarkIcon className="h-5 w-5" />
-                      </button>
-                    )}
-                  </div>
-                ))}
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Icon Name
+                  </label>
+                  <input
+                    type="text"
+                    name="icon"
+                    value={formData.icon}
+                    onChange={handleInputChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    placeholder="e.g., pool, wifi (Font Awesome names)"
+                  />
+                </div>
               </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  rows="3"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  placeholder="Brief description of this amenity"
+                ></textarea>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Category
+                  </label>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  >
+                    <option value="general">General</option>
+                    <option value="kitchen">Kitchen</option>
+                    <option value="bathroom">Bathroom</option>
+                    <option value="outdoor">Outdoor</option>
+                    <option value="entertainment">Entertainment</option>
+                    <option value="safety">Safety</option>
+                  </select>
+                </div>
+                
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="featured"
+                    name="featured"
+                    checked={formData.featured}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="featured" className="ml-2 block text-sm text-gray-700">
+                    Featured Amenity (highlighted in listings)
+                  </label>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
                 <button
                   type="button"
-                  onClick={closeModal}
+                  onClick={() => {
+                    setShowForm(false);
+                    resetForm();
+                  }}
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md flex items-center"
+                  className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700"
+                  disabled={loading}
                 >
-                  <CheckIcon className="h-5 w-5 mr-1" />
-                  {editingAmenity ? 'Update' : 'Save'}
+                  {loading ? 'Saving...' : editingAmenity ? 'Update Amenity' : 'Create Amenity'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Amenities Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {loading && amenities.length === 0 ? (
+          <div className="col-span-full flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-yellow-600"></div>
+          </div>
+        ) : filteredAmenities.length === 0 ? (
+          <div className="col-span-full bg-white rounded-xl p-8 text-center border border-gray-200">
+            <div className="mx-auto w-16 h-16 bg-yellow-100 flex items-center justify-center rounded-full mb-4">
+              <PhotoIcon className="h-8 w-8 text-yellow-600" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900">No amenities found</h3>
+            <p className="text-gray-500 mt-1">
+              {searchTerm ? "Try adjusting your search" : "No amenities match your criteria."}
+            </p>
+          </div>
+        ) : (
+          filteredAmenities.map((amenity) => (
+            <div key={amenity._id} className="bg-white rounded-xl shadow-md border border-gray-200 p-4 flex flex-col">
+              <div className="flex-1">
+                <div className="flex items-center mb-3">
+                  <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center mr-3">
+                    <span className="text-yellow-600 text-xl">
+                      {amenity.icon}
+                    </span>
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-800">
+                      {amenity.name}
+                    </h4>
+                    <p className="text-sm text-gray-500">
+                      {amenity.description}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full px-3 py-1">
+                    {amenity.category}
+                  </span>
+                  {amenity.featured && (
+                    <span className="text-xs font-medium bg-green-100 text-green-800 rounded-full px-3 py-1">
+                      Featured
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  onClick={() => handleEdit(amenity)}
+                  className="text-indigo-600 hover:text-indigo-900 flex items-center"
+                >
+                  <PencilIcon className="h-5 w-5 mr-1" />
+                  Edit
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(amenity._id)}
+                  className="text-red-600 hover:text-red-900 flex items-center"
+                >
+                  <TrashIcon className="h-5 w-5 mr-1" />
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Confirm Delete */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Confirm Deletion
+              </h3>
+              <p className="text-sm text-gray-500">
+                Are you sure you want to delete this amenity? This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(confirmDelete)}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center"
+              >
+                <TrashIcon className="h-5 w-5 mr-1" />
+                Delete Amenity
+              </button>
+            </div>
           </div>
         </div>
       )}

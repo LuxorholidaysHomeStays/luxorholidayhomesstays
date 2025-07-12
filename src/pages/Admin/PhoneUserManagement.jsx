@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaSearch, FaPhone, FaEnvelope, FaUser, FaCheck, FaTimes, FaCalendarAlt, FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
+import { FaSearch, FaPhone, FaEnvelope, FaUser, FaCheck, FaTimes, FaCalendarAlt, FaEdit, FaTrash, FaPlus, FaTimes as FaClose } from 'react-icons/fa';
 import { API_BASE_URL } from '../../config/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -13,8 +13,8 @@ const PhoneUserManagement = () => {
   const [usersPerPage] = useState(10);
   const { authToken } = useAuth();
   
-  // State for modals
-  const [showAddModal, setShowAddModal] = useState(false);
+  // Replace showAddModal with showForm
+  const [showForm, setShowForm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -90,7 +90,7 @@ const PhoneUserManagement = () => {
     });
   };
   
-  // Open add user modal
+  // Open add user form
   const handleAddUserClick = () => {
     setFormData({
       name: '',
@@ -99,7 +99,7 @@ const PhoneUserManagement = () => {
       role: 'user',
       isEmailVerified: false
     });
-    setShowAddModal(true);
+    setShowForm(!showForm); // Toggle form visibility
   };
   
   // Open edit user modal
@@ -108,6 +108,7 @@ const PhoneUserManagement = () => {
     setFormData({
       name: user.name || '',
       email: user.email || '',
+      phoneNumber: user.phoneNumber || '',
       role: user.role || 'user',
       isEmailVerified: user.isEmailVerified || false
     });
@@ -141,7 +142,7 @@ const PhoneUserManagement = () => {
         throw new Error(data.message || 'Failed to create user');
       }
       
-      setShowAddModal(false);
+      setShowForm(false);
       showNotification('Phone user created successfully', 'success');
       fetchPhoneUsers();
     } catch (err) {
@@ -305,13 +306,131 @@ const PhoneUserManagement = () => {
             onClick={handleAddUserClick}
             className="flex items-center bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 transition"
           >
-            <FaPlus className="mr-2" /> Add New User
+            {showForm ? (
+              <>
+                <FaClose className="mr-2" /> Cancel
+              </>
+            ) : (
+              <>
+                <FaPlus className="mr-2" /> Add New User
+              </>
+            )}
           </button>
           <div className="ml-4 text-gray-600">
             Showing {filteredUsers.length} of {phoneUsers.length} users
           </div>
         </div>
       </div>
+      
+      {/* Add User Form - Inline */}
+      {showForm && (
+        <div className="bg-white rounded-lg shadow-md mb-6 border border-gray-200">
+          <div className="border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-gray-800">Add New Phone User</h2>
+            <button
+              onClick={() => setShowForm(false)}
+              className="text-gray-400 hover:text-gray-500"
+              type="button"
+            >
+              <FaClose className="h-5 w-5" />
+            </button>
+          </div>
+          
+          <div className="p-6">
+            <form onSubmit={handleAddUser} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">
+                    Name *
+                  </label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    required
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="phoneNumber">
+                    Phone Number *
+                  </label>
+                  <input
+                    type="text"
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    value={formData.phoneNumber}
+                    onChange={handleInputChange}
+                    required
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="role">
+                    Role
+                  </label>
+                  <div className="mt-1 block w-full py-2">
+                    <span className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-medium rounded-full bg-blue-100 text-blue-800">
+                      User
+                    </span>
+                    <p className="text-xs text-gray-500 mt-1">All new accounts are created as standard users.</p>
+                  </div>
+                  <input type="hidden" name="role" value="user" />
+                </div>
+              </div>
+              
+              <div className="flex items-center mt-4">
+                <input
+                  type="checkbox"
+                  id="isEmailVerified"
+                  name="isEmailVerified"
+                  checked={formData.isEmailVerified}
+                  onChange={handleInputChange}
+                  className="mr-2 h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                />
+                <label className="text-gray-700 text-sm font-bold" htmlFor="isEmailVerified">
+                  Email Verified
+                </label>
+              </div>
+              
+              <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                  disabled={loading}
+                >
+                  {loading ? 'Adding...' : 'Add User'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       
       {/* Users Table */}
       <div className="overflow-x-auto bg-white rounded-lg shadow">
@@ -450,108 +569,7 @@ const PhoneUserManagement = () => {
         </div>
       )}
       
-      {/* Add User Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Add New Phone User</h2>
-            <form onSubmit={handleAddUser}>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">
-                  Name *
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="phoneNumber">
-                  Phone Number *
-                </label>
-                <input
-                  type="text"
-                  id="phoneNumber"
-                  name="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={handleInputChange}
-                  required
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="role">
-                  Role
-                </label>
-                <select
-                  id="role"
-                  name="role"
-                  value={formData.role}
-                  onChange={handleInputChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                >
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-              
-              <div className="mb-4 flex items-center">
-                <input
-                  type="checkbox"
-                  id="isEmailVerified"
-                  name="isEmailVerified"
-                  checked={formData.isEmailVerified}
-                  onChange={handleInputChange}
-                  className="mr-2"
-                />
-                <label className="text-gray-700 text-sm font-bold" htmlFor="isEmailVerified">
-                  Email Verified
-                </label>
-              </div>
-              
-              <div className="flex items-center justify-end space-x-4">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                  disabled={loading}
-                >
-                  {loading ? 'Adding...' : 'Add User'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-      
-      {/* Edit User Modal */}
+      {/* Keep Edit User Modal for now - it's for existing users */}
       {showEditModal && selectedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
@@ -589,16 +607,13 @@ const PhoneUserManagement = () => {
                 <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="edit-role">
                   Role
                 </label>
-                <select
-                  id="edit-role"
-                  name="role"
-                  value={formData.role}
-                  onChange={handleInputChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                >
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                </select>
+                <div className="mt-1 block w-full py-2">
+                  <span className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-medium rounded-full bg-blue-100 text-blue-800">
+                    User
+                  </span>
+                  <p className="text-xs text-gray-500 mt-1">User role changes are restricted.</p>
+                </div>
+                <input type="hidden" name="role" value="user" />
               </div>
               
               <div className="mb-4 flex items-center">

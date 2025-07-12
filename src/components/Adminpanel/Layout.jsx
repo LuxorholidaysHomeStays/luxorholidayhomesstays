@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -12,8 +12,7 @@ import {
   ExclamationTriangleIcon,
   SparklesIcon,
   UserCircleIcon,
-  EnvelopeIcon,
-  PlusCircleIcon
+  EnvelopeIcon
 } from '@heroicons/react/24/outline';
 
 const Layout = ({ children }) => {
@@ -26,7 +25,6 @@ const Layout = ({ children }) => {
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
     { name: 'Villas', href: '/villas', icon: BuildingOfficeIcon },
     { name: 'Bookings', href: '/bookings', icon: CalendarDaysIcon },
-    { name: 'Manual Booking', href: '/manual-booking', icon: PlusCircleIcon }, // Add this line
     { name: 'Cancel Requests', href: '/cancel-requests', icon: ExclamationTriangleIcon },
     { name: 'Amenities', href: '/amenities', icon: SparklesIcon },
     { name: 'Users', href: '/users', icon: UsersIcon },
@@ -39,61 +37,6 @@ const Layout = ({ children }) => {
     logout();
     navigate('/sign-in'); // Updated to match your sign-in route path
   };
-
-  useEffect(() => {
-    // Function to remove any stray loading overlays
-    const cleanupOverlays = () => {
-      // Find any loading overlays that might be stuck
-      const overlays = document.querySelectorAll('.loading-overlay, .modal-backdrop, [class*="overlay"]');
-      overlays.forEach(overlay => {
-        overlay.style.display = 'none';
-        overlay.remove();
-      });
-      
-      // Reset body styles that might have been altered
-      document.body.style.overflow = '';
-      document.body.style.backgroundColor = '';
-      document.body.classList.remove('modal-open');
-    };
-
-    // Call on mount
-    cleanupOverlays();
-
-    // Set an interval to periodically check for and clean up stray overlays
-    const intervalId = setInterval(() => {
-      // Check if any API operations are in progress
-      const loadingElements = document.querySelectorAll('.loading, .spinner, .spinner-border');
-      if (loadingElements.length === 0) {
-        cleanupOverlays();
-      }
-    }, 2000);
-
-    // Clean up interval on unmount
-    return () => {
-      clearInterval(intervalId);
-      cleanupOverlays();
-    };
-  }, []);
-
-  // Add this CSS to the component's style section
-  const overlayFixStyle = document.createElement('style');
-  overlayFixStyle.innerHTML = `
-    body {
-      background-color: #f8f9fa !important;
-    }
-    
-    .modal-backdrop, 
-    .loading-overlay, 
-    [class*="overlay"] {
-      z-index: 1040 !important;
-      transition: opacity 0.3s ease;
-    }
-    
-    .fade-out {
-      opacity: 0 !important;
-    }
-  `;
-  document.head.appendChild(overlayFixStyle);
 
   return (
     <div className="min-h-screen bg-gray-50 relative">

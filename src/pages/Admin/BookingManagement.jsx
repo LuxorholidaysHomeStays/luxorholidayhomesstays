@@ -50,26 +50,47 @@ const BookingManagement = () => {
     }
   }
 
+  // Update the updateBookingStatus function for better error handling and confirmation
   const updateBookingStatus = async (bookingId, newStatus) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/bookings/${bookingId}`, {
-        method: "PUT",
+      // For cancellations, we need to provide additional information
+      if (newStatus === "cancelled" && !window.confirm("Are you sure you want to cancel this booking? This action cannot be undone.")) {
+        return; // User cancelled the action
+      }
+      
+      setLoading(true);
+      
+      const endpoint = newStatus === "cancelled" 
+        ? `${API_BASE_URL}/api/bookings/${bookingId}/cancel` 
+        : `${API_BASE_URL}/api/bookings/${bookingId}`;
+      
+      const method = newStatus === "cancelled" ? "POST" : "PUT";
+      const body = newStatus === "cancelled" 
+        ? JSON.stringify({ reason: "Cancelled by administrator" }) 
+        : JSON.stringify({ status: newStatus });
+      
+      const response = await fetch(endpoint, {
+        method: method,
         headers: {
           Authorization: `Bearer ${authToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status: newStatus }),
-      })
+        body: body
+      });
+
+      const data = await response.json();
 
       if (response.ok) {
-        addToast("Booking status updated successfully", "success")
-        fetchBookings()
+        addToast(`Booking ${newStatus === "cancelled" ? "cancelled" : "status updated"} successfully`, "success");
+        fetchBookings(); // Refresh the bookings list
       } else {
-        addToast("Error updating booking status", "error")
+        throw new Error(data.error || data.message || "Failed to update booking status");
       }
     } catch (error) {
-      console.error("Error updating booking:", error)
-      addToast("Error updating booking status", "error")
+      console.error("Error updating booking:", error);
+      addToast(error.message || "Error updating booking status", "error");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -354,24 +375,42 @@ const BookingManagement = () => {
                     <div className="flex space-x-2">
                       <button
                         onClick={() => setShowDetails(booking)}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="text-blue-600 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-50"
                       >
                         View
                       </button>
                       {booking.status !== "completed" && booking.status !== "cancelled" && (
                         <button
                           onClick={() => updateBookingStatus(booking._id, "completed")}
-                          className="text-green-600 hover:text-green-900"
+                          disabled={loading}
+                          className="text-green-600 hover:text-green-900 px-2 py-1 rounded hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Complete
+                          {loading ? (
+                            <span className="flex items-center">
+                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Processing...
+                            </span>
+                          ) : "Complete"}
                         </button>
                       )}
                       {booking.status !== "cancelled" && (
                         <button
                           onClick={() => updateBookingStatus(booking._id, "cancelled")}
-                          className="text-red-600 hover:text-red-900"
+                          disabled={loading}
+                          className="text-red-600 hover:text-red-900 px-2 py-1 rounded hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Cancel
+                          {loading ? (
+                            <span className="flex items-center">
+                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Processing...
+                            </span>
+                          ) : "Cancel"}
                         </button>
                       )}
                     </div>
