@@ -10,6 +10,8 @@ import { useNavigate } from "react-router-dom"
 import backgroundVideo from "../assets/About/v.mp4"
 import { Popover } from "@headlessui/react"
 import { Minus, Plus, Users, X } from "lucide-react"
+import '../styles/Home/Hero/PremiumLocationsModal.css'
+// import './PremiumLocationsModalFix.css'
 
 // Booking form component to be reused in mobile and desktop
 const BookingFormSection = ({
@@ -433,24 +435,216 @@ const useNavbarHeight = () => {
   return navbarHeight
 }
 
-const PremiumLocationsModal = ({ isOpen, onClose }) => {
+const PremiumLocationsModal = ({ isOpen, onClose, clickPosition = null }) => {
   const navigate = useNavigate(); // Add navigate hook here
   
+  // Get the navbar height to position the modal correctly
+  const navbarHeight = useNavbarHeight();
+  
+  // Track if we're on mobile
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Reference to the modal content for scrolling
+  const modalContentRef = useRef(null);
+  
+  // Detect mobile devices
   useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  // Scroll modal to ensure it's visible when opened
+  useEffect(() => {
+    if (isOpen && modalContentRef.current && isMobile) {
+      // For mobile, ensure modal is in view regardless of scroll position
+      setTimeout(() => {
+        modalContentRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center'
+        });
+      }, 100);
+    }
+  }, [isOpen, isMobile]);
+  
+  useEffect(() => {
+    // Store the scroll position
+    let scrollPosition = 0;
+    
     if (isOpen) {
-      document.body.classList.add('modal-open');
-      document.body.style.overflow = 'hidden';
+      // Save current scroll position
+      scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+      
+      // Only prevent body scrolling on desktop, allow scrolling on mobile
+      if (!isMobile) {
+        // Add class to body to prevent scrolling on desktop only
+        document.body.classList.add('modal-open');
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${scrollPosition}px`;
+        document.body.style.width = '100%';
+        document.body.style.left = '0';
+        document.body.style.right = '0';
+      } else {
+        // On mobile, add a class but don't prevent scrolling
+        document.body.classList.add('modal-open-mobile');
+      }
+      
+      // Add dynamic CSS for navbar height adjustment
+      const modalStyle = document.createElement('style');
+      modalStyle.setAttribute('data-premium-modal-style', '');
+      
+      // Different styling for mobile and desktop
+      if (isMobile) {
+        modalStyle.textContent = `
+          .premium-locations-modal {
+            align-items: center !important;
+            padding-top: 0 !important;
+          }
+          .premium-locations-modal-content {
+            margin-top: 60px !important;
+            max-height: 85vh !important;
+          }
+        `;
+      } else {
+        modalStyle.textContent = `
+          .premium-locations-modal {
+            padding-top: ${navbarHeight + 20}px !important;
+            align-items: flex-start !important;
+          }
+          .premium-locations-modal-content {
+            max-height: calc(90vh - ${navbarHeight + 20}px) !important;
+          }
+        `;
+      }
+      
+      document.head.appendChild(modalStyle);
+      
+      // Reset modal scroll position to top when opened
+      setTimeout(() => {
+        if (modalContentRef.current) {
+          modalContentRef.current.scrollTop = 0;
+        }
+      }, 100);
+      
+      // Set focus to the modal content to improve accessibility
+      setTimeout(() => {
+        const modalElement = document.querySelector('.premium-locations-modal-content');
+        if (modalElement) {
+          modalElement.focus();
+        }
+      }, 100);
+      
+      // Add listener for escape key to close modal
+      const handleEsc = (event) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEsc);
+      };
     } else {
+      // Restore scroll position when closing
+      const scrollY = document.body.style.top;
       document.body.classList.remove('modal-open');
-      document.body.style.overflow = 'unset';
+      
+      // Add a force-scroll class to ensure scrolling is enabled
+      document.documentElement.classList.add('force-scroll');
+      document.body.classList.add('force-scroll');
+      
+      // Reset all body styles
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+      
+      // First ensure scroll restoration works
+      if (scrollY) {
+        const scrollPx = Math.abs(parseInt(scrollY || '0', 10));
+        window.scrollTo(0, scrollPx);
+      }
+      
+      // Force scrolling to work again with a slight delay
+      setTimeout(() => {
+        // Remove force-scroll class after everything is reset
+        document.documentElement.classList.remove('force-scroll');
+        document.body.classList.remove('force-scroll');
+        
+        // Force a redraw/reflow to ensure scrolling works
+        document.body.style.display = 'none';
+        void document.body.offsetHeight; // Force reflow
+        document.body.style.display = '';
+        
+        // Ensure we're at the right position
+        if (scrollY) {
+          const scrollPx = Math.abs(parseInt(scrollY || '0', 10));
+          window.scrollTo(0, scrollPx);
+        }
+      }, 100);
     }
     
     // Cleanup on unmount
     return () => {
+      // Remove modal class
       document.body.classList.remove('modal-open');
-      document.body.style.overflow = 'unset';
+      document.documentElement.classList.remove('force-scroll');
+      document.body.classList.remove('force-scroll');
+      
+      // Reset all body styles completely
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      
+      // Force body to be scrollable again
+      document.body.style.overflow = 'auto';
+      document.documentElement.style.overflow = 'auto';
+      
+      // Ensure scrolling is restored properly with a force refresh
+      setTimeout(() => {
+        // Force a redraw/reflow
+        document.body.style.display = 'none';
+        void document.body.offsetHeight; // Force reflow
+        document.body.style.display = '';
+        
+        // Scroll to current position to ensure scrolling works
+        window.scrollTo(0, window.scrollY);
+      }, 100);
+      
+      // Remove any added styles
+      const modalStyle = document.querySelector('style[data-premium-modal-style]');
+      if (modalStyle) {
+        modalStyle.remove();
+      }
+      
+      // Re-enable navigation elements if needed
+      const navElements = document.querySelectorAll(
+        '.swiper, .carousel, .slider, [class*="swiper"], [class*="carousel"], [class*="slider"], ' +
+        'button[aria-label*="slide"], button[class*="nav"], [class*="navigation"], ' + 
+        '[class*="ChevronLeft"], [class*="ChevronRight"], ' +
+        'button[aria-label*="Go to slide"]'
+      );
+      
+      navElements.forEach(el => {
+        // Restore original values
+        el.style.zIndex = el.dataset.originalZIndex || '';
+        el.style.pointerEvents = el.dataset.originalPointerEvents || '';
+        el.style.opacity = el.dataset.originalOpacity || '';
+        el.style.visibility = el.dataset.originalVisibility || '';
+      });
     };
-  }, [isOpen]);
+  }, [isOpen, onClose, navbarHeight]);
   
   if (!isOpen) return null;
   
@@ -460,55 +654,81 @@ const PremiumLocationsModal = ({ isOpen, onClose }) => {
       city: "Chennai",
       description: "Experience luxury living in Chennai's most exclusive neighborhoods with stunning coastal views and elegant villas designed for maximum comfort.",
       highlights: ["Beachfront Properties", "Private Pools", "Elite Neighborhoods", "Exclusive Amenities"],
-      image: "/api/placeholder/400/300" // Using placeholder for now
+      image: "/AmrithPalace/AP1.jpg" // Chennai image from AmrithPalace folder
     },
     {
       city: "Pondicherry",
       description: "Discover the French colonial charm of Pondicherry with our premium villas featuring serene garden spaces and refined architectural details.",
       highlights: ["Colonial Architecture", "Tranquil Gardens", "Heritage Locations", "Beach Proximity"],
-      image: "/api/placeholder/400/300" // Using placeholder for now
+      image: "/eastcoastvilla/EC1.jpg" // Pondicherry image from eastcoastvilla folder
     }
   ];
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          style={{ zIndex: 9999 }} // Ensure highest z-index
+        <div 
+          className="premium-locations-modal" 
+          onClick={(e) => {
+            // Close modal only if clicking directly on the container or backdrop, not its children
+            if (e.target.classList.contains('premium-locations-modal') || 
+                e.target.classList.contains('premium-locations-modal-backdrop')) {
+              onClose();
+            }
+          }}
+          style={{
+            paddingTop: isMobile ? '0px' : `${navbarHeight + 20}px`,
+            alignItems: isMobile ? 'center' : 'flex-start',
+            justifyContent: 'center'
+          }}
+          aria-modal="true"
+          role="dialog"
         >
-          {/* Backdrop */}
+          {/* Backdrop - removed onClick from here to prevent double triggering */}
           <motion.div 
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
-            onClick={onClose}
+            className="premium-locations-modal-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           />
           
-          {/* Modal Content */}
+          {/* Modal Content - Positioned according to click on mobile */}
           <motion.div
-            className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900 to-black rounded-2xl border border-[#D4AF37]/40 shadow-[0_0_50px_rgba(212,175,55,0.4)]"
-            initial={{ scale: 0.9, y: 20, opacity: 0 }}
-            animate={{ scale: 1, y: 0, opacity: 1 }}
-            exit={{ scale: 0.9, y: 20, opacity: 0 }}
+            ref={modalContentRef}
+            className="w-full max-w-5xl overflow-y-auto premium-locations-modal-content scrollbar-hide"
+            style={isMobile ? {
+              maxHeight: '90vh',
+              margin: '0 auto',
+              marginTop: '60px', // Added fixed top margin for mobile
+              marginBottom: '20px'
+            } : {
+              maxHeight: `calc(90vh - ${navbarHeight + 20}px)`
+            }}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            tabIndex="-1"
+            onClick={(e) => e.stopPropagation()} // Prevent clicks inside modal from closing it
           >
             {/* Close button */}
             <button 
-              className="absolute top-4 right-4 text-white bg-black/60 hover:bg-[#D4AF37]/80 p-2 rounded-full z-10 transition-all duration-200 hover:scale-110"
-              onClick={onClose}te
+              className="absolute top-4 right-4 text-white bg-black hover:bg-[#D4AF37]/80 p-2 rounded-full z-10 transition-all duration-200 hover:scale-110 close-button"
+              onClick={onClose}
+              aria-label="Close premium locations modal"
+              style={{
+                boxShadow: "0 0 15px rgba(212, 175, 55, 0.7)",
+                border: "2px solid rgba(212, 175, 55, 0.8)",
+                backgroundColor: "rgba(0, 0, 0, 0.8)"
+              }}
             >
               <X className="h-6 w-6" />
             </button>
             
             {/* Header */}
-            <div className="bg-gradient-to-r from-[#D4AF37] to-[#BFA181] py-8 px-8 text-center">
+            <div className="bg-gradient-to-r from-[#D4AF37] to-[#BFA181] py-6 sm:py-8 px-6 sm:px-8 text-center">
               <motion.h2 
-                className="text-3xl sm:text-4xl font-bold text-black"
+                className="text-2xl sm:text-3xl md:text-4xl font-bold text-black"
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.2 }}
@@ -516,7 +736,7 @@ const PremiumLocationsModal = ({ isOpen, onClose }) => {
                 Premium Locations
               </motion.h2>
               <motion.p 
-                className="text-black/80 mt-2 text-lg"
+                className="text-black/80 mt-2 text-sm sm:text-base md:text-lg"
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.3 }}
@@ -525,51 +745,51 @@ const PremiumLocationsModal = ({ isOpen, onClose }) => {
               </motion.p>
             </div>
             
-            {/* Locations grid */}
-            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Locations grid - Responsive padding and gap */}
+            <div className="p-4 sm:p-6 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
               {premiumLocations.map((location, index) => (
                 <motion.div
                   key={location.city}
-                  className="bg-black/60 backdrop-blur-sm rounded-xl overflow-hidden border border-[#D4AF37]/30 hover:border-[#D4AF37] transition-all duration-300 group"
+                  className="bg-black/60 backdrop-blur-sm rounded-xl overflow-hidden border border-[#D4AF37]/30 hover:border-[#D4AF37] transition-all duration-300 group flex flex-col h-full"
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 + 0.4 }}
                   whileHover={{ 
-                    y: -8,
-                    boxShadow: "0 20px 40px -10px rgba(0, 0, 0, 0.4), 0 0 20px -5px rgba(212, 175, 55, 0.6)"
+                    y: -5,
+                    boxShadow: "0 15px 30px -10px rgba(0, 0, 0, 0.4), 0 0 20px -5px rgba(212, 175, 55, 0.6)"
                   }}
                 >
-                  {/* Location Image */}
+                  {/* Location Image - Responsive height */}
                   <div 
-                    className="h-56 bg-cover bg-center relative" 
+                    className="h-40 sm:h-48 md:h-56 bg-cover bg-center relative" 
                     style={{
                       backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.7)), url(${location.image})`
                     }}
                   >
-                    <div className="absolute bottom-0 left-0 p-6">
-                      <h3 className="text-3xl font-bold text-white mb-2">{location.city}</h3>
+                    <div className="absolute bottom-0 left-0 p-4 sm:p-6">
+                      <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">{location.city}</h3>
                       <div className="w-12 h-1 bg-[#D4AF37] rounded-full"></div>
                     </div>
                   </div>
                   
-                  {/* Location Details */}
-                  <div className="p-6">
-                    <p className="text-gray-300 mb-6 leading-relaxed">{location.description}</p>
+                  {/* Location Details - Improved spacing for better readability */}
+                  <div className="p-4 sm:p-6 flex-grow flex flex-col">
+                    <p className="text-gray-300 mb-4 sm:mb-6 leading-relaxed text-sm sm:text-base">{location.description}</p>
                     
-                    <h4 className="text-[#D4AF37] font-semibold mb-4 text-lg">Highlights:</h4>
-                    <div className="grid grid-cols-2 gap-3 mb-6">
+                    <h4 className="text-[#D4AF37] font-semibold mb-3 sm:mb-4 text-base sm:text-lg">Highlights:</h4>
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-6">
                       {location.highlights.map((highlight, i) => (
-                        <div key={i} className="flex items-center text-sm text-white">
-                          <div className="w-2 h-2 bg-[#D4AF37] rounded-full mr-3 flex-shrink-0"></div>
+                        <div key={i} className="flex items-center text-xs sm:text-sm text-white">
+                          <div className="w-2 h-2 bg-[#D4AF37] rounded-full mr-2 sm:mr-3 flex-shrink-0"></div>
                           <span>{highlight}</span>
                         </div>
                       ))}
                     </div>
                     
-                    {/* Action Button */}
-                    <div className="flex justify-end">
+                    {/* Action Button - More touch-friendly on mobile */}
+                    <div className="flex justify-end mt-auto">
                       <button 
-                        className="px-6 py-3 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-black rounded-full font-semibold hover:opacity-90 transition-all duration-200 hover:scale-105 shadow-lg"
+                        className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-black rounded-full font-semibold hover:opacity-90 transition-all duration-200 hover:scale-105 shadow-lg text-sm sm:text-base"
                         onClick={() => {
                           onClose();
                           // Navigate to search results with the location filter
@@ -584,11 +804,11 @@ const PremiumLocationsModal = ({ isOpen, onClose }) => {
               ))}
             </div>
             
-            {/* Footer */}
-            <div className="px-8 pb-8 text-center border-t border-[#D4AF37]/20">
-              <div className="pt-6">
+            {/* Footer - Responsive padding and font sizes */}
+            <div className="px-4 sm:px-8 pb-6 sm:pb-8 text-center border-t border-[#D4AF37]/20">
+              <div className="pt-4 sm:pt-6">
                 <motion.p 
-                  className="text-[#D4AF37]/90 text-sm mb-2"
+                  className="text-[#D4AF37]/90 text-xs sm:text-sm mb-2"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.6 }}
@@ -596,17 +816,29 @@ const PremiumLocationsModal = ({ isOpen, onClose }) => {
                   Need personalized assistance?
                 </motion.p>
                 <motion.p 
-                  className="text-white font-semibold"
+                  className="text-white font-semibold text-sm sm:text-base mb-6"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.7 }}
                 >
                   Contact us at <span className="text-[#D4AF37]">+91 8015924647</span>
                 </motion.p>
+                
+                {/* Bottom close button */}
+                <motion.button
+                  className="mx-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-black/80 text-white rounded-full border border-[#D4AF37]/50 hover:bg-[#D4AF37]/20 transition-all duration-200"
+                  onClick={onClose}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 }}
+                >
+                  <X className="h-4 w-4" />
+                  <span className="text-sm">Close</span>
+                </motion.button>
               </div>
             </div>
           </motion.div>
-        </motion.div>
+        </div>
       )}
     </AnimatePresence>
   );
@@ -642,6 +874,7 @@ const Hero = () => {
   const [showLocationDropdown, setShowLocationDropdown] = useState(false)
   const [loadingTimeout, setLoadingTimeout] = useState(false)
   const [showPremiumLocations, setShowPremiumLocations] = useState(false);
+  const [clickPosition, setClickPosition] = useState(null);
 
   // Add local state for guests
   const [adults, setAdults] = useState(1)
@@ -1078,7 +1311,15 @@ const Hero = () => {
                       scale: 1.02, 
                       boxShadow: "0 0 15px rgba(212, 175, 55, 0.15)" 
                     }}
-                    onClick={() => setShowPremiumLocations(true)}
+                    onClick={(e) => {
+                      // Capture click position for mobile modal positioning
+                      setClickPosition({
+                        x: e.clientX,
+                        y: e.clientY,
+                        scrollY: window.scrollY
+                      });
+                      setShowPremiumLocations(true);
+                    }}
                   >
                     <div className="flex items-center mb-3">
                       <div className="rounded-full bg-gradient-to-r from-[#D4AF37] to-[#BFA181] p-2 mr-3">
@@ -1203,6 +1444,7 @@ const Hero = () => {
       <PremiumLocationsModal 
         isOpen={showPremiumLocations}
         onClose={() => setShowPremiumLocations(false)}
+        clickPosition={clickPosition}
       />
     </div>
   )
