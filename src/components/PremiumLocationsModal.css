@@ -1,0 +1,191 @@
+/* Premium Locations Modal Styling */
+
+/* Gold gradient text */
+.luxury-gold-bg {
+  background: linear-gradient(45deg, #BF953F, #FCF6BA, #B38728, #FBF5B7, #AA771C);
+  background-size: 200% 200%;
+  animation: goldShimmer 2s infinite;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 5px rgba(212, 175, 55, 0.2);
+}
+
+@keyframes goldShimmer {
+  0% {background-position: 0% 50%}
+  50% {background-position: 100% 50%}
+  100% {background-position: 0% 50%}
+}
+
+/* Custom scrollbar for premium locations modal */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, #D4AF37, #BFA181);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(45deg, #BF953F, #D4AF37);
+}
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  /* Improve mobile touch targets */
+  .premium-locations-button {
+    min-height: 44px; /* Minimum touch target size */
+  }
+}
+
+/* Animation for modal backdrop */
+.modal-backdrop-enter {
+  opacity: 0;
+}
+
+.modal-backdrop-enter-active {
+  opacity: 1;
+  transition: opacity 300ms;
+}
+
+.modal-backdrop-exit {
+  opacity: 1;
+}
+
+.modal-backdrop-exit-active {
+  opacity: 0;
+  transition: opacity 300ms;
+}
+
+/* Animation for modal content */
+.modal-content-enter {
+  transform: scale(0.8);
+  opacity: 0;
+}
+
+.modal-content-enter-active {
+  transform: scale(1);
+  opacity: 1;
+  transition: all 300ms;
+}
+
+.modal-content-exit {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.modal-content-exit-active {
+  transform: scale(0.8);
+  opacity: 0;
+  transition: all 300ms;
+}
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
+/* Shimmer effect for buttons */
+.premium-location-button:after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(30deg);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%) rotate(30deg);
+  }
+  100% {
+    transform: translateX(100%) rotate(30deg);
+  }
+}
+
+/* Modal Positioning - Top Center */
+.fixed.z-50.flex.items-start {
+  align-items: flex-start;
+  padding-top: 5vh;
+}
+
+@media (min-width: 768px) {
+  .fixed.z-50.flex.items-start {
+    padding-top: 10vh;
+  }
+}
+
+/* For taller screens, position modal more naturally */
+@media (min-height: 900px) {
+  .fixed.z-50.flex.items-start {
+    padding-top: 15vh;
+  }
+}
+
+/* Ensure modal always appears at the top of the page */
+body:has(.fixed.z-50.flex) {
+  scroll-behavior: smooth;
+}
+
+/* Modal top positioning classes */
+.premium-modal-open {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  overflow: hidden;
+}
+
+.premium-modal-open-mobile {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Top positioning for modal container */
+.fixed.inset-0.z-50 {
+  position: fixed !important;
+  top: 0 !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+}
+
+/* Add some space at the top for breathing room */
+@media (min-width: 640px) {
+  .fixed.inset-0.z-50 {
+    padding-top: 5vh !important;
+  }
+}
+
+/* Make sure the modal container is visible at top of viewport */
+.fixed.inset-0.z-50 > div {
+  margin-top: 10vh !important;
+}
+
+@media (max-width: 640px) {
+  .fixed.inset-0.z-50 > div {
+    margin-top: 5vh !important;
+  }
+}

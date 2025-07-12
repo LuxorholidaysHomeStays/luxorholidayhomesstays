@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { FaCalendarAlt, FaUsers, FaMapMarkerAlt, FaUtensils, FaWifi, FaSwimmingPool, FaStar } from "react-icons/fa"
 import { FiChevronDown } from "react-icons/fi"
@@ -10,7 +11,8 @@ import { useNavigate } from "react-router-dom"
 import backgroundVideo from "../assets/About/v.mp4"
 import { Popover } from "@headlessui/react"
 import { Minus, Plus, Users, X } from "lucide-react"
-
+import PremiumLocationsModal from './PremiumLocationsModal';
+import './PremiumLocationsModal.css';
 
 // Booking form component to be reused in mobile and desktop
 const BookingFormSection = ({
@@ -920,6 +922,10 @@ const Hero = () => {
     }
   `
 
+  // State for Premium Locations modal
+  const [premiumLocationsOpen, setPremiumLocationsOpen] = useState(false);
+  const [modalClickPosition, setModalClickPosition] = useState(null);
+
   return (
     <div
       className="hero-container relative w-full overflow-hidden"
@@ -1039,7 +1045,7 @@ const Hero = () => {
                 <h3 className="text-lg font-medium text-[#D4AF37]">Villa Highlights</h3>
                 
                 {/* Feature Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Feature 1: Virtual Tour */}
                   <motion.div
                     className="bg-black/30 backdrop-blur-sm border border-[#D4AF37]/20 rounded-2xl p-4 hover:border-[#D4AF37]/40 transition-all group cursor-pointer"
@@ -1062,6 +1068,41 @@ const Hero = () => {
                     </div>
                     <div className="flex items-center justify-between ml-10">
                       <p className="text-xs text-gray-300">Experience our properties before booking</p>
+                      <span className="text-[#D4AF37] group-hover:translate-x-1 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </span>
+                    </div>
+                  </motion.div>
+                  
+                  {/* Feature 2: Premium Locations */}
+                  <motion.div
+                    className="bg-black/30 backdrop-blur-sm border border-[#D4AF37]/20 rounded-2xl p-4 hover:border-[#D4AF37]/40 transition-all group cursor-pointer premium-location-button"
+                    whileHover={{ 
+                      scale: 1.02, 
+                      boxShadow: "0 0 15px rgba(212, 175, 55, 0.15)" 
+                    }}
+                    onClick={(e) => {
+                      // Store click position for mobile animation
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setModalClickPosition({
+                        x: e.clientX - rect.left,
+                        y: e.clientY - rect.top
+                      });
+                      setPremiumLocationsOpen(true);
+                    }}
+                  >
+                    <div className="flex items-center mb-3">
+                      <div className="rounded-full bg-gradient-to-r from-[#D4AF37] to-[#BFA181] p-2 mr-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-black" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <h4 className="font-semibold text-white">Premium Locations</h4>
+                    </div>
+                    <div className="flex items-center justify-between ml-10">
+                      <p className="text-xs text-gray-300">Discover our exclusive villas in Chennai & Pondicherry</p>
                       <span className="text-[#D4AF37] group-hover:translate-x-1 transition-transform">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -1141,6 +1182,21 @@ const Hero = () => {
           )}
         </motion.button>
       </motion.div>
+
+      {/* Premium Locations Modal - Positioned at top of page with navigation */}
+      {createPortal(
+        <AnimatePresence>
+          {premiumLocationsOpen && (
+            <PremiumLocationsModal 
+              isOpen={premiumLocationsOpen} 
+              onClose={() => setPremiumLocationsOpen(false)}
+              navigate={navigate}
+              clickPosition={modalClickPosition}
+            />
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   )
 }
