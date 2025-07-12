@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import Navbar from './components/Navbar'
@@ -291,14 +292,28 @@ function App() {
           </div>
           <Footer />
 
-          <a
-            href="https://wa.me/918015924647?text=Hi%2C%20I%20am%20interested%20in%20booking%20a%20villas."
-            target="_blank"
-            rel="noopener noreferrer"
-            className="fixed bottom-5 right-5 bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition duration-300 z-50 text-2xl whatsapp-button"
-          >
-            <FaWhatsapp />
-          </a>
+          {/* WhatsApp button with React Portal to ensure it stays on top of everything */}
+          {createPortal(
+            <a
+              href="https://wa.me/918015924647?text=Hi%2C%20I%20am%20interested%20in%20booking%20a%20villas."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="fixed bottom-5 right-5 bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition duration-300 z-[9999] text-2xl whatsapp-button animate-pulse-slow"
+              style={{
+                position: 'fixed', 
+                bottom: '20px', 
+                right: '20px',
+                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3), 0 0 10px rgba(37, 211, 102, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              aria-label="Contact us on WhatsApp"
+            >
+              <FaWhatsapp />
+            </a>,
+            document.body
+          )}
         </div>
         <Toast />
       </ToastProvider>
