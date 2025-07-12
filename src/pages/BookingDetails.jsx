@@ -343,6 +343,13 @@ const BookingDetails = () => {
       return
     }
 
+    // Add validation for required cancellation reason
+    if (!cancellationReason.trim()) {
+      setIsCancelling(true) // This triggers the validation styling
+      showToastNotification("Please provide a reason for cancellation")
+      return
+    }
+
     setIsCancelling(true)
     setBooking((prev) => ({ ...prev, processingCancel: true }))
 
@@ -1178,24 +1185,30 @@ const BookingDetails = () => {
                     htmlFor="cancellationReason"
                     className="block text-xs sm:text-sm font-medium text-gray-700 mb-1"
                   >
-                    Reason for cancellation (optional)
+                    Reason for cancellation <span className="text-red-600">*</span>
                   </label>
                   <textarea
                     id="cancellationReason"
                     value={cancellationReason}
                     onChange={(e) => setCancellationReason(e.target.value)}
                     rows={3}
-                    className="w-full bg-white border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                    className={`w-full bg-white border ${
+                      !cancellationReason.trim() && isCancelling ? 'border-red-500' : 'border-gray-300'
+                    } text-gray-700 rounded-lg px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500`}
                     placeholder="Please let us know why you're cancelling"
+                    required
                   />
+                  {!cancellationReason.trim() && isCancelling && (
+                    <p className="mt-1 text-xs text-red-600">Please provide a reason for cancellation</p>
+                  )}
                 </div>
 
                 <div className="flex gap-3">
                   <button
                     onClick={cancelBooking}
-                    disabled={isCancelling}
+                    disabled={isCancelling || !cancellationReason.trim()}
                     className={`flex-1 px-3 sm:px-4 py-2 rounded text-xs sm:text-sm font-medium ${
-                      isCancelling
+                      isCancelling || !cancellationReason.trim()
                         ? "bg-red-300 text-white cursor-not-allowed"
                         : "bg-red-600 text-white hover:bg-red-700"
                     }`}
