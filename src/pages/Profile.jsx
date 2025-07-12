@@ -502,6 +502,29 @@ const Profile = () => {
         return
       }
 
+      const formattedPhone = `${countryCode}${newPhone}`
+      
+      // First check if this number already exists in the database
+      const checkResponse = await axios.get(
+        `${baseUrl}/api/profile/check-phone?phoneNumber=${encodeURIComponent(formattedPhone)}`,
+        {
+          headers: { Authorization: `Bearer ${authToken}` }
+        }
+      );
+
+      if (checkResponse.data.exists) {
+        // Show SweetAlert if the number is already associated with another account
+        Swal.fire({
+          icon: 'error',
+          title: 'Phone Number Already Registered',
+          text: 'This phone number is already associated with another account. Please use a different phone number.',
+          confirmButtonColor: "#ca8a04",
+        });
+        setSendingOtp(false);
+        return;
+      }
+
+      // If number is not already registered, proceed with OTP verification
       if (recaptchaVerifierRef.current) {
         try {
           recaptchaVerifierRef.current.clear()
@@ -521,7 +544,6 @@ const Profile = () => {
         },
       })
 
-      const formattedPhone = `${countryCode}${newPhone}`
       console.log("Sending OTP to:", formattedPhone)
 
       const confirmation = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifierRef.current)
@@ -809,13 +831,13 @@ const Profile = () => {
                                   <path
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
-                                    strokeWidth="2"
+                                    strokeWidth={2}
                                     d="M3 9a2 2 0 002-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9a2 2 0 012-2h3z"
                                   />
                                   <path
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
-                                    strokeWidth="2"
+                                    strokeWidth={2}
                                     d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
                                   />
                                 </svg>
