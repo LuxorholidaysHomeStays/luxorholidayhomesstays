@@ -81,12 +81,13 @@ const villaDescriptions = {
 }
 
 // Villa location details with coordinates and descriptions
+// Villa location details with coordinates and descriptions
 const villaLocations = {
   "Amrith Palace": {
     address: "Pattipulam, East Coast Road, Chennai",
     coordinates: "12.8046° N, 80.2329° E",
     description: "Located just 800m from Pattipulam Beach, 45 minutes from Chennai city center",
-    mapUrl: "https://maps.app.goo.gl/abcdefghijklmnop",
+    mapUrl: "https://maps.app.goo.gl/zgKn8G6c7q3zXaNK9",
     nearbyAttractions: [
       "Kovalam Beach - 15 min drive",
       "Mahabalipuram - 25 min drive",
@@ -97,7 +98,7 @@ const villaLocations = {
     address: "Perur, East Coast Road, Chennai",
     coordinates: "12.7985° N, 80.2456° E",
     description: "Peaceful location in Perur with just 5 minutes walk to a secluded beach",
-    mapUrl: "https://maps.app.goo.gl/qrstuvwxyz123456",
+    mapUrl: "https://maps.app.goo.gl/T42kAzGFteVLF7Ry7?g_st=ac",
     nearbyAttractions: [
       "Perur Beach - 5 min walk",
       "Local fish market - 10 min drive",
@@ -108,7 +109,7 @@ const villaLocations = {
     address: "Perur, East Coast Road, Chennai",
     coordinates: "12.8025° N, 80.2515° E",
     description: "Conveniently located on the East Coast Road with easy access to beaches and attractions",
-    mapUrl: "https://maps.app.goo.gl/789012abcdefghij",
+    mapUrl: "https://maps.app.goo.gl/KbUjnyUxBeSNf3Yh8",
     nearbyAttractions: [
       "Nettukuppam Beach - 10 min drive",
       "VGP Snow Kingdom - 25 min drive",
@@ -126,7 +127,39 @@ const villaLocations = {
       "Mahabalipuram temples - 20 min drive"
     ]
   },
-
+  "Lavish I": {
+    address: "East Coast Road, Chennai",
+    coordinates: "13.0827° N, 80.2707° E",
+    description: "One of our three signature Lavish villas on the East Coast Road",
+    mapUrl: "https://maps.app.goo.gl/FwjnyQ3Fjqotg89NA?g_st=aw",
+    nearbyAttractions: [
+      "Marina Beach - 30 min drive",
+      "Kapaleeshwarar Temple - 35 min drive",
+      "Fort St. George - 40 min drive"
+    ]
+  },
+  "Lavish II": {
+    address: "East Coast Road, Chennai",
+    coordinates: "13.0827° N, 80.2707° E",
+    description: "One of our three signature Lavish villas on the East Coast Road",
+    mapUrl: "https://maps.app.goo.gl/FwjnyQ3Fjqotg89NA?g_st=aw",
+    nearbyAttractions: [
+      "Marina Beach - 30 min drive",
+      "Kapaleeshwarar Temple - 35 min drive",
+      "Fort St. George - 40 min drive"
+    ]
+  },
+  "Lavish III": {
+    address: "East Coast Road, Chennai",
+    coordinates: "13.0827° N, 80.2707° E",
+    description: "One of our three signature Lavish villas on the East Coast Road",
+    mapUrl: "https://www.google.com/maps/place/Ecrholidays%2FLavish+Home+stays/@11.9693191,79.8385511,17.7z/data=!4m9!3m8!1s0x3a5363005d0a6e63:0x80241e87f3f19b09!5m2!4m1!1i2!8m2!3d11.9683005!4d79.8401932!16s%2Fg%2F11v_6782jg?entry=ttu&g_ep=EgoyMDI1MDcwOS4wIKXMDSoASAFQAw%3D%3D",
+    nearbyAttractions: [
+      "Marina Beach - 30 min drive",
+      "Kapaleeshwarar Temple - 35 min drive",
+      "Fort St. George - 40 min drive"
+    ]
+  },
   "default": {
     address: "East Coast Road, Chennai",
     coordinates: "13.0827° N, 80.2707° E",
@@ -182,6 +215,7 @@ const standardAmenities = [
   "BBQ Setup",
   "Party Lawn"
 ];
+
 
 export default function VillaInfo ({ villa, villaPricing }) {
   const [showFullDescription, setShowFullDescription] = useState(false)
@@ -287,16 +321,34 @@ export default function VillaInfo ({ villa, villaPricing }) {
           <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
             <h2 className="text-3xl font-bold text-gray-900 mb-6">Where you'll be</h2>
             <div className="rounded-2xl overflow-hidden h-80 shadow-lg mb-6">
-              <iframe
-                src={`https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d497511.2313083493!2d79.92235835!3d13.048160899999999!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a5265ea4f7d3361%3A0x6e61a70b6863d433!2sChennai%2C%20Tamil%20Nadu!5e0!3m2!1sen!2sin!4v1703123456789!5m2!1sen!2sin`}
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title={`Map showing ${villa?.name || 'Villa'} location`}
-              />
+              {villaLocation.mapUrl ? (
+                // Extract Google Maps embed URL from the shared URL
+                <iframe
+                  src={villaLocation.mapUrl.includes('maps.app.goo.gl') 
+                    ? `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3890!2d${villaLocation.coordinates.split(',')[1].trim().split('°')[0]}!3d${villaLocation.coordinates.split(',')[0].trim().split('°')[0]}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a5265ea4f7d3361%3A0x6e61a70b6863d433!2s${encodeURIComponent(villa?.name || 'Luxury Villa')}!5e0!3m2!1sen!2sin!4v1703123456789!5m2!1sen!2sin` 
+                    : villaLocation.mapUrl.replace('https://www.google.com/maps/place/', 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3000!2d')
+                  }
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title={`Map showing ${villa?.name || 'Villa'} location`}
+                />
+              ) : (
+                // Fallback to coordinates if no map URL available
+                <iframe
+                  src={`https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3000!2d${villaLocation.coordinates.split(',')[1].trim().split('°')[0]}!3d${villaLocation.coordinates.split(',')[0].trim().split('°')[0]}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2z${encodeURIComponent(villa?.name || 'Luxury Villa')}!5e0!3m2!1sen!2sin!4v1703123456789!5m2!1sen!2sin`}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title={`Map showing ${villa?.name || 'Villa'} location`}
+                />
+              )}
             </div>
             
             <div className="space-y-4">
@@ -314,6 +366,19 @@ export default function VillaInfo ({ villa, villaPricing }) {
                     <li key={index}>{attraction}</li>
                   ))}
                 </ul>
+              </div>
+              
+              {/* Add a link to open in Google Maps */}
+              <div className="mt-4">
+                <a 
+                  href={villaLocation.mapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  <MapPin className="h-4 w-4" />
+                  View on Google Maps
+                </a>
               </div>
             </div>
           </div>

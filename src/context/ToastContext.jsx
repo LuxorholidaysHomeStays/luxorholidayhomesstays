@@ -5,14 +5,24 @@ const ToastContext = createContext(null);
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
-  const addToast = (message, type = 'info', duration = 5000) => {
-    const id = Math.random().toString(36).substr(2, 9);
-    setToasts(prev => [...prev, { id, message, type, visible: true }]);
-    setTimeout(() => removeToast(id), duration);
+  const addToast = (message, type = 'info') => {
+    // Ensure message is a string
+    const toastMessage = typeof message === 'object' && message.message 
+      ? message.message 
+      : String(message);
+      
+    const toastType = typeof message === 'object' && message.type
+      ? message.type
+      : type;
+      
+    setToasts(prevToasts => [
+      ...prevToasts, 
+      { id: Date.now(), message: toastMessage, type: toastType }
+    ]);
   };
 
   const removeToast = (id) => {
-    // First mark the toast as hidden to trigger fade-out animation
+ 
     setToasts(prev => 
       prev.map(toast => 
         toast.id === id ? { ...toast, visible: false } : toast
