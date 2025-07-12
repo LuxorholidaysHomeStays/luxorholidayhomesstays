@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets";
 import { API_BASE_URL } from "../config/api";
@@ -57,6 +57,11 @@ const Navbar = () => {
             if (isMenuOpen) {
                 setIsMenuOpen(false);
             }
+            
+            // Close user menu dropdown if open
+            if (userMenuOpen) {
+                setUserMenuOpen(false);
+            }
         }
     }
 
@@ -83,6 +88,8 @@ const Navbar = () => {
 
     // User menu controls
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const userMenuRef = useRef(null); // Ref for the user menu dropdown
+    const mobileMenuRef = useRef(null); // Separate ref for mobile menu dropdown
 
     const handleLogout = () => {
         logout();
@@ -93,6 +100,31 @@ const Navbar = () => {
     const pulseClasses = isPhoneHovered ? 
         "animate-pulse ring-4 ring-amber-200 bg-gradient-to-r from-amber-50 to-amber-100 text-amber-600" : 
         "bg-white/80 text-amber-600 hover:bg-amber-50 hover:text-amber-700 border-amber-200";
+
+    // Close user menu if clicked outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            const isDesktopMenuClicked = userMenuRef.current && userMenuRef.current.contains(event.target);
+            const isMobileMenuClicked = mobileMenuRef.current && mobileMenuRef.current.contains(event.target);
+            const isAvatarClicked = event.target.closest('[data-menu-trigger="true"]');
+            
+            if (userMenuOpen && !isDesktopMenuClicked && !isMobileMenuClicked && !isAvatarClicked) {
+                setUserMenuOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [userMenuOpen]);
+    
+    // Close user menu when location changes
+    useEffect(() => {
+        if (userMenuOpen) {
+            setUserMenuOpen(false);
+        }
+    }, [location.pathname]);
 
     return (
         <nav className={`fixed top-0 left-0 w-full flex items-center justify-between px-4 md:px-16 lg:px-24 xl:px-32 transition-all duration-500 z-50 ${
@@ -171,8 +203,10 @@ const Navbar = () => {
                 {isSignedIn && userData ? (
                     <div className="relative">
                         <div 
-                            className="flex items-center gap-2 cursor-pointer"
+                            data-menu-trigger="true"
+                            className="flex items-center gap-2 cursor-pointer group relative"
                             onClick={() => setUserMenuOpen(!userMenuOpen)}
+                            title="Profile"
                         >
                             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#BF953F] to-[#FCF6BA] p-0.5 overflow-hidden flex items-center justify-center shadow-md">
                                 {userData.profileImageUrl ? (
@@ -188,10 +222,11 @@ const Navbar = () => {
                                 )}
                             </div>
                             <span className="hidden lg:block text-sm font-medium text-white">{userData.firstName || userData.name || userData.email}</span>
+                            <span className="absolute -bottom-6 left-5 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Profile</span>
                         </div>
                         
                         {userMenuOpen && (
-                            <div className="absolute right-0 mt-2 w-48 bg-gray-900/95 backdrop-blur-md rounded-lg shadow-lg py-2 z-20 ring-1 ring-[#BF953F]/20">
+                            <div ref={userMenuRef} className="absolute right-0 mt-2 w-48 bg-gray-900/95 backdrop-blur-md rounded-lg shadow-lg py-2 z-20 ring-1 ring-[#BF953F]/20">
                                 <button
                                     onClick={() => setUserMenuOpen(false)}
                                     className="absolute top-2 right-2 p-1 rounded-full text-white hover:text-[#BF953F] transition-colors"
@@ -269,8 +304,12 @@ const Navbar = () => {
             {/* Mobile Menu Button */}
             <div className="flex items-center gap-3 lg:hidden relative z-10">
                 {isSignedIn && userData && (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#BF953F] to-[#FCF6BA] p-0.5 overflow-hidden flex items-center justify-center"
-                         onClick={() => setUserMenuOpen(!userMenuOpen)}>
+                    <div 
+                        data-menu-trigger="true" 
+                        className="w-8 h-8 rounded-full bg-gradient-to-r from-[#BF953F] to-[#FCF6BA] p-0.5 overflow-hidden flex items-center justify-center relative group cursor-pointer"
+                        onClick={() => setUserMenuOpen(!userMenuOpen)}
+                        title="Profile"
+                    >
                         {userData.profileImageUrl ? (
                             <img src={userData.profileImageUrl} alt="Profile" className="w-full h-full object-cover rounded-full" />
                         ) : (
@@ -282,6 +321,7 @@ const Navbar = () => {
                                 </span>
                             </div>
                         )}
+                        <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Profile</span>
                     </div>
                 )}
 
@@ -328,15 +368,7 @@ const Navbar = () => {
                     </div>
                 ))}
 
-                {isSignedIn && userData && !isAdmin && (
-                    <div
-                        onClick={() => handleNavigation('/my-bookings')}
-                        className="group cursor-pointer text-lg text-white transition-all duration-300 relative px-4 py-2 hover:scale-105"
-                    >
-                        <span className="relative z-10 transition-colors duration-300 group-hover:text-[#BF953F]">My Bookings</span>
-                        <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-[#BF953F] to-[#FCF6BA] group-hover:w-full transition-all duration-300 ease-out"></div>
-                    </div>
-                )}
+                {/* My Bookings option removed from hamburger menu since it's already in the avatar dropdown */}
 
                 {/* Show Dashboard button for admin in mobile menu instead of My Bookings */}
                 {isSignedIn && userData && isAdmin && (
@@ -372,9 +404,9 @@ const Navbar = () => {
                 )}
             </div>
             
-            {/* Mobile User Menu */}
+            {/* Mobile and Tablet User Menu */}
             {userMenuOpen && isSignedIn && userData && (
-                <div className="md:hidden fixed top-16 right-4 w-48 bg-gray-900/95 backdrop-blur-md rounded-lg shadow-lg py-2 z-50 ring-1 ring-[#BF953F]/20">
+                <div ref={mobileMenuRef} className="lg:hidden fixed top-16 right-4 w-48 bg-gray-900/95 backdrop-blur-md rounded-lg shadow-lg py-2 z-50 ring-1 ring-[#BF953F]/20">
                     <button
                         onClick={() => setUserMenuOpen(false)}
                         className="absolute top-2 right-2 p-1 rounded-full text-white hover:text-[#BF953F] transition-colors"

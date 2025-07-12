@@ -231,8 +231,12 @@ const SignIn = () => {
       console.log("Google sign-in result:", result); // Debug log
       
       if (result.success) {
-        // Add a success toast message
-        addToast(result.isAdmin ? 'Admin login successful!' : 'Login successful!', 'success');
+        // Add a styled success toast message
+        addToast(
+          result.isAdmin ? 'Admin login successful!' : 'Login successful! Welcome back.',
+          'success',
+          4000
+        );
         
         // Special handling for admin users
         if (result.isAdmin) {
@@ -246,11 +250,11 @@ const SignIn = () => {
           handleSuccessfulLogin();
         }
       } else {
-        addToast(result.message || 'Login failed', 'error');
+        addToast(result.message || 'Login failed. Please check your credentials.', 'error', 6000);
       }
     } catch (error) {
       console.error("Google sign-in error:", error);
-      addToast('An error occurred during login', 'error');
+      addToast('An error occurred during login. Please try again later.', 'error', 6000);
     } finally {
       setLoading(false);
     }
