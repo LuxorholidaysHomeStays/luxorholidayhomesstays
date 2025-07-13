@@ -33,23 +33,39 @@ const LanguageSelector = () => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={toggleDropdown}
-        className="flex items-center justify-center bg-white text-gray-800 p-3 rounded-full shadow-lg hover:bg-gray-100 transition duration-300"
+        className="flex items-center justify-center bg-white text-gray-800 p-4 rounded-full shadow-lg hover:bg-gray-100 transition duration-300 text-2xl"
         style={{
-          boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)',
+          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3), 0 0 10px rgba(220, 220, 220, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          pointerEvents: 'auto',
+          touchAction: 'manipulation',
+          width: '56px',
+          height: '56px'
         }}
         aria-label="Change language"
         title="Change language"
       >
-        <span className="text-xl">{languages[currentLanguage].flag}</span>
+        <span>{languages[currentLanguage].flag}</span>
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-16 right-0 bg-white rounded-lg shadow-xl py-2 w-40 z-[9999]">
+        <div 
+          className="absolute bg-white rounded-lg shadow-xl py-2 w-44 z-[10000]" 
+          style={{
+            bottom: '60px',
+            right: '0',
+            maxHeight: '300px', 
+            overflow: 'auto',
+            boxShadow: '0 5px 15px rgba(0, 0, 0, 0.3)'
+          }}
+        >
           {Object.values(languages).map((language) => (
             <button
               key={language.code}
               onClick={() => handleLanguageChange(language.code)}
-              className={`flex items-center w-full px-4 py-2 text-left hover:bg-gray-100 ${
+              className={`flex items-center w-full px-4  text-left hover:bg-gray-100 ${
                 currentLanguage === language.code ? 'bg-gray-100 font-medium' : ''
               }`}
             >

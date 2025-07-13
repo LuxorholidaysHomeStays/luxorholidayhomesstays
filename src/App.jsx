@@ -319,8 +319,8 @@ function App() {
                 </a>
               </div>
               
-              {/* Language Selector - Placed on left side */}
-              <div className="fixed bottom-5 left-5 z-[9999]">
+              {/* Language Selector - Placed on right side above WhatsApp */}
+              <div className="fixed bottom-24 right-5 z-[9999]" style={{ minWidth: '48px', minHeight: '48px' }}>
                 <LanguageSelector />
               </div>
             </>,
