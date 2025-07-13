@@ -359,7 +359,10 @@ const SignIn = () => {
             idToken,
             phoneNumber: firebaseUser.phoneNumber,
             // Use a generic name - user can update later in profile
-            name: firebaseUser.displayName || `User_${firebaseUser.phoneNumber.slice(-4)}`
+            name: firebaseUser.displayName || `User_${firebaseUser.phoneNumber.slice(-4)}`,
+            isSignUp: !isLogin, // Send info to backend whether this is a login or signup attempt
+            authMode: isLogin ? 'login' : 'signup',
+            forceProfileUpdate: !isLogin // Force profile update for all signups
           }),
         });
 
@@ -369,18 +372,50 @@ const SignIn = () => {
           throw new Error(data.error || 'Phone authentication failed');
         }
 
-        // Store auth token
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userId', data.user._id || data.user.id);
-        
         // Check if user needs to complete their profile
         // For both login and signup via phone, handle the same way:
         // - If email is not verified or is a placeholder, go to profile completion
         // - Otherwise, go directly to home page
         const emailIsVerified = data.user.emailVerified === true || data.emailVerified === true;
-        if (!emailIsVerified || data.user.needsProfileUpdate || data.isNewUser || 
-            (data.user.email && data.user.email.includes('@phone.luxor.com'))) {
-          console.log('User needs to complete profile: email verification status =', emailIsVerified);
+        const hasPlaceholderEmail = data.user.email && (
+          data.user.email.includes('@phone.luxor.com') || 
+          data.user.email.includes('@phone.local')
+        );
+        
+        console.log('Auth flow info:', { 
+          isLogin, 
+          emailIsVerified,
+          hasPlaceholderEmail,
+          needsProfileUpdate: data.user.needsProfileUpdate,
+          isNewUser: data.isNewUser
+        });
+        
+        // For phone authentication, we want to ensure consistent behavior:
+        // 1. If this is a new signup (isLogin=false) -> always complete profile
+        // 2. If user is new according to backend -> always complete profile
+        // 3. If email is not verified or is placeholder -> complete profile
+        // 4. Otherwise -> go to home page
+        const needsProfileCompletion = !isLogin || !emailIsVerified || 
+                                    data.user.needsProfileUpdate || 
+                                    data.isNewUser || 
+                                    hasPlaceholderEmail;
+                                    
+        if (needsProfileCompletion) {
+          // Log detailed reason for redirecting to profile completion
+          const reason = !isLogin ? 'New signup' :
+                        !emailIsVerified ? 'Email not verified' :
+                        data.user.needsProfileUpdate ? 'Profile needs update' :
+                        data.isNewUser ? 'New user' :
+                        hasPlaceholderEmail ? 'Has placeholder email' : 'Unknown reason';
+                        
+          console.log(`Redirecting to complete profile. Reason: ${reason}`);
+          // Store the auth token and user ID in localStorage
+          localStorage.setItem('authToken', data.token);
+          localStorage.setItem('userId', data.user._id || data.user.id);
+          
+          // Update auth context (but don't set userData to avoid inconsistencies)
+          setAuthToken(data.token);
+          
           // Navigate to profile completion page
           navigate('/complete-profile', { 
             state: { 
@@ -388,7 +423,9 @@ const SignIn = () => {
               authToken: data.token,
               currentName: data.user.name,
               currentEmail: data.user.email,
-              idToken
+              idToken,
+              isNewSignup: !isLogin,
+              reason: reason
             } 
           });
         } else {
@@ -397,7 +434,8 @@ const SignIn = () => {
           setUserData(data.user);
           setAuthToken(data.token);
           
-          // Show success message
+          // Always treat this as a login success since we've confirmed
+          // the user has a complete profile and verified email
           addToast('Login successful! Welcome back.', 'success', 4000);
           
           // Navigate directly to home page
@@ -775,6 +813,16 @@ const SignIn = () => {
                       />
                     </div>
                     <p className="text-xs text-gray-500 mt-1">Enter the 6-digit OTP sent to {countryCode} {phoneNumber}</p>
+                    <p className="text-xs text-yellow-600 mt-2">
+                      {isLogin ? 
+                        "After verification, you'll be redirected to your dashboard or profile completion if needed" : 
+                        "After verification, you'll be directed to complete your profile information"}
+                    </p>
+                    {!isLogin && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        This step is required to finish creating your account
+                      </p>
+                    )}
                   </div>
                   
                   <div className="flex space-x-3" data-aos="fade-up" data-aos-delay="200">
