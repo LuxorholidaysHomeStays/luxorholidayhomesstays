@@ -1,9 +1,35 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const ToastContext = createContext(null);
 
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
+  
+  // Add effect to handle toast expiration for each toast individually
+  useEffect(() => {
+    const timers = [];
+    
+    toasts.forEach(toast => {
+      if (toast.visible && !toast.timer) {
+        const timer = setTimeout(() => {
+          removeToast(toast.id);
+        }, 3000); // 3 seconds timeout
+        
+        timers.push(timer);
+        
+        // Update toast to track progress
+        setToasts(prev => 
+          prev.map(t => 
+            t.id === toast.id ? { ...t, timer: true, startTime: Date.now() } : t
+          )
+        );
+      }
+    });
+    
+    return () => {
+      timers.forEach(timer => clearTimeout(timer));
+    };
+  }, [toasts]);
 
   const addToast = (message, type = 'info') => {
     // Ensure message is a string
@@ -15,14 +41,21 @@ export const ToastProvider = ({ children }) => {
       ? message.type
       : type;
       
+    // Add visible property and startTime for progress tracking
     setToasts(prevToasts => [
       ...prevToasts, 
-      { id: Date.now(), message: toastMessage, type: toastType }
+      { 
+        id: Date.now(), 
+        message: toastMessage, 
+        type: toastType, 
+        visible: true,
+        startTime: Date.now(),
+      }
     ]);
   };
 
   const removeToast = (id) => {
- 
+    // Set visible to false to trigger fade-out animation
     setToasts(prev => 
       prev.map(toast => 
         toast.id === id ? { ...toast, visible: false } : toast

@@ -454,9 +454,9 @@ const Dashboard = () => {
 
   return (
     <>
-      {/* Main content without the fixed welcome bar at top */}
+     
       <div className="space-y-8">
-        {/* Welcome bar - positioned normally in the flow */}
+     
         <div className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-lg shadow-lg p-6">
           <div className="flex justify-between items-center">
             <div>
@@ -474,7 +474,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl shadow-md border border-blue-200">
             <div className="flex justify-between items-start">

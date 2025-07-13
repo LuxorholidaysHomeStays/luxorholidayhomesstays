@@ -945,7 +945,7 @@ export default function EnhancedBookingForm({
         console.log("New address endpoint not available or returned an error, falling back to legacy method")
       }
 
-      // Fall back to the original implementation if the new endpoint fails
+     
       const bookingsResponse = await fetch(`${baseUrl}/api/bookings/user-bookings`, {
         headers: {
           Authorization: `Bearer ${token}`,
