@@ -7,7 +7,7 @@ import 'aos/dist/aos.css';
 import { signInWithGoogle } from '../utils/firebase';
 import { FcGoogle } from 'react-icons/fc';
 import { useToast } from '../context/ToastContext';
-import { setupRecaptcha, sendOTP, verifyOTP, isSessionLikelyExpired } from '../utils/otp';
+import { setupRecaptcha, setupHiddenRecaptcha, sendOTP, verifyOTP, isSessionLikelyExpired } from '../utils/otp';
 
 const SignIn = () => {
   // Initialize AOS for animations
@@ -316,13 +316,20 @@ const SignIn = () => {
       
       // Clear existing content to avoid duplicates
       recaptchaContainer.innerHTML = '';
+      recaptchaContainer.style.display = 'block'; // Make sure it's visible
       
-      // Setup reCAPTCHA with normal (visible) size
+      // Setup reCAPTCHA with normal (visible) size for the phone input step
       const recaptchaVerifier = setupRecaptcha('recaptcha-container');
       
       // Send OTP with full phone number
       const confirmationResult = await sendOTP(fullPhoneNumber, recaptchaVerifier);
       setConfirmationResult(confirmationResult);
+      
+      // Hide the main recaptcha after successful OTP send
+      if (recaptchaContainer) {
+        recaptchaContainer.style.display = 'none';
+      }
+      
       setShowOtpInput(true);
       setSuccess('OTP sent successfully! Please check your phone.');
       
@@ -386,6 +393,19 @@ const SignIn = () => {
           code: 'auth/session-expired',
           message: 'Your verification session has expired. Please request a new code.'
         };
+      }
+      
+      // Hide the main recaptcha container if it exists
+      const mainRecaptchaContainer = document.getElementById('recaptcha-container');
+      if (mainRecaptchaContainer) {
+        mainRecaptchaContainer.style.display = 'none';
+      }
+      
+      // Make sure we have a hidden recaptcha for verification if needed
+      // Some operations might require additional recaptcha verification
+      const verifyContainer = document.getElementById('recaptcha-verify-container');
+      if (verifyContainer) {
+        verifyContainer.style.display = 'none'; // Keep it hidden
       }
 
       console.log('Verifying OTP with Firebase...');
@@ -856,7 +876,7 @@ const SignIn = () => {
                   </div>
                   
                   <div data-aos="fade-up" data-aos-delay="300">
-                    {/* reCAPTCHA container - make sure it's visible with sufficient space */}
+                    {/* reCAPTCHA container - only show in the phone input step */}
                     <div id="recaptcha-container" className="flex justify-center mb-4 min-h-[78px] border border-gray-100 rounded p-2"></div>
                     
                     <button
@@ -884,6 +904,8 @@ const SignIn = () => {
                 </form>
               ) : (
                 <form onSubmit={handleOtpVerification} className="space-y-4">
+                  {/* Hidden recaptcha container for OTP verification */}
+                  <div id="recaptcha-verify-container" className="hidden"></div>
                   <div data-aos="fade-up" data-aos-delay="100">
                     <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
                       Enter OTP
@@ -912,14 +934,14 @@ const SignIn = () => {
                         "After verification, you'll be redirected to your dashboard or profile completion if needed" : 
                         "After verification, you'll be directed to complete your profile information"}
                     </p>
+                    <p className="text-xs text-orange-600 mt-1">
+                      Note: The verification code expires after 10 minutes. If expired, click "Request New OTP" below.
+                    </p>
                     {!isLogin && (
                       <p className="text-xs text-gray-500 mt-1">
                         This step is required to finish creating your account
                       </p>
                     )}
-                    <p className="text-xs text-orange-600 mt-2">
-                      Note: The verification code expires after 10 minutes. If expired, click "Request New OTP" below.
-                    </p>
                   </div>
                   
                   <div data-aos="fade-up" data-aos-delay="200">
@@ -930,6 +952,14 @@ const SignIn = () => {
                           setShowOtpInput(false);
                           setOtp('');
                           setConfirmationResult(null);
+                          
+                          // Make sure the recaptcha container is visible again when going back
+                          const recaptchaContainer = document.getElementById('recaptcha-container');
+                          if (recaptchaContainer) {
+                            setTimeout(() => {
+                              recaptchaContainer.style.display = 'block';
+                            }, 100);
+                          }
                         }}
                         className="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-all duration-300"
                       >
@@ -967,6 +997,7 @@ const SignIn = () => {
                         setConfirmationResult(null);
                         setError('');
                         setSuccess('Ready to request a new verification code');
+                        
                         // Clear recaptcha if it exists
                         if (window.recaptchaVerifier) {
                           try {
@@ -977,10 +1008,25 @@ const SignIn = () => {
                           }
                         }
                         
+                        // Make sure the recaptcha container is visible again
+                        const recaptchaContainer = document.getElementById('recaptcha-container');
+                        if (recaptchaContainer) {
+                          setTimeout(() => {
+                            recaptchaContainer.innerHTML = ''; // Clear existing content
+                            recaptchaContainer.style.display = 'block';
+                            // Setup a new recaptcha in case needed
+                            try {
+                              setupRecaptcha('recaptcha-container');
+                            } catch (e) {
+                              console.log('Failed to reset reCAPTCHA:', e);
+                            }
+                          }, 100);
+                        }
+                        
                         // Add notification toast
                         addToast('You can now request a new verification code', 'info');
                       }}
-                      className="w-full mt-3 py-3 px-4 border border-orange-400 rounded-lg text-orange-700 text-sm font-medium hover:bg-orange-50 transition-all duration-300 shadow-md"
+                      className="w-full mt-4 py-3 px-4 border border-orange-400 bg-white rounded-lg text-orange-700 text-base font-medium hover:bg-orange-50 transition-all duration-300 shadow-sm"
                     >
                       Request New OTP
                     </button>

@@ -56,7 +56,7 @@ try {
 const auth = getAuth(otpApp);
 
 // Phone authentication functions
-export const setupRecaptcha = (elementId) => {
+export const setupRecaptcha = (elementId, options = {}) => {
   try {
     // Clear existing recaptcha verifier if it exists
     if (window.recaptchaVerifier) {
@@ -74,8 +74,11 @@ export const setupRecaptcha = (elementId) => {
       throw new Error(`Element with id '${elementId}' not found`);
     }
     
+    // Default to invisible for OTP verification step
+    const size = options.invisible ? 'invisible' : 'normal';
+    
     window.recaptchaVerifier = new RecaptchaVerifier(auth, elementId, {
-      size: 'normal', // Make it explicitly visible
+      size: size, // Can be 'invisible' or 'normal'
       theme: 'light',
       badge: 'bottomright',
       callback: (response) => {
@@ -212,6 +215,11 @@ export const isSessionLikelyExpired = (confirmationResult) => {
   const MAX_SESSION_AGE_MS = 55 * 60 * 1000; // 55 minutes (just under Firebase's 1 hour)
   
   return sessionAge > MAX_SESSION_AGE_MS;
+};
+
+// Setup a hidden recaptcha for verification step
+export const setupHiddenRecaptcha = (elementId) => {
+  return setupRecaptcha(elementId, { invisible: true });
 };
 
 export { auth };
