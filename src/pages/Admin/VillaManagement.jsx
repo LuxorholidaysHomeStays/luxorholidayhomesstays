@@ -16,64 +16,26 @@ import {
   HomeIcon,
 } from "@heroicons/react/24/outline"
 
-// // Import villa images properly
-// import Amrith from "/AmrithPalace/AP9.jpg"
-// import EastCoast from "/eastcoastvilla/EC1.jpg"
-// import EmpireAnand from "/empireanandvillasamudra/anandvilla1.jpg"
-// import RamWater from "/ramwatervilla/RW1.jpg"
-// import LavishOne from "/LavishVilla 1/lvone18.jpg"
-// import LavishTwo from "/LavishVilla 2/lvtwo22.jpg"
-// import LavishThree from "/LavishVilla 3/lvthree5.jpg"
-
-// // Create a proper villa images mapping
-// const villaImages = {
-//   "Amrith Palace": Amrith,
-//   "East Coast Villa": EastCoast,
-//   "Empire Anand Villa Samudra": EmpireAnand,
-//   "Ram Water Villa": RamWater,
-//   "Lavish Villa I": LavishOne,
-//   "Lavish Villa II": LavishTwo,
-//   "Lavish Villa III": LavishThree,
-// }
-
 // Helper function to get villa image based on villa name with better matching
 const getVillaImage = (villaName) => {
-  if (!villaName) return Amrith
+  // Return an SVG data URI with the villa name
+  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f3f4f6'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='32' text-anchor='middle' fill='%23666'%3E${encodeURIComponent(villaName || 'Villa')}%3C/text%3E%3C/svg%3E`;
+}
 
-  // Direct match first
-  if (villaImages[villaName]) {
-    return villaImages[villaName]
+// Update getDisplayVillaImage to be more robust
+const getDisplayVillaImage = (villa) => {
+  // If villa has a mainImage property and it's a non-empty string
+  if (villa.mainImage && typeof villa.mainImage === 'string' && villa.mainImage.length > 0) {
+    return villa.mainImage; // Use the base64 image from API
   }
-
-  // Case insensitive partial matching
-  const lowerName = villaName.toLowerCase()
-
-  if (lowerName.includes("amrith") || lowerName.includes("palace")) {
-    return villaImages["Amrith Palace"]
-  } else if (lowerName.includes("east") || lowerName.includes("coast")) {
-    return villaImages["East Coast Villa"]
-  } else if (lowerName.includes("empire") || lowerName.includes("anand") || lowerName.includes("samudra")) {
-    return villaImages["Empire Anand Villa Samudra"]
-  } else if (lowerName.includes("ram") || lowerName.includes("water")) {
-    return villaImages["Ram Water Villa"]
-  } else if (
-    lowerName.includes("lavish") &&
-    lowerName.includes("i") &&
-    !lowerName.includes("ii") &&
-    !lowerName.includes("iii")
-  ) {
-    return villaImages["Lavish Villa I"]
-  } else if (lowerName.includes("lavish") && lowerName.includes("ii")) {
-    return villaImages["Lavish Villa II"]
-  } else if (lowerName.includes("lavish") && lowerName.includes("iii")) {
-    return villaImages["Lavish Villa III"]
-  }
-
-  // Default fallback
-  return Amrith
+  
+  // Otherwise fall back to our SVG generator
+  return getVillaImage(villa.name);
 }
 
 const VillaManagement = () => {
+
+
   const [villas, setVillas] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false) // Change showModal to showForm
@@ -87,66 +49,85 @@ const VillaManagement = () => {
     maxGuests: 1,
     bedrooms: 1,
     bathrooms: 1,
-    amenities: [],
-    images: [],
-    mainImage: null, // Added mainImage field
+    mainImage: null, // Only keep mainImage
   })
   const [deleteConfirmation, setDeleteConfirmation] = useState(null)
   const { authToken } = useAuth()
   const { addToast } = useToast()
 
+  
   useEffect(() => {
     fetchVillas()
   }, [])
 
+  // Update the fetchVillas function
   const fetchVillas = async () => {
     try {
-      setLoading(true)
-      // Fetch villas
+      setLoading(true);
+      
+      // Fetch villas from API
       const response = await fetch(`${API_BASE_URL}/api/villas`, {
         headers: {
           Authorization: `Bearer ${authToken}`,
           "Content-Type": "application/json",
         },
-      })
-      const data = await response.json()
-      let villasList = []
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch villas: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      let villasList = [];
 
       if (Array.isArray(data)) {
-        villasList = data
+        villasList = data;
       } else if (data.villas && Array.isArray(data.villas)) {
-        villasList = data.villas
+        villasList = data.villas;
       } else {
-        villasList = []
+        villasList = [];
       }
 
-      // For each villa, try to fetch its main image
-      for (const villa of villasList) {
-        try {
-          // Try to get the image from VillaImage collection
-          const imageResponse = await fetch(
-            `${API_BASE_URL}/api/admin/villa-images/${encodeURIComponent(villa.name)}`,
-            {
-              headers: {
-                Authorization: `Bearer ${authToken}`,
-              },
-            },
-          )
+      console.log("Fetched villas list:", villasList);
 
-          if (imageResponse.ok) {
-            const imageData = await imageResponse.json()
-            if (imageData.success && imageData.image) {
-              // Add the image to the villa object
-              villa.mainImage = imageData.image
+      // For each villa, try to fetch its image (but don't fail if image fetch fails)
+      const updatedVillas = await Promise.all(
+        villasList.map(async (villa) => {
+          // Only try to fetch image if it doesn't already have one
+          if (!villa.mainImage) {
+            try {
+              console.log(`Attempting to fetch image for villa: ${villa.name}`);
+              
+              const imageResponse = await fetch(
+                `${API_BASE_URL}/api/admin/villa-images/${encodeURIComponent(villa.name)}`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${authToken}`,
+                  },
+                }
+              );
+
+              if (imageResponse.ok) {
+                const imageData = await imageResponse.json();
+                if (imageData.success && imageData.image) {
+                  console.log(`Successfully fetched image for villa: ${villa.name}`);
+                  return {
+                    ...villa,
+                    mainImage: imageData.image
+                  };
+                }
+              } else {
+                console.log(`No image found for villa: ${villa.name} (Status: ${imageResponse.status})`);
+              }
+            } catch (imageError) {
+              console.error(`Error fetching image for ${villa.name}:`, imageError);
             }
           }
-        } catch (imageError) {
-          console.error(`Error fetching image for ${villa.name}:`, imageError)
-          // Continue with next villa even if this one fails
-        }
-      }
+          return villa;
+        })
+      );
 
-      setVillas(villasList)
+      setVillas(updatedVillas);
     } catch (error) {
       console.error("Error fetching villas:", error)
       addToast("Error fetching villas", "error")
@@ -163,48 +144,59 @@ const VillaManagement = () => {
     })
   }
 
-  const handleAmenitiesChange = (e) => {
-    const { checked, value } = e.target
-    if (checked) {
-      setFormData({
-        ...formData,
-        amenities: [...formData.amenities, value],
-      })
-    } else {
-      setFormData({
-        ...formData,
-        amenities: formData.amenities.filter((amenity) => amenity !== value),
-      })
-    }
-  }
-
-  // Add these functions to handle file uploads and conversion to base64
+  // Add/update this function in your VillaManagement.jsx file
   const handleImageUpload = (e) => {
-    const file = e.target.files[0]
-    if (!file) return
+    const file = e.target.files[0];
+    if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      // 5MB limit
-      addToast("Image size should be less than 5MB", "error")
-      return
+    // Check file size (5MB max)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      addToast("Image size is too large (max 5MB)", "error");
+      return;
     }
 
-    const reader = new FileReader()
+    const reader = new FileReader();
     reader.onloadend = () => {
-      setFormData({
-        ...formData,
-        mainImage: reader.result, // Store base64 string
-      })
-      addToast("Image uploaded successfully", "success")
-    }
-    reader.onerror = () => {
-      addToast("Error reading file", "error")
-    }
-    reader.readAsDataURL(file)
+      // Compress image if needed
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDimension = 1200; // Max width/height
+        let width = img.width;
+        let height = img.height;
+        
+        // Resize if too large
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round(height * (maxDimension / width));
+            width = maxDimension;
+          } else {
+            width = Math.round(width * (maxDimension / height));
+            height = maxDimension;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Get compressed image as base64
+        const compressedImage = canvas.toDataURL('image/jpeg', 0.8); // 0.8 quality
+        
+        setFormData(prev => ({ ...prev, mainImage: compressedImage }));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
   }
 
+  // Replace the handleSubmit function with this improved version
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     try {
       // Check if image is provided for new villas
       if (!editingVilla && !formData.mainImage) {
@@ -212,85 +204,138 @@ const VillaManagement = () => {
         return;
       }
       
-      // Convert string values to appropriate types
-      const dataToSubmit = {
-        ...formData,
+      setLoading(true);
+      
+      // Prepare villa data (without image)
+      const villaData = {
+        name: formData.name,
+        description: formData.description,
+        location: formData.location,
         price: parseFloat(formData.price),
         maxGuests: parseInt(formData.maxGuests),
         bedrooms: parseInt(formData.bedrooms),
         bathrooms: parseInt(formData.bathrooms)
       };
       
-      console.log("Submitting villa data:", dataToSubmit);
+      console.log("Submitting villa data:", villaData);
       
+      // Define API endpoint based on whether we're creating or updating
       const url = editingVilla 
         ? `${API_BASE_URL}/api/villas/${editingVilla._id}` 
         : `${API_BASE_URL}/api/villas`;
       const method = editingVilla ? "PUT" : "POST";
 
+      // Send villa data to API
       const response = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${authToken}`
         },
-        body: JSON.stringify(dataToSubmit),
+        body: JSON.stringify(villaData)
       });
 
-      if (response.ok) {
-        const responseData = await response.json();
-        console.log("Server response:", responseData);
-        addToast(`Villa ${editingVilla ? "updated" : "created"} successfully`, "success");
-        setShowForm(false);
-        setEditingVilla(null);
-        setFormData({
-          name: "",
-          description: "",
-          location: "",
-          price: 0,
-          maxGuests: 1,
-          bedrooms: 1,
-          bathrooms: 1,
-          amenities: [],
-          images: [],
-          mainImage: null
-        });
-        fetchVillas();
-      } else {
+      if (!response.ok) {
         const errorData = await response.json();
-        console.error("Error response:", errorData);
-        addToast(`Failed to ${editingVilla ? "update" : "create"} villa: ${errorData.message || "Unknown error"}`, "error");
+        throw new Error(`Failed to ${editingVilla ? 'update' : 'create'} villa: ${errorData.message || response.statusText}`);
       }
+
+      // Get the response data (including the villa ID for new villas)
+      const responseData = await response.json();
+      
+      // Upload image if available
+      let imageUploadSuccess = true;
+      if (formData.mainImage) {
+        imageUploadSuccess = await uploadVillaImage(formData.name, formData.mainImage);
+      }
+      
+      // Show appropriate toast messages
+      if (imageUploadSuccess) {
+        addToast(`Villa ${editingVilla ? 'updated' : 'created'} successfully`, "success");
+      } else {
+        addToast(`Villa ${editingVilla ? 'updated' : 'created'}, but image upload failed. Try again later.`, "warning");
+      }
+      
+      // Reset form and UI state
+      setShowForm(false);
+      setEditingVilla(null);
+      setFormData({
+        name: "",
+        description: "",
+        location: "",
+        price: 0,
+        maxGuests: 1,
+        bedrooms: 1,
+        bathrooms: 1,
+        mainImage: null
+      });
+      
+      // Refresh the villas list
+      fetchVillas();
     } catch (error) {
       console.error("Error saving villa:", error);
-      addToast("Error saving villa", "error");
+      addToast(error.message || "Error saving villa", "error");
+    } finally {
+      setLoading(false);
     }
   }
 
   // Modify the getVillaImage function to use the villa.mainImage if available
   const getDisplayVillaImage = (villa) => {
-    if (villa.mainImage) {
-      return villa.mainImage // Use the base64 image from API if available
+    // If villa has a mainImage property and it's a non-empty string
+    if (villa.mainImage && typeof villa.mainImage === 'string' && villa.mainImage.length > 0) {
+      return villa.mainImage; // Use the base64 image from API
     }
-
-    return getVillaImage(villa.name) // Fall back to the existing function
+    
+    // Otherwise fall back to our SVG generator
+    return getVillaImage(villa.name);
   }
 
-  const handleEdit = (villa) => {
-    setEditingVilla(villa)
+  // Update the handleEdit function to match your actual villa model
+  const handleEdit = async (villa) => {
+    setEditingVilla(villa);
+    
+    console.log("Editing villa:", villa);
+    
+    // Copy the basic villa details to the form - NO amenities field
     setFormData({
       name: villa.name,
-      description: villa.description,
-      location: villa.location,
-      price: villa.price,
-      maxGuests: villa.maxGuests,
-      bedrooms: villa.bedrooms,
-      bathrooms: villa.bathrooms,
-      amenities: villa.amenities || [],
-      images: villa.images || [],
-      mainImage: villa.mainImage || null, // Include mainImage if available
-    })
-    setShowForm(true)
+      description: villa.description || '',
+      location: villa.location || '',
+      price: villa.price || 0,
+      maxGuests: villa.maxGuests || villa.guests || 1,
+      bedrooms: villa.bedrooms || 1,
+      bathrooms: villa.bathrooms || 1,
+      mainImage: villa.mainImage || null,
+    });
+    
+    // If mainImage isn't available in the villa object, try to fetch it
+    if (!villa.mainImage) {
+      try {
+        const imageResponse = await fetch(
+          `${API_BASE_URL}/api/admin/villa-images/${encodeURIComponent(villa.name)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          }
+        );
+
+        if (imageResponse.ok) {
+          const imageData = await imageResponse.json();
+          if (imageData.success && imageData.image) {
+            setFormData(prev => ({
+              ...prev,
+              mainImage: imageData.image
+            }));
+          }
+        }
+      } catch (imageError) {
+        console.error(`Error fetching image for ${villa.name}:`, imageError);
+      }
+    }
+    
+    setShowForm(true);
   }
 
   const confirmDelete = (villa) => {
@@ -338,6 +383,43 @@ const VillaManagement = () => {
     "Hanger", "Room Dark Shades", "Patio"
   ]
 
+  // Add this function to your VillaManagement component
+  // Add it right after your handleImageUpload function
+  const uploadVillaImage = async (villaName, imageBase64) => {
+    if (!villaName || !imageBase64 || !imageBase64.startsWith('data:image')) {
+      console.error('Invalid villa name or image data');
+      return false;
+    }
+    
+    try {
+      console.log(`Uploading image for villa: ${villaName}`);
+      
+      const response = await fetch(`${API_BASE_URL}/api/admin/villa-images`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          villaName,
+          imageBase64
+        })
+      });
+      
+      if (response.ok) {
+        console.log(`Successfully uploaded image for: ${villaName}`);
+        return true;
+      } else {
+        const errorData = await response.json();
+        console.error(`Failed to upload image: ${errorData.message || response.statusText}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return false;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -373,8 +455,6 @@ const VillaManagement = () => {
                 maxGuests: 1,
                 bedrooms: 1,
                 bathrooms: 1,
-                amenities: [],
-                images: [],
                 mainImage: null,
               })
               setShowForm(!showForm) // Toggle form visibility
@@ -503,35 +583,6 @@ const VillaManagement = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Amenities</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {standardAmenities.map((amenity) => (
-                    <div key={amenity} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        id={`amenity-${amenity}`}
-                        value={amenity}
-                        checked={formData.amenities?.includes(amenity) || false}
-                        onChange={(e) => {
-                          const isChecked = e.target.checked;
-                          setFormData(prevData => ({
-                            ...prevData,
-                            amenities: isChecked 
-                              ? [...(prevData.amenities || []), amenity] 
-                              : (prevData.amenities || []).filter(a => a !== amenity)
-                          }));
-                        }}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <label htmlFor={`amenity-${amenity}`} className="ml-2 text-sm text-gray-700">
-                        {amenity}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Main Villa Image</label>
                 <div className="mt-1 border-2 border-gray-300 border-dashed rounded-md p-6">
                   {formData.mainImage ? (
@@ -609,11 +660,12 @@ const VillaManagement = () => {
                 alt={villa.name}
                 className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
                 onError={(e) => {
-                  console.log(`Failed to load image for ${villa.name}, using fallback`);
-                  e.target.src = ""; // Remove reference to Amrith since we don't have it defined
+                  console.log(`Image load failed for ${villa.name}, using fallback`);
+                  e.target.src = getVillaImage(villa.name);
+                  e.target.classList.add('fallback-image');
                 }}
                 style={{
-                  backgroundColor: "#f3f4f6", // Light gray background while loading
+                  backgroundColor: "#f3f4f6",
                   minHeight: "256px",
                 }}
               />
@@ -693,8 +745,6 @@ const VillaManagement = () => {
                     maxGuests: 1,
                     bedrooms: 1,
                     bathrooms: 1,
-                    amenities: [],
-                    images: [],
                     mainImage: null,
                   });
                   setShowForm(true);
