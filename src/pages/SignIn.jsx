@@ -873,9 +873,9 @@ const SignIn = () => {
                         This step is required to finish creating your account
                       </p>
                     )}
-                    <p className="text-xs text-orange-600 mt-2">
-                      Note: The verification code expires after 10 minutes. If expired, click "Back" to request a new one.
-                    </p>
+                    {/* <p className="text-xs text-orange-600 mt-2">
+                    
+                    </p> */}
                   </div>
                   
                   <div data-aos="fade-up" data-aos-delay="200">
