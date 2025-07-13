@@ -39,7 +39,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background-color: #000000;
+        background-color: transparent;
         z-index: 9999;
         display: flex;
         flex-direction: column;
@@ -65,6 +65,7 @@
         padding: 0 20px;
         height: auto;
         min-height: 300px;
+        box-sizing: border-box;
       }
       
       /* Logo styling */
@@ -96,36 +97,65 @@
         }
       }
       
-      /* Gold circular loader */
+      /* Modern gold loader */
       .loader {
-        width: 60px;
-        aspect-ratio: 1;
-        border: 8px solid #8a7203;
+        transform: rotateZ(45deg);
+        perspective: 1000px;
         border-radius: 50%;
-        position: relative;
-        transform: rotate(45deg);
+        width: 48px;
+        height: 48px;
+        color: #D4AF37;
         margin: 20px auto;
+        position: relative;
         filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.6));
-        will-change: transform;
-        box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.5);
       }
-      
-      .loader::before {
-        content: "";
+        
+      .loader:before,
+      .loader:after {
+        content: '';
+        display: block;
         position: absolute;
-        inset: -8px;
+        top: 0;
+        left: 0;
+        width: inherit;
+        height: inherit;
         border-radius: 50%;
-        border: 8px solid #D4AF37;
-        animation: l18 1.5s infinite linear;
-        filter: drop-shadow(0 0 5px gold);
+        transform: rotateX(70deg);
+        animation: 1s spin linear infinite;
       }
-      
-      @keyframes l18 {
-          0%   {clip-path:polygon(50% 50%,0 0,0    0,0    0   ,0    0   ,0    0   )}
-          25%  {clip-path:polygon(50% 50%,0 0,100% 0,100% 0   ,100% 0   ,100% 0   )}
-          50%  {clip-path:polygon(50% 50%,0 0,100% 0,100% 100%,100% 100%,100% 100%)}
-          75%  {clip-path:polygon(50% 50%,0 0,100% 0,100% 100%,0    100%,0    100%)}
-          100% {clip-path:polygon(50% 50%,0 0,100% 0,100% 100%,0    100%,0    0   )}
+        
+      .loader:after {
+        color: #8a7203;
+        transform: rotateY(70deg);
+        animation-delay: .4s;
+      }
+
+      @keyframes spin {
+        0%,
+        100% {
+          box-shadow: .2em 0px 0 0px currentcolor;
+        }
+        12% {
+          box-shadow: .2em .2em 0 0 currentcolor;
+        }
+        25% {
+          box-shadow: 0 .2em 0 0px currentcolor;
+        }
+        37% {
+          box-shadow: -.2em .2em 0 0 currentcolor;
+        }
+        50% {
+          box-shadow: -.2em 0 0 0 currentcolor;
+        }
+        62% {
+          box-shadow: -.2em -.2em 0 0 currentcolor;
+        }
+        75% {
+          box-shadow: 0px -.2em 0 0 currentcolor;
+        }
+        87% {
+          box-shadow: .2em -.2em 0 0 currentcolor;
+        }
       }
       
       /* Gold Text Animation */
@@ -143,6 +173,7 @@
         text-shadow: 0 0 15px rgba(212, 175, 55, 0.7);
         margin: 0;
         padding: 0;
+        text-align: center;
         white-space: nowrap;
         animation: glow 4s ease-in-out infinite;
         transform: translateZ(0);
@@ -187,6 +218,46 @@
         75%{ transform: rotate3d(1, -1, 0, 4deg); }
       }
       
+      /* Progress Bar Styling */
+      .progress-container {
+        width: 280px;
+        height: 6px;
+        background: rgba(138, 114, 3, 0.2);
+        border-radius: 10px;
+        margin: 20px auto 5px;
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+      }
+      
+      .progress-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(to right, #8a7203, #D4AF37, #D4AF37, #8a7203);
+        background-size: 200% 100%;
+        border-radius: 10px;
+        transition: width 0.1s ease;
+        animation: gradient 2s ease infinite;
+        position: relative;
+        box-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
+      }
+      
+      .progress-text {
+        color: #D4AF37;
+        font-size: 12px;
+        margin-top: 8px;
+        text-align: center;
+        font-family: 'Georgia', serif;
+        letter-spacing: 1px;
+        text-shadow: 0 0 5px rgba(212, 175, 55, 0.6);
+      }
+      
+      @keyframes gradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+
       .preloader-hide {
         opacity: 0;
         visibility: hidden;
@@ -203,21 +274,72 @@
       @media (max-width: 768px) {
         .luxor-title h1 {
           font-size: 2.2em;
+          white-space: normal;
+          padding: 0 10px;
         }
         
         .luxor-subtitle {
           font-size: 0.8em;
+          padding: 0 15px;
+          text-align: center;
         }
         
         .loader {
           width: 40px;
-          margin: 60px auto 30px;
+          height: 40px;
+          margin: 20px auto;
+        }
+        
+        .preloader-content {
+          min-height: 250px;
+          padding: 0 10px;
+          animation: wobble 6s ease-in-out infinite;
+        }
+        
+        .logo-container {
+          width: 100px;
+          height: 100px;
+          margin-bottom: 15px;
+        }
+        
+        .progress-container {
+          width: 200px;
+          height: 5px;
+        }
+        
+        .progress-text {
+          font-size: 10px;
         }
       }
       
       @media (max-width: 480px) {
         .luxor-title h1 {
-          font-size: 1.8em;
+          font-size: 1.6em;
+          line-height: 1.3;
+        }
+        
+        .loader {
+          width: 35px;
+          height: 35px;
+        }
+        
+        .logo-container {
+          width: 80px;
+          height: 80px;
+        }
+        
+        .preloader-content {
+          min-height: 220px;
+        }
+      }
+      
+      @media (max-width: 360px) {
+        .luxor-title h1 {
+          font-size: 1.4em;
+        }
+        
+        .luxor-subtitle {
+          font-size: 0.75em;
         }
       }
     </style>
@@ -339,6 +461,12 @@
         
         <!-- Subtitle -->
         <div class="luxor-subtitle">Luxury Villa Experiences</div>
+        
+        <!-- Progress Bar -->
+        <div class="progress-container">
+          <div class="progress-bar" id="preloaderProgress"></div>
+          <div class="progress-text" id="progressText">0%</div>
+        </div>
       </div>
     </div>
     
@@ -352,18 +480,70 @@
         const preloader = document.getElementById('preloader');
         if (preloader) {
           preloader.style.display = 'flex';
-          // Force black background during loading
-          document.documentElement.style.backgroundColor = '#000000';
-          document.body.style.backgroundColor = '#000000';
+          // No background color change - using transparent background
+          
+          // Initialize progress bar
+          initializeProgressBar();
         }
       })();
+      
+      // Progress bar animation
+      function initializeProgressBar() {
+        const progressBar = document.getElementById('preloaderProgress');
+        const progressText = document.getElementById('progressText');
+        let progress = 0;
+        let loadTime = 2000; // Total loading time in milliseconds
+        let increment = 1;
+        let speedFactor = 100 / loadTime * 20; // Adjust for smoother animation
+        
+        // Start with 1%
+        progressBar.style.width = '1%';
+        progressText.textContent = '1%';
+        
+        // Progress animation
+        const progressInterval = setInterval(function() {
+          progress += increment;
+          
+          // Slow down as we approach 100%
+          if (progress >= 80) {
+            speedFactor = 0.3;
+          } else if (progress >= 50) {
+            speedFactor = 0.5;
+          }
+          
+          // Limit to 98% until page is fully loaded
+          if (progress < 98) {
+            progressBar.style.width = progress + '%';
+            progressText.textContent = Math.round(progress) + '%';
+          } else {
+            clearInterval(progressInterval);
+            // Hold at 98% until page is fully loaded
+            progressBar.style.width = '98%';
+            progressText.textContent = '98%';
+          }
+        }, 20);
+        
+        // Store the interval ID so we can access it when the page loads
+        window.progressInterval = progressInterval;
+      }
       
       window.addEventListener('load', function() {
         const preloader = document.getElementById('preloader');
         const root = document.getElementById('root');
+        const progressBar = document.getElementById('preloaderProgress');
+        const progressText = document.getElementById('progressText');
         
         if (preloader && root) {
-          // Show content immediately for better user experience
+          // Complete the progress bar
+          progressBar.style.width = '100%';
+          progressText.textContent = '100%';
+          
+          // Clear any existing interval
+          if (window.progressInterval) {
+            clearInterval(window.progressInterval);
+          }
+          
+          // Wait for the progress bar to reach 100%
           setTimeout(function() {
             preloader.classList.add('preloader-hide');
             root.style.opacity = '1';
@@ -371,10 +551,9 @@
             // Hide completely after transition completes
             setTimeout(function() {
               preloader.style.display = 'none';
-              // Keep the black background
-              document.body.style.backgroundColor = '#000000';
+              // Don't change the background color
             }, 200);
-          }, 200);
+          }, 300);
         }
       });
     </script>
