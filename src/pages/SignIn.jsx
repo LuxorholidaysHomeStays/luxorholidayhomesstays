@@ -865,8 +865,8 @@ const SignIn = () => {
                     <p className="text-xs text-gray-500 mt-1">Enter the 6-digit OTP sent to {countryCode} {phoneNumber}</p>
                     <p className="text-xs text-yellow-600 mt-2">
                       {isLogin ? 
-                        "After verification, you'll be redirected to your dashboard or profile completion if needed" : 
-                        "After verification, you'll be directed to complete your profile information"}
+                        "" : 
+                        ""}
                     </p>
                     {!isLogin && (
                       <p className="text-xs text-gray-500 mt-1">
