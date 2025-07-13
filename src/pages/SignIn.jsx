@@ -350,6 +350,7 @@ const SignIn = () => {
       const idToken = await firebaseUser.getIdToken();
 
       // Send to backend for verification and user login
+      // For both login and signup, we use the same endpoint and flow
       try {
         const response = await fetch(`${API_BASE_URL}/api/auth/phone-verify`, {
           method: 'POST',
@@ -357,7 +358,8 @@ const SignIn = () => {
           body: JSON.stringify({
             idToken,
             phoneNumber: firebaseUser.phoneNumber,
-            name: name || firebaseUser.displayName || `User_${firebaseUser.phoneNumber.slice(-4)}`
+            // Use a generic name - user can update later in profile
+            name: firebaseUser.displayName || `User_${firebaseUser.phoneNumber.slice(-4)}`
           }),
         });
 
@@ -372,8 +374,13 @@ const SignIn = () => {
         localStorage.setItem('userId', data.user._id || data.user.id);
         
         // Check if user needs to complete their profile
-        if (data.user.needsProfileUpdate || data.isNewUser || 
+        // For both login and signup via phone, handle the same way:
+        // - If email is not verified or is a placeholder, go to profile completion
+        // - Otherwise, go directly to home page
+        const emailIsVerified = data.user.emailVerified === true || data.emailVerified === true;
+        if (!emailIsVerified || data.user.needsProfileUpdate || data.isNewUser || 
             (data.user.email && data.user.email.includes('@phone.luxor.com'))) {
+          console.log('User needs to complete profile: email verification status =', emailIsVerified);
           // Navigate to profile completion page
           navigate('/complete-profile', { 
             state: { 
@@ -385,6 +392,7 @@ const SignIn = () => {
             } 
           });
         } else {
+          console.log('User profile complete, email is verified:', data.user.email);
           // User has a complete profile, update auth context and navigate home
           setUserData(data.user);
           setAuthToken(data.token);
@@ -606,9 +614,13 @@ const SignIn = () => {
           
           <h2 className="text-3xl font-bold text-gray-800 mb-2">
             {isLogin ? 'Welcome Back!' : 'Create Account'}
-          </h2>
-          <p className="text-gray-600 mb-8">
+          </h2>            <p className="text-gray-600 mb-8">
             {isLogin ? 'Sign in to access your account' : 'Sign up to get started with Luxor Stays'}
+            {authMethod === 'phone' && !showOtpInput && (
+              <span className="block text-sm text-yellow-700 mt-2">
+                {isLogin ? 'Verify your phone number to continue' : 'Verify your phone number to create an account'}
+              </span>
+            )}
           </p>
           
           {error && (
@@ -658,29 +670,6 @@ const SignIn = () => {
             <div className="space-y-4">
               {!showOtpInput ? (
                 <form onSubmit={handlePhoneSubmit} className="space-y-4">
-                  {!isLogin && (
-                    <div data-aos="fade-up" data-aos-delay="100">
-                      <label htmlFor="phone-name" className="block text-sm font-medium text-gray-700 mb-1">
-                        Full Name
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                        </div>
-                        <input
-                          id="phone-name"
-                          type="text"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
-                          placeholder="John Smith"
-                          required={!isLogin}
-                        />
-                      </div>
-                    </div>
-                  )}
                   
                   <div data-aos="fade-up" data-aos-delay="200">
                     <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
@@ -727,6 +716,11 @@ const SignIn = () => {
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
                       Enter your phone number (format: {getPhoneNumberPlaceholder()})
+                    </p>
+                    <p className="text-xs text-yellow-600 mt-2">
+                      {isLogin ? 
+                        "We'll send a verification code to confirm it's you" : 
+                        "You'll complete your profile details after phone verification"}
                     </p>
                   </div>
                   
