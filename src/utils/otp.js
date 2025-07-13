@@ -75,7 +75,9 @@ export const setupRecaptcha = (elementId) => {
     }
     
     window.recaptchaVerifier = new RecaptchaVerifier(auth, elementId, {
-      size: 'normal', // Make it visible for testing
+      size: 'normal', // Make it explicitly visible
+      theme: 'light',
+      badge: 'bottomright',
       callback: (response) => {
         console.log('reCAPTCHA solved:', response);
       },

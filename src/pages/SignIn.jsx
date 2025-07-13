@@ -308,7 +308,16 @@ const SignIn = () => {
       
       console.log('Sending OTP to:', fullPhoneNumber);
 
-      // Setup reCAPTCHA
+      // Ensure recaptcha container is ready
+      const recaptchaContainer = document.getElementById('recaptcha-container');
+      if (!recaptchaContainer) {
+        throw new Error('reCAPTCHA container not found');
+      }
+      
+      // Clear existing content to avoid duplicates
+      recaptchaContainer.innerHTML = '';
+      
+      // Setup reCAPTCHA with normal (visible) size
       const recaptchaVerifier = setupRecaptcha('recaptcha-container');
       
       // Send OTP with full phone number
@@ -319,7 +328,41 @@ const SignIn = () => {
       
     } catch (error) {
       console.error('Phone auth error:', error);
-      setError(error.message || 'Failed to send OTP');
+      
+      // Log more details about the reCAPTCHA setup
+      console.log('reCAPTCHA container exists:', !!document.getElementById('recaptcha-container'));
+      console.log('reCAPTCHA verifier exists:', !!window.recaptchaVerifier);
+      
+      // Clear recaptcha on error to allow retry
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+          window.recaptchaVerifier = null;
+        } catch (clearError) {
+          console.log('Recaptcha cleared after error');
+        }
+      }
+      
+      // Provide more helpful error message
+      if (error.message?.includes('reCAPTCHA') || error.code === 'auth/argument-error') {
+        setError('Please complete the reCAPTCHA verification before requesting OTP');
+      } else {
+        setError(error.message || 'Failed to send OTP');
+      }
+      
+      // Force the recaptcha to reset
+      setTimeout(() => {
+        const container = document.getElementById('recaptcha-container');
+        if (container) {
+          container.innerHTML = '';
+          // Try to set up a new reCAPTCHA
+          try {
+            setupRecaptcha('recaptcha-container');
+          } catch (e) {
+            console.log('Failed to reset reCAPTCHA:', e);
+          }
+        }
+      }, 500);
     } finally {
       setLoading(false);
     }
@@ -813,8 +856,8 @@ const SignIn = () => {
                   </div>
                   
                   <div data-aos="fade-up" data-aos-delay="300">
-                    {/* reCAPTCHA container */}
-                    <div id="recaptcha-container" className="flex justify-center mb-4"></div>
+                    {/* reCAPTCHA container - make sure it's visible with sufficient space */}
+                    <div id="recaptcha-container" className="flex justify-center mb-4 min-h-[78px] border border-gray-100 rounded p-2"></div>
                     
                     <button
                       type="submit"
@@ -855,9 +898,10 @@ const SignIn = () => {
                         id="otp"
                         type="text"
                         value={otp}
-                        onChange={(e) => setOtp(e.target.value)}
+                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                         className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300 text-center text-lg tracking-widest"
                         placeholder="000000"
+                        inputMode="numeric"
                         maxLength="6"
                         required
                       />
@@ -865,17 +909,17 @@ const SignIn = () => {
                     <p className="text-xs text-gray-500 mt-1">Enter the 6-digit OTP sent to {countryCode} {phoneNumber}</p>
                     <p className="text-xs text-yellow-600 mt-2">
                       {isLogin ? 
-                        "" : 
-                        ""}
+                        "After verification, you'll be redirected to your dashboard or profile completion if needed" : 
+                        "After verification, you'll be directed to complete your profile information"}
                     </p>
                     {!isLogin && (
                       <p className="text-xs text-gray-500 mt-1">
                         This step is required to finish creating your account
                       </p>
                     )}
-                    {/* <p className="text-xs text-orange-600 mt-2">
-                    
-                    </p> */}
+                    <p className="text-xs text-orange-600 mt-2">
+                      Note: The verification code expires after 10 minutes. If expired, click "Request New OTP" below.
+                    </p>
                   </div>
                   
                   <div data-aos="fade-up" data-aos-delay="200">
@@ -936,9 +980,9 @@ const SignIn = () => {
                         // Add notification toast
                         addToast('You can now request a new verification code', 'info');
                       }}
-                      className="w-full mt-2 py-2 px-4 border border-orange-300 rounded-lg text-orange-700 text-sm font-medium hover:bg-orange-50 transition-all duration-300"
+                      className="w-full mt-3 py-3 px-4 border border-orange-400 rounded-lg text-orange-700 text-sm font-medium hover:bg-orange-50 transition-all duration-300 shadow-md"
                     >
-                      Request New OTP (if expired)
+                      Request New OTP
                     </button>
                   </div>
                 </form>
