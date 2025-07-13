@@ -196,6 +196,9 @@ export default function VillaDetails() {
     zipCode: ""
   })
   
+  // New state to track when the unified calendar is open
+  const [calendarOpen, setCalendarOpen] = useState(false)
+  
   // New state to track if we're fetching address info
   const [loadingAddressInfo, setLoadingAddressInfo] = useState(false)
   
@@ -817,8 +820,8 @@ export default function VillaDetails() {
   // Main render
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Enhanced Header - Always Sticky */}
-      <div className="fixed top-0 left-0 right-0 z-50  backdrop-blur-md shadow-lg">
+      {/* Enhanced Header - Always Sticky but hidden when calendar is open */}
+      <div className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-md shadow-lg transition-all duration-300 ${calendarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
           {/* Navigation & Actions */}
           <div className="flex items-center justify-between mb-3">
@@ -890,7 +893,7 @@ export default function VillaDetails() {
       </div>
 
  
-      <div className="h-[140px] md:h-[130px]"></div>
+      <div className={`h-[140px] md:h-[130px] transition-all duration-300 ${calendarOpen ? 'h-0' : ''}`}></div>
 
       <div className="bg-white z-40 shadow-md">
         <VillaGallery villa={villa} />
@@ -972,6 +975,7 @@ export default function VillaDetails() {
                 blockedDates={blockedDates}
                 initialBookingStep={bookingStep}
                 initialAddress={bookingAddress}
+                onCalendarVisibilityChange={setCalendarOpen}
               />
             </div>
           </div>
@@ -994,6 +998,7 @@ export default function VillaDetails() {
               blockedDates={blockedDates}
               initialBookingStep={bookingStep}
               initialAddress={bookingAddress}
+              onCalendarVisibilityChange={setCalendarOpen}
             />
           </div>
         </div>
@@ -1035,6 +1040,7 @@ export default function VillaDetails() {
                   isModal={true}
                   initialBookingStep={bookingStep}
                   initialAddress={bookingAddress}
+                  onCalendarVisibilityChange={setCalendarOpen}
                 />
               </div>
             </div>

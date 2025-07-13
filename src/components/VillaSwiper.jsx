@@ -312,6 +312,75 @@ function getRandomUnsplash() {
   return unsplashImages[Math.floor(Math.random() * unsplashImages.length)]
 }
 
+// Format price as "45k" similar to unified calendar (without ₹ symbol)
+const formatCompactPrice = (price) => {
+  if (!price || isNaN(Number(price))) return "0";
+  const formattedPrice = Math.round(Number(price) / 1000);
+  return `${formattedPrice}k`;
+}
+
+// Fallback prices for villas when API data is not available
+const villaFallbackPrices = {
+  "Amrith Palace": { weekday: 45000, weekend: 65000 },
+  "Ram Water Villa": { weekday: 30000, weekend: 45000 },
+  "East Coast Villa": { weekday: 15000, weekend: 25000 },
+  "Lavish Villa I": { weekday: 18000, weekend: 25000 },
+  "Lavish Villa II": { weekday: 18000, weekend: 25000 },
+  "Lavish Villa III": { weekday: 16000, weekend: 23000 },
+  "Empire Anand Villa Samudra": { weekday: 40000, weekend: 60000 }
+}
+
+// Get the accurate price for a villa based on its name
+const getAccurateVillaPrice = (villa) => {
+  if (!villa) return { weekday: 0, weekend: 0 };
+  
+  let weekdayPrice = villa.price || 0;
+  if (typeof weekdayPrice === 'string') {
+    weekdayPrice = parseInt(weekdayPrice.replace(/,/g, ""));
+  }
+  
+  let weekendPrice = villa.weekendPrice || villa.weekendprice || 0;
+  if (typeof weekendPrice === 'string') {
+    weekendPrice = parseInt(weekendPrice.replace(/,/g, ""));
+  }
+  
+  // If we don't have a weekend price, try to find a fallback
+  if (weekendPrice === 0 || isNaN(weekendPrice)) {
+    // Check for villa name match in fallbacks
+    if (villa.name || villa.roomType) {
+      const villaName = villa.name || villa.roomType;
+      
+      // Direct match
+      if (villaFallbackPrices[villaName]) {
+        weekdayPrice = villaFallbackPrices[villaName].weekday;
+        weekendPrice = villaFallbackPrices[villaName].weekend;
+        return { weekday: weekdayPrice, weekend: weekendPrice };
+      }
+      
+      // Partial match
+      for (const [name, pricing] of Object.entries(villaFallbackPrices)) {
+        if (villaName.toLowerCase().includes(name.toLowerCase()) || 
+            name.toLowerCase().includes(villaName.toLowerCase())) {
+          weekdayPrice = pricing.weekday;
+          weekendPrice = pricing.weekend;
+          return { weekday: weekdayPrice, weekend: weekendPrice };
+        }
+      }
+    }
+    
+    // If we have a weekday price but no weekend price
+    if (weekdayPrice > 0) {
+      weekendPrice = Math.round(weekdayPrice * 1.5);
+    } else {
+      // Default fallback
+      weekdayPrice = 30000;
+      weekendPrice = 45000;
+    }
+  }
+  
+  return { weekday: weekdayPrice, weekend: weekendPrice };
+}
+
 const VillaSwiper = () => {
   const navigate = useNavigate()
 
@@ -389,6 +458,9 @@ const VillaSwiper = () => {
       console.log("Creating fallback properties")
       // Create fallback properties using our predefined image collections
       const fallbackProperties = Object.entries(villaImageCollections).map(([name, images], index) => {
+        // Get prices from our fallback price mapping
+        const pricing = villaFallbackPrices[name];
+        
         return {
           id: `fallback-villa-${index}`,
           _id: `fallback-${index}`,
@@ -400,11 +472,11 @@ const VillaSwiper = () => {
           },
           images: images.slice(0, 5), // First 5 images for carousel
           allImages: images, // All images for detail view
-          pricePerNight: (Math.floor(Math.random() * 15000) + 15000).toLocaleString(),
+          pricePerNight: pricing.weekday.toLocaleString(),
           pricing: {
-            weekday: (Math.floor(Math.random() * 15000) + 15000).toLocaleString(),
-            weekend: (Math.floor(Math.random() * 15000) + 20000).toLocaleString(),
-            holiday: (Math.floor(Math.random() * 15000) + 25000).toLocaleString(),
+            weekday: pricing.weekday.toLocaleString(),
+            weekend: pricing.weekend.toLocaleString(),
+            holiday: Math.round(pricing.weekend * 1.2).toLocaleString(),
           },
           description: "A beautiful luxury villa with stunning views and modern amenities.",
           amenities: ["Private Pool", "WiFi", "Air Conditioning", "Kitchen", "Parking"],
@@ -460,6 +532,9 @@ const VillaSwiper = () => {
             featuredImage = getRandomUnsplash()
             images = [featuredImage]
           }
+          
+          // Get accurate pricing using our helper function
+          const accuratePricing = getAccurateVillaPrice(villa);
 
           return {
             id: villa._id || `villa-${idx}`,
@@ -472,11 +547,11 @@ const VillaSwiper = () => {
             },
             images: images.slice(0, 5), // First 5 images for carousel
             allImages: images, // All images for detail view
-            pricePerNight: villa.price ? villa.price.toLocaleString() : "12,000",
+            pricePerNight: accuratePricing.weekday.toLocaleString(),
             pricing: {
-              weekday: villa.price ? villa.price.toLocaleString() : "12,000",
-              weekend: villa.price ? (villa.price * 1.2).toLocaleString() : "14,400",
-              holiday: villa.price ? (villa.price * 1.5).toLocaleString() : "18,000",
+              weekday: accuratePricing.weekday.toLocaleString(),
+              weekend: accuratePricing.weekend.toLocaleString(),
+              holiday: Math.round(accuratePricing.weekend * 1.2).toLocaleString(),
             },
             description: villa.description || "A beautiful luxury villa with stunning views and modern amenities.",
             amenities: villa.facilities?.map((f) => f.name) || ["WiFi", "AC", "Kitchen", "Free Parking"],
@@ -563,9 +638,13 @@ const VillaSwiper = () => {
     setTimeout(() => setIsAnimating(false), 600)
   }
 
+  // Enhanced price formatting function
   const formatPrice = (price) => {
     if (!price) return "0"
-    return Number(price.replace(/,/g, "")).toLocaleString("en-IN")
+    const numPrice = Number(price.toString().replace(/,/g, ""))
+    
+    // For display in the slider, use compact format like unified calendar
+    return formatCompactPrice(numPrice)
   }
 
   // Handle resize events to detect mobile
@@ -1031,6 +1110,20 @@ const VillaSwiper = () => {
           <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
             Discover luxury villas with stunning views and premium amenities for your perfect getaway
           </p>
+          
+          {/* Tourism Awards Section */}
+          <div className="flex flex-col sm:flex-row items-center justify-center mt-3 gap-2 sm:gap-6 text-sm font-medium">
+            <div className="flex items-center bg-gradient-to-r from-amber-50 to-amber-100 px-3 py-1 rounded-full">
+              <span className="text-amber-800">
+                <span className="mr-1.5 text-xs">⭐</span>Tourism Board of India, 2024
+              </span>
+            </div>
+            <div className="flex items-center bg-gradient-to-r from-amber-50 to-amber-100 px-3 py-1 rounded-full">
+              <span className="text-amber-800">
+                <span className="mr-1.5 text-xs">🏆</span>Travel & Leisure Awards, 2023
+              </span>
+            </div>
+          </div>
           {/* Mobile-only swipe indicator */}
           <div className="flex md:hidden items-center justify-center mt-4 text-gray-500 text-sm">
             <span className="flex items-center">
@@ -1225,7 +1318,7 @@ const VillaSwiper = () => {
                   </div>
                   <div>
                     <div className="text-xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-[#BFA181]">
-                      ₹{formatPrice(villas[currentIndex].pricePerNight)}
+                      {formatPrice(villas[currentIndex].pricePerNight)}
                     </div>
                     <div className="text-gray-600 text-xs md:text-sm">per night</div>
                   </div>
@@ -1269,4 +1362,4 @@ const VillaSwiper = () => {
   )
 }
 
-export default VillaSwiper;3
+export default VillaSwiper;

@@ -3,6 +3,35 @@ import { assets } from '../assets/assets'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
+// Create a custom hook to detect if calendar modal is open
+const useCalendarModalDetection = () => {
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  
+  useEffect(() => {
+    // Function to check if calendar modal is open by looking for its elements
+    const checkForCalendarModal = () => {
+      const calendarElements = document.querySelectorAll('.fixed.inset-0.bg-black\\/50, .fixed.inset-0.bg-black\\/60');
+      setIsCalendarModalOpen(calendarElements.length > 0);
+    };
+    
+    // Set up a mutation observer to watch for changes in the DOM
+    const observer = new MutationObserver((mutations) => {
+      checkForCalendarModal();
+    });
+    
+    // Start observing the body for changes
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Initial check
+    checkForCalendarModal();
+    
+    // Clean up the observer when component unmounts
+    return () => observer.disconnect();
+  }, []);
+  
+  return isCalendarModalOpen;
+};
+
 const Footer = () => {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -12,6 +41,22 @@ const Footer = () => {
     villas: false,
     luxorInfo: false,
   });
+  
+  // Use our custom hook to detect if calendar modal is open
+  const isCalendarModalOpen = useCalendarModalDetection();
+  
+  // Add/remove body class when calendar modal opens/closes
+  useEffect(() => {
+    if (isCalendarModalOpen) {
+      document.body.classList.add('calendar-modal-open');
+    } else {
+      document.body.classList.remove('calendar-modal-open');
+    }
+    
+    return () => {
+      document.body.classList.remove('calendar-modal-open');
+    };
+  }, [isCalendarModalOpen]);
   
   // Monitor screen size for responsive adjustments
   useEffect(() => {
@@ -75,8 +120,13 @@ const Footer = () => {
     }
   };
 
+  // If calendar modal is open, don't render the footer at all
+  if (isCalendarModalOpen) {
+    return null;
+  }
+
   return (
-    <footer className='bg-[#F6F9FC] text-gray-600 pt-12 px-4 sm:px-6 md:px-16 lg:px-24 xl:px-32 relative z-10' data-component="footer">
+    <footer className='bg-[#F6F9FC] text-gray-600 pt-12 px-4 sm:px-6 md:px-16 lg:px-24 xl:px-32 relative z-0' data-component="footer">
       <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-6 relative'>
         <div className='max-w-xs'>
           <motion.img 

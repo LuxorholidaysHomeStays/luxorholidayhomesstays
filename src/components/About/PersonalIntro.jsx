@@ -51,8 +51,8 @@ const PersonalIntro = () => {
             </p>
             
             <div className="signature-block">
-              <div className="signature">Rajesh Kumar</div>
-              <div className="designation">Founder & CEO</div>
+              <div className="signature">Gunaseelan Neelakandan</div>
+              <div className="designation">Co Founder & Managing Director</div>
             </div>
             
             <div className="awards-section">
@@ -255,7 +255,7 @@ const IntroSection = styled.section`
       margin-bottom: 20px;
       font-size: 1.05rem;
       line-height: 1.8;
-      color: #e0e0e0;
+      color: black;
       
       &.intro-paragraph {
         font-size: 1.1rem;

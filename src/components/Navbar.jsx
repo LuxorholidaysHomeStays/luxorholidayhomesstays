@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets";
 import { API_BASE_URL } from "../config/api";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 
 // Update the phone icon component with slightly smaller dimensions
 const PhoneIcon = () => (
@@ -24,11 +25,13 @@ const BookIcon = () => (
 );
 
 const Navbar = () => {
+    const { t } = useLanguage();
+    
     const navLinks = [
-        { name: 'Home', path: '/' },
-        { name: 'Villas', path: '/rooms' },
-        { name: 'Contact', path: '/contact' },
-        { name: 'About', path: '/about' },
+        { name: t('home'), path: '/' },
+        { name: t('villas'), path: '/rooms' },
+        { name: t('contact'), path: '/contact' },
+        { name: t('about'), path: '/about' },
     ];
 
     const [isScrolled, setIsScrolled] = useState(false);
@@ -163,7 +166,7 @@ const Navbar = () => {
                         onClick={() => handleNavigation('/my-bookings')}
                         className="group flex flex-col gap-0.5 text-white hover:text-[#BF953F] cursor-pointer relative z-10 font-medium transition-colors duration-300"
                     >
-                        My Bookings
+                        {t('my_bookings')}
                         <div className="h-0.5 w-0 group-hover:w-full transition-all duration-300 bg-[#BF953F]" />
                     </div>
                 )}
@@ -206,11 +209,11 @@ const Navbar = () => {
                             data-menu-trigger="true"
                             className="flex items-center gap-2 cursor-pointer group relative"
                             onClick={() => setUserMenuOpen(!userMenuOpen)}
-                            title="Profile"
+                            title={t('profile')}
                         >
                             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#BF953F] to-[#FCF6BA] p-0.5 overflow-hidden flex items-center justify-center shadow-md">
                                 {userData.profileImageUrl ? (
-                                    <img src={userData.profileImageUrl} alt="Profile" className="w-full h-full object-cover rounded-full" />
+                                    <img src={userData.profileImageUrl} alt={t('profile')} className="w-full h-full object-cover rounded-full" />
                                 ) : (
                                     <div className="bg-gray-900 rounded-full w-full h-full flex items-center justify-center">
                                         <span className="text-[#BF953F] font-bold text-lg">
@@ -222,7 +225,7 @@ const Navbar = () => {
                                 )}
                             </div>
                             <span className="hidden lg:block text-sm font-medium text-white">{userData.firstName || userData.name || userData.email}</span>
-                            <span className="absolute -bottom-6 left-5 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Profile</span>
+                            <span className="absolute -bottom-6 left-5 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">{t('profile')}</span>
                         </div>
                         
                         {userMenuOpen && (
@@ -242,7 +245,7 @@ const Navbar = () => {
                                         }}
                                     >
                                         <BookIcon />
-                                        <span>My Bookings</span>
+                                        <span>{t('my_bookings')}</span>
                                     </div>
                                 )}
                                 
@@ -273,7 +276,7 @@ const Navbar = () => {
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
-                                    <span>My Profile</span>
+                                    <span>{t('my_profile')}</span>
                                 </div>
                                 <hr className="my-1 border-[#BF953F]/20" />
                                 <div 
@@ -286,7 +289,7 @@ const Navbar = () => {
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                                     </svg>
-                                    <span>Logout</span>
+                                    <span>{t('logout')}</span>
                                 </div>
                             </div>
                         )}
@@ -296,7 +299,7 @@ const Navbar = () => {
                         onClick={handleLogin} 
                         className="bg-gradient-to-r from-[#BF953F] to-[#FCF6BA] hover:from-[#FCF6BA] hover:to-[#BF953F] text-gray-900 px-6 py-2 rounded-full ml-4 transition-all duration-300 shadow-md font-medium border border-[#AA771C]"
                     >
-                        Login
+                        {t('sign_in')}
                     </button>
                 )}
             </div>
@@ -321,7 +324,7 @@ const Navbar = () => {
                                 </span>
                             </div>
                         )}
-                        <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Profile</span>
+                        <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">{t('profile')}</span>
                     </div>
                 )}
 
@@ -389,7 +392,7 @@ const Navbar = () => {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
-                        Logout
+                        {t('logout')}
                     </button>
                 ) : (
                     <button 
@@ -399,7 +402,7 @@ const Navbar = () => {
                         }} 
                         className="bg-black text-white hover:bg-gray-800 px-8 py-2.5 rounded-full transition-all duration-300 mt-4"
                     >
-                        Login
+                        {t('sign_in')}
                     </button>
                 )}
             </div>
@@ -422,7 +425,7 @@ const Navbar = () => {
                             }}
                         >
                             <BookIcon />
-                            <span>My Bookings</span>
+                            <span>{t('my_bookings')}</span>
                         </div>
                     )}
                     
@@ -440,7 +443,7 @@ const Navbar = () => {
                                 <path d="M4 14H10V20H4V14Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                 <path d="M14 14H20V20H14V14Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
-                            <span>Dashboard</span>
+                            <span>{t('dashboard')}</span>
                         </div>
                     )}
                     <div 
@@ -466,7 +469,7 @@ const Navbar = () => {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
-                        <span>Logout</span>
+                        <span>{t('logout')}</span>
                     </div>
                 </div>
             )}
