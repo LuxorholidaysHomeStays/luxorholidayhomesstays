@@ -20,6 +20,8 @@ import HelpCenter from './components/Footer/Help-center'
 import Safety from './components/Footer/safety-info'
 import NavbarGallery from './components/Navbar/Gallery'
 import AboutGallery from './components/About/Gallery'
+import LanguageSelector from './components/LanguageSelector'
+import { LanguageProvider } from './context/LanguageContext';
 import SearchResults from './pages/SearchResults';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import SignIn from './pages/SignIn';
@@ -140,11 +142,12 @@ function App() {
   return (
     <AuthProvider>
       <ToastProvider>
-        <SEOHead {...getDefaultSEO()} />
-        <div className="w-full max-w-[100vw] overflow-x-hidden">
-          {!isOwnerPath && <Navbar />}
-          <div className='min-h-[90vh] pt-[3rem] md:pt-[4rem]'>
-            <Routes>
+        <LanguageProvider>
+          <SEOHead {...getDefaultSEO()} />
+          <div className="w-full max-w-[100vw] overflow-x-hidden">
+            {!isOwnerPath && <Navbar />}
+            <div className='min-h-[90vh] pt-[3rem] md:pt-[4rem]'>
+              <Routes>
               {/* Public routes */}
               <Route path='/' element={<Home/>} />
               <Route path='/rooms' element={<AllRooms/>} />
@@ -292,32 +295,40 @@ function App() {
           </div>
           <Footer />
 
-          {/* WhatsApp button with React Portal to ensure it stays on top of everything */}
+          {/* WhatsApp button and Language Selector with React Portal to ensure they stay on top of everything */}
           {createPortal(
-            <a
-              href="https://wa.me/918015924647?text=Hi%2C%20I%20am%20interested%20in%20booking%20a%20villas."
-              target="_blank"
-              rel="noopener noreferrer"
-              className="fixed bottom-5 right-5 bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition duration-300 z-[9999] text-2xl whatsapp-button animate-pulse-slow"
-              style={{
-                position: 'fixed', 
-                bottom: '20px', 
-                right: '20px',
-                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3), 0 0 10px rgba(37, 211, 102, 0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                pointerEvents: 'auto',
-                touchAction: 'manipulation'
-              }}
-              aria-label="Contact us on WhatsApp"
-            >
-              <FaWhatsapp />
-            </a>,
+            <>
+              {/* WhatsApp Button - Placed on right side */}
+              <div className="fixed bottom-5 right-5 z-[9999]">
+                <a
+                  href="https://wa.me/918015924647?text=Hi%2C%20I%20am%20interested%20in%20booking%20a%20villas."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition duration-300 text-2xl whatsapp-button animate-pulse-slow"
+                  style={{
+                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3), 0 0 10px rgba(37, 211, 102, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    pointerEvents: 'auto',
+                    touchAction: 'manipulation'
+                  }}
+                  aria-label="Contact us on WhatsApp"
+                >
+                  <FaWhatsapp />
+                </a>
+              </div>
+              
+              {/* Language Selector - Placed on left side */}
+              <div className="fixed bottom-5 left-5 z-[9999]">
+                <LanguageSelector />
+              </div>
+            </>,
             document.body
           )}
         </div>
         <Toast />
+        </LanguageProvider>
       </ToastProvider>
     </AuthProvider>
   )

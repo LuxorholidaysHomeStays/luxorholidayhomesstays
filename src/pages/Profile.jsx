@@ -960,19 +960,19 @@ const Profile = () => {
                                   />
                                 </div>
                                 {!emailVerificationSuccess && (
-                                  <div className="flex items-center space-x-2">
+                                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                                     <button
                                       type="button"
                                       onClick={startEmailVerification}
                                       disabled={sendingOtp || !newEmail}
-                                      className="bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded transition-colors disabled:opacity-50 text-sm"
+                                      className="w-full sm:w-auto bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded transition-colors disabled:opacity-50 text-sm"
                                     >
                                       {sendingOtp ? "Sending..." : "Send Verification Code"}
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => setEmailOtpMode(false)}
-                                      className="border border-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-50 text-sm"
+                                      className="w-full sm:w-auto border border-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-50 text-sm"
                                     >
                                       Cancel
                                     </button>
@@ -993,7 +993,7 @@ const Profile = () => {
                                 {emailOtpMode && (
                                   <div className="mt-3">
                                     <label className="block text-sm text-gray-600 mb-1">Verification Code</label>
-                                    <div className="flex items-center space-x-2">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                                       <input
                                         type="text"
                                         value={otpCode}
@@ -1005,7 +1005,7 @@ const Profile = () => {
                                         type="button"
                                         onClick={verifyEmailOtp}
                                         disabled={verifyingOtp || !otpCode}
-                                        className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded transition-colors disabled:opacity-50 whitespace-nowrap text-sm"
+                                        className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded transition-colors disabled:opacity-50 whitespace-nowrap text-sm"
                                       >
                                         {verifyingOtp ? "Verifying..." : "Verify"}
                                       </button>
@@ -1096,27 +1096,27 @@ const Profile = () => {
                                 </div>
                                 <div>
                                   <label className="block text-sm text-gray-600 mb-1">Phone Number</label>
-                                  <div className="flex">
-                                    <div className="inline-flex items-center px-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md">
+                                  <div className="flex flex-wrap">
+                                    <div className="inline-flex items-center px-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md h-10">
                                       <span className="text-sm text-gray-500">{countryCode}</span>
                                     </div>
                                     <input
                                       type="tel"
                                       value={newPhone}
                                       onChange={(e) => setNewPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                                      className="flex-1 border border-gray-300 rounded-r-md px-3 py-2 focus:ring-yellow-500 focus:border-yellow-500"
+                                      className="flex-1 min-w-[200px] border border-gray-300 rounded-r-md px-3 py-2 focus:ring-yellow-500 focus:border-yellow-500 h-10"
                                       placeholder="Enter phone number"
                                       disabled={sendingOtp}
                                     />
                                   </div>
                                 </div>
                                 {!phoneVerificationSuccess && (
-                                  <div className="flex items-center space-x-2">
+                                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                                     <button
                                       type="button"
                                       onClick={startPhoneVerification}
                                       disabled={sendingOtp || !newPhone || newPhone.length < 10}
-                                      className="bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded transition-colors disabled:opacity-50 text-sm"
+                                      className="w-full sm:w-auto bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded transition-colors disabled:opacity-50 text-sm"
                                     >
                                       {sendingOtp ? (
                                         <span className="flex items-center">
@@ -1140,11 +1140,10 @@ const Profile = () => {
                                       ) : (
                                         "Send Verification Code"
                                       )}
-                                    </button>
-                                    <button
+                                    </button>                                      <button
                                       type="button"
                                       onClick={() => setPhoneOtpMode(false)}
-                                      className="border border-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-50 text-sm"
+                                      className="w-full sm:w-auto border border-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-50 text-sm"
                                     >
                                       Cancel
                                     </button>
@@ -1165,12 +1164,12 @@ const Profile = () => {
                                 {phoneOtpMode && !phoneVerificationSuccess && (
                                   <div className="mt-3">
                                     <label className="block text-sm text-gray-600 mb-1">Verification Code</label>
-                                    <div className="flex items-center space-x-2">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                                       <input
                                         type="text"
                                         value={otpCode}
                                         onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                                        className="flex-1 border border-gray-300 rounded px-3 py-2 focus:ring-yellow-500 focus:border-yellow-500"
+                                        className="w-full sm:flex-1 border border-gray-300 rounded px-3 py-2 focus:ring-yellow-500 focus:border-yellow-500"
                                         placeholder="Enter 6-digit code"
                                         maxLength="6"
                                       />
@@ -1178,7 +1177,7 @@ const Profile = () => {
                                         type="button"
                                         onClick={verifyPhoneOtp}
                                         disabled={verifyingOtp || !otpCode || otpCode.length !== 6}
-                                        className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded transition-colors disabled:opacity-50 whitespace-nowrap text-sm"
+                                        className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded transition-colors disabled:opacity-50 whitespace-nowrap text-sm"
                                       >
                                         {verifyingOtp ? (
                                           <span className="flex items-center">
