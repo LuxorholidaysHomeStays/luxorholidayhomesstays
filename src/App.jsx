@@ -51,6 +51,7 @@ import AuthGuard from './components/AuthGuard';
 import Profile from './pages/Profile';
 import CompleteProfile from './pages/Completeprofile';
 import CancelRequestsManagementPage from './pages/Admin/CancelRequestsManagementPage';
+import BookingReview from './pages/BookingReview';
 // import AmenitiesManagement from './pages/Admin/AmenitiesManagement';
 function App() {
   const { pathname } = useLocation();
@@ -188,6 +189,7 @@ function App() {
                   <BookingDetails />
                 </AuthGuard>
               } />
+              <Route path="/booking-review" element={<BookingReview />} />
               
               {/* Admin protected routes */}
               <Route path="/dashboard" element={

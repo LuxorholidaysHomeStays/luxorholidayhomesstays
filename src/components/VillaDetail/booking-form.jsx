@@ -27,6 +27,7 @@ import Swal from "sweetalert2"
 
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth"
 import { auth } from "../../utils/otp"
+import { useNavigate } from 'react-router-dom';
 
 
 // Replace the countryCodesList array with this fixed version
@@ -523,6 +524,7 @@ export default function EnhancedBookingForm({
   const [countryCode, setCountryCode] = useState("+91")
   const [isLoadingPhoneCheck, setIsLoadingPhoneCheck] = useState(false)
   const [userPhoneData, setUserPhoneData] = useState(null)
+  const navigate = useNavigate();
 
   // Import useAuth
   const { authToken } = useAuth()
@@ -699,16 +701,24 @@ export default function EnhancedBookingForm({
       })
       return
     }
-
+    // Prepare booking data for review page
     const bookingData = {
-      checkInTime: extractRailwayTime(checkInTime),
-      checkOutTime: extractRailwayTime(checkOutTime),
+      villaId: villa?._id || villa?.id,
+      villaName: villa?.name,
+      checkInDate,
+      checkOutDate,
+      adults,
+      children,
+      infants,
       address: address,
-      // Use userPhoneData if available (which combines data from all sources), otherwise fall back to props or form data
       phone: userPhoneData?.phone || userData?.phone || newPhone,
       countryCode: userPhoneData?.countryCode || userData?.countryCode || countryCode,
-    }
-    onBookNow(bookingData)
+      checkInTime: extractRailwayTime(checkInTime),
+      checkOutTime: extractRailwayTime(checkOutTime),
+      // Add more fields as needed
+    };
+    // Navigate to review page
+    navigate('/booking-review', { state: { bookingData } });
   }
 
   // Check if address has complete data

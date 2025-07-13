@@ -109,6 +109,21 @@ const SignIn = () => {
     const redirectUrl = localStorage.getItem("authRedirectUrl");
     if (redirectUrl) {
       localStorage.removeItem("authRedirectUrl");
+      
+      // Special handling for booking review page
+      if (redirectUrl === '/booking-review') {
+        const pendingBookingReview = localStorage.getItem('pendingBookingReview');
+        if (pendingBookingReview) {
+          try {
+            const bookingData = JSON.parse(pendingBookingReview);
+            navigate('/booking-review', { state: { bookingData } });
+            return;
+          } catch (error) {
+            console.error("Error parsing pending booking review data:", error);
+          }
+        }
+      }
+      
       navigate(redirectUrl);
       return;
     }
@@ -116,6 +131,20 @@ const SignIn = () => {
     // Then check for location state redirect
     const fromLocation = location.state?.from;
     if (fromLocation) {
+      // Special handling for booking review page
+      if (fromLocation === '/booking-review') {
+        const pendingBookingReview = localStorage.getItem('pendingBookingReview');
+        if (pendingBookingReview) {
+          try {
+            const bookingData = JSON.parse(pendingBookingReview);
+            navigate('/booking-review', { state: { bookingData } });
+            return;
+          } catch (error) {
+            console.error("Error parsing pending booking review data:", error);
+          }
+        }
+      }
+      
       navigate(fromLocation);
       return;
     }
@@ -624,7 +653,9 @@ const SignIn = () => {
       
       // Show success and navigate to home
       setSuccess('Account created successfully!');
-      setTimeout(() => navigate('/'), 1000);
+      setTimeout(() => {
+        handleSuccessfulLogin();
+      }, 1000);
       
     } catch (error) {
       console.error('Error updating user data:', error);
@@ -664,7 +695,9 @@ const SignIn = () => {
       
       // Navigate to home
       setSuccess('Phone verification successful!');
-      setTimeout(() => navigate('/'), 1000);
+      setTimeout(() => {
+        handleSuccessfulLogin();
+      }, 1000);
       
     } catch (error) {
       console.error('Error skipping email step:', error);

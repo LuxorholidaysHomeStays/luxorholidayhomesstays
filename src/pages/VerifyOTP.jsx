@@ -205,8 +205,14 @@ const VerifyOTP = () => {
         }).then(() => {
           // Clear verification email from session
           sessionStorage.removeItem('verificationEmail');
-          // Navigate to home page
-          navigate('/');
+          // Use the same redirect logic as SignIn
+          const redirectUrl = localStorage.getItem("authRedirectUrl");
+          if (redirectUrl) {
+            localStorage.removeItem("authRedirectUrl");
+            navigate(redirectUrl);
+          } else {
+            navigate('/');
+          }
         });
       }
       

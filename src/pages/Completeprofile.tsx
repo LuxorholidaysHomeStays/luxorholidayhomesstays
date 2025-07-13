@@ -120,7 +120,14 @@ const CompleteProfile = () => {
       // Show success and redirect
       setSuccess('Profile updated successfully! Redirecting...');
       setTimeout(() => {
-        navigate('/');
+        // Use the same redirect logic as SignIn
+        const redirectUrl = localStorage.getItem("authRedirectUrl");
+        if (redirectUrl) {
+          localStorage.removeItem("authRedirectUrl");
+          navigate(redirectUrl);
+        } else {
+          navigate('/');
+        }
       }, 2000);
       
     } catch (error) {
