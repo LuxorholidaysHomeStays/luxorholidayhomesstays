@@ -1,18 +1,27 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import styled from 'styled-components';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import backgroundVideo from '../../assets/About/v.mp4';
 
 const HeroSection = () => {
-  const [tilt, setTilt] = useState({ rotateX: 0, rotateY: 0 });
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  useEffect(() => {
+    AOS.init({
+      duration: 1000,
+      once: true,
+    });
+  }, []);
+  
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const containerRef = useRef(null);
   const videoRef = useRef(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [tilt, setTilt] = useState({ rotateX: 0, rotateY: 0 });
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isExploreHovered, setIsExploreHovered] = useState(false);
   const [isScrollIndicatorHovered, setIsScrollIndicatorHovered] = useState(false);
   
@@ -280,8 +289,8 @@ const HeroSection = () => {
               className="relative inline-block"
               variants={textItem}
             >
-              <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold mt-1 bg-clip-text text-transparent bg-gradient-to-br from-white via-gray-200 to-gray-100">
-                Luxury Living
+              <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold mt-1 text-white">
+                Luxury <span className="golden-text">Luxor</span> Living
               </span>
               
               {/* Animated underline */}
@@ -477,7 +486,7 @@ const HeroSection = () => {
       </motion.div>
 
       {/* Animated graphics and keyframes */}
-      <style jsx>{`
+      <style>{`
         @keyframes floatUpDown {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-12px); }
@@ -497,6 +506,12 @@ const HeroSection = () => {
           0% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
+        }
+        
+        .golden-text {
+          color: #D4AF37;
+          text-shadow: 0 0 5px rgba(212, 175, 55, 0.5);
+          font-weight: bold;
         }
       `}</style>
     </section>

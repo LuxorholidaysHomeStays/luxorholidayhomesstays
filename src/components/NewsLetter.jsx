@@ -45,7 +45,7 @@ setLoading(false);
 };
 
 return (
-<div className="flex flex-col items-center max-w-5xl lg:w-full rounded-2xl md:rounded-3xl px-3 py-6 md:px-6 md:py-16 mx-2 lg:mx-auto my-30 bg-gradient-to-br from-gray-900 to-black backdrop-blur-lg shadow-xl border border-[#D4AF37]/20 animate-gradient-slow relative overflow-hidden transform hover:translate-y-[-2px] transition-all duration-700">
+<div className="flex flex-col items-center max-w-5xl lg:w-full rounded-2xl md:rounded-3xl px-3 py-6 md:px-6 md:py-16 mx-2 lg:mx-auto my-30 backdrop-blur-lg shadow-xl border border-[#D4AF37]/20 animate-gradient-slow relative overflow-hidden transform hover:translate-y-[-2px] transition-all duration-700">
   {/* Animated gold glass elements */}
   <div className="absolute top-[-50%] left-[-20%] w-[70%] h-[70%] rounded-full animate-pulse-slow"></div>
   <div className="absolute bottom-[-30%] right-[-10%] w-[60%] h-[60%] rounded-fullanimate-float-slow"></div>

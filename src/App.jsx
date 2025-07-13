@@ -15,7 +15,7 @@ import BookingDetails from './pages/BookingDetails';
 import { FaWhatsapp } from 'react-icons/fa';
 import Contact from './pages/Contact'
 import Partners from './components/Footer/Partners'
-import About from './components/Footer/About'
+import About from './pages/About';
 import HelpCenter from './components/Footer/Help-center'
 import Safety from './components/Footer/safety-info'
 import NavbarGallery from './components/Navbar/Gallery'

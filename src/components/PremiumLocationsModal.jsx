@@ -3,6 +3,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FaMapMarkerAlt, FaTimes, FaBuilding, FaInfoCircle, FaStar } from 'react-icons/fa';
 import { MdLocationOn, MdLocationCity, MdBeachAccess, MdLocalActivity } from 'react-icons/md';
 
+// Add style to hide scrollbar across browsers
+const hideScrollbarStyles = {
+  // For webkit browsers (Chrome, Safari)
+  "::-webkit-scrollbar": {
+    display: "none",
+  },
+  // For Firefox
+  scrollbarWidth: "none",
+  // For IE/Edge
+  msOverflowStyle: "none",
+};
+
 const PremiumLocationsModal = ({ isOpen, onClose, navigate, clickPosition = null }) => {
   // State to track which location is active
   const [activeLocation, setActiveLocation] = useState('Chennai');
@@ -180,8 +192,14 @@ const PremiumLocationsModal = ({ isOpen, onClose, navigate, clickPosition = null
                 </div>
               </div>
 
-              {/* Main content area with scroll */}
-              <div className="p-4 sm:p-6 max-h-[50vh] sm:max-h-[60vh] overflow-y-auto custom-scrollbar">
+              {/* Main content area with scroll - hiding scrollbars completely */}
+              <div 
+                className="p-4 sm:p-6 max-h-[50vh] sm:max-h-[60vh] overflow-y-auto"
+                style={{ 
+                  overflowY: 'auto',
+                  ...hideScrollbarStyles
+                }}
+              >
                 <div className="space-y-6">
                   {/* Location description */}
                   <div className="bg-black/30 rounded-xl p-4 border border-[#D4AF37]/20">

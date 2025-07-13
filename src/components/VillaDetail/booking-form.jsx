@@ -88,7 +88,7 @@ export default function EnhancedBookingForm({
     "Empire Anand Villa Samudra": { weekday: 40000, weekend: 60000 },
   }
 
-  const weekdayPrice = villa?.price || 0
+  let weekdayPrice = villa?.price || 0
   let weekendPrice = villa?.weekendPrice || villa?.weekendprice || 0
 
   if (weekendPrice === 0 && villa?.name) {
@@ -337,13 +337,38 @@ export default function EnhancedBookingForm({
   const fetchCountries = async () => {
     setIsLoadingCountries(true)
     try {
+      // Define India as a constant to ensure consistent naming
+      const INDIA = { name: "India", code: "IN" }
+      
       const response = await fetch("https://countriesnow.space/api/v0.1/countries/positions")
       const data = await response.json()
+      
       if (data.data && Array.isArray(data.data)) {
-        setCountries(data.data.map((c) => ({ name: c.name, code: c.iso2 || "" })))
+        // Map countries to our format
+        let mappedCountries = data.data
+          .map((c) => ({ name: c.name, code: c.iso2 || "" }))
+          // Sort alphabetically first
+          .sort((a, b) => a.name.localeCompare(b.name))
+        
+        // Remove India if it exists in the array
+        mappedCountries = mappedCountries.filter(country => 
+          country.name.toLowerCase() !== "india"
+        )
+        
+        // Always ensure India is at the beginning, regardless of API response
+        const finalCountries = [INDIA, ...mappedCountries]
+        console.log("Countries list prepared with India as first option:", finalCountries[0])
+        
+        setCountries(finalCountries)
+      } else {
+        // Fallback if API doesn't return expected format
+        console.warn("API didn't return expected data format, using fallback country list")
+        setCountries([INDIA])
       }
     } catch (error) {
       console.error("Error fetching countries:", error)
+      // If API fails, at least ensure India is available
+      setCountries([{ name: "India", code: "IN" }])
     } finally {
       setIsLoadingCountries(false)
     }

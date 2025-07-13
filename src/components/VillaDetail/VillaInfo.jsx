@@ -259,23 +259,34 @@ export default function VillaInfo ({ villa, villaPricing }) {
         const defaultDescription =
           villaDescriptions[villa?.name] || villa?.longDescription || villa?.description || "No description available."
           
-        return (            <div className="bg-white rounded-lg p-8 shadow-md">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center">
+        return (
+          <div className="bg-white rounded-lg md:p-8 p-6 shadow-md">
+            <h2 className="md:text-3xl text-2xl font-bold text-gray-900 mb-6 flex items-center">
               <span className="w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center mr-3">
                 <Home className="h-4 w-4 text-white" />
               </span>
               About this place
             </h2>
-            <div className="text-gray-700 leading-relaxed text-lg">
+            <div className="text-gray-700 leading-relaxed md:text-lg text-base">
               <p className="mb-6">
                 {showFullDescription
                   ? defaultDescription
                   : defaultDescription.substring(0, 300) + "..."}
-              </p>                <button
+              </p>
+              <button
                 onClick={() => setShowFullDescription(!showFullDescription)}
-                className="text-[#D4AF37] hover:text-[#BFA181] font-semibold underline transition-colors"
+                className="text-[#D4AF37] hover:text-[#BFA181] font-semibold underline transition-colors flex items-center"
               >
-                {showFullDescription ? "Show less" : "Show more"}
+                <span>{showFullDescription ? "Show less" : "Show more"}</span>
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className={`h-4 w-4 ml-1 transition-transform ${showFullDescription ? 'rotate-180' : ''}`} 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
               </button>
             </div>
           </div>
@@ -404,13 +415,13 @@ export default function VillaInfo ({ villa, villaPricing }) {
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <button
                 onClick={() => setShowCancellationPolicy(!showCancellationPolicy)}
-                className="w-full p-8 text-left flex items-center justify-between hover:bg-gray-50/50 transition-colors"
+                className="w-full md:p-8 p-6 text-left flex items-center justify-between hover:bg-gray-50/50 transition-colors active:bg-gray-100 focus:outline-none focus:ring focus:ring-[#D4AF37]/20"
               >
                 <div className="flex items-center">
                   <span className="w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center mr-3">
                     <Shield className="h-4 w-4 text-white" />
                   </span>
-                  <h2 className="text-2xl font-bold text-gray-900">Cancellation Policy</h2>
+                  <h2 className="md:text-2xl text-xl font-bold text-gray-900">Cancellation Policy</h2>
                 </div>
                 <ChevronDown
                   className={`h-6 w-6 text-[#D4AF37] transition-transform ${showCancellationPolicy ? "rotate-180" : ""}`}
@@ -451,7 +462,7 @@ export default function VillaInfo ({ villa, villaPricing }) {
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <button
                 onClick={() => setShowThingsToKnow(!showThingsToKnow)}
-                className="w-full p-8 text-left flex items-center justify-between hover:bg-gray-50/50 transition-colors"
+                className="w-full md:p-8 p-6 text-left flex items-center justify-between hover:bg-gray-50/50 transition-colors active:bg-gray-100 focus:outline-none focus:ring focus:ring-[#D4AF37]/20"
               >
                 <div className="flex items-center">
                   <span className="w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center mr-3">
@@ -459,7 +470,7 @@ export default function VillaInfo ({ villa, villaPricing }) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </span>
-                  <h2 className="text-2xl font-bold text-gray-900">Things to Know</h2>
+                  <h2 className="md:text-2xl text-xl font-bold text-gray-900">Things to Know</h2>
                 </div>
                 <ChevronDown
                   className={`h-6 w-6 text-[#D4AF37] transition-transform ${showThingsToKnow ? "rotate-180" : ""}`}
@@ -506,7 +517,8 @@ export default function VillaInfo ({ villa, villaPricing }) {
     <div className="space-y-6">
       {/* Section Navigation - Mobile/Desktop Responsive */}
       <div className="bg-gradient-to-r from-white/80 to-gray-100/80 backdrop-blur-sm p-2 rounded-xl shadow-md">
-        <div className="flex overflow-x-auto scrollbar-hide gap-1 justify-center">
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex overflow-x-auto scrollbar-hide gap-1 justify-center">
           {sections.map((section) => {
             const IconComponent = section.icon
             const isActive = activeSection === section.id
@@ -533,6 +545,59 @@ export default function VillaInfo ({ villa, villaPricing }) {
               </div>
             )
           })}
+        </div>
+        
+        {/* Mobile Navigation - More touch-friendly */}
+        <div className="md:hidden">
+          <div className="grid grid-cols-4 gap-1 w-full">
+            {sections.map((section) => {
+              const IconComponent = section.icon
+              const isActive = activeSection === section.id
+              return (
+                <button
+                  key={section.id}
+                  onClick={() => setActiveSection(section.id)}
+                  className={`flex flex-col items-center justify-center py-3 px-2 rounded-lg transition-all duration-300 ${
+                    isActive
+                      ? "bg-[#D4AF37] text-white"
+                      : "bg-white/70 text-gray-600"
+                  }`}
+                >
+                  <div className={`flex items-center justify-center w-10 h-10 mb-1 rounded-full ${
+                    isActive ? "bg-white/20" : "bg-[#D4AF37]/10"
+                  }`}>
+                    <IconComponent className={`h-5 w-5 ${
+                      isActive ? "text-white" : "text-[#D4AF37]"
+                    }`} />
+                  </div>
+                  <span className={`text-xs font-medium ${isActive ? 'font-bold' : ''}`}>
+                    {section.label}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          
+          {/* Mobile Active Indicator */}
+          <div className="mt-2 px-4">
+            <div className="flex justify-between">
+              {sections.map((section, index) => {
+                const isActive = activeSection === section.id;
+                return (
+                  <div 
+                    key={section.id} 
+                    className="flex-1"
+                  >
+                    <div 
+                      className={`h-1 transition-all duration-300 rounded ${
+                        isActive ? "bg-[#D4AF37]" : "bg-transparent"
+                      }`}
+                    ></div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         </div>
       </div>
 

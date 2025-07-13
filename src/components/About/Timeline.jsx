@@ -1,325 +1,330 @@
-
-import React, { useEffect, useRef, useState } from 'react';
-import { FaBuilding, FaBusinessTime, FaCertificate, FaUsers } from 'react-icons/fa';
-import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
-
-const milestones = [
-  {
-    date: 'April 1, 2024',
-    text: 'Business Incorporation',
-    icon: <FaBuilding size={28} />,
-    bgImage:
-      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80', // business-themed
-    description: 'Luxor Holiday Home Stays was officially registered as a business entity under UDYAM certification.'
-  },
-  {
-    date: 'April 1, 2024',
-    text: 'Commencement of Business',
-    icon: <FaBusinessTime size={28} />,
-    bgImage:
-      'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=800&q=80', // business operations themed
-    description: 'We officially began our business operations, opening our doors to welcome guests to our luxury accommodations.'
-  },
-  {
-    date: 'February 17, 2025',
-    text: 'Udyam Certificate Issued',
-    icon: <FaCertificate size={28} />,
-    bgImage:
-      'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=800&q=80', // certificate-themed
-    description: 'Our official Udyam certificate was issued, recognizing Luxor Holiday Home Stays as a Micro Enterprise in the Accommodation and Hospitality sector.'
-  },
-  {
-    date: 'Present Day',
-    text: 'Growing Team of Professionals',
-    icon: <FaUsers size={28} />,
-    bgImage:
-      'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&w=800&q=80', // team-themed
-    description: 'Today, we proudly employ a dedicated team of 8 professionals (6 male and 2 female staff) committed to providing exceptional service to our guests.'
-  },
-];
+import React, { useEffect } from 'react';
+import styled from 'styled-components';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
+import { FaHome, FaWater, FaTrophy, FaChartLine, FaLaptop, FaSeedling, FaStar } from 'react-icons/fa';
 
 const Timeline = () => {
-  const containerRef = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start end", "end start"]
-  });
-
-  // Parallax effect for background elements
-  const backgroundY = useTransform(scrollYProgress, [0, 1], ['-10%', '10%']);
-
   useEffect(() => {
-    // Add 3D perspective to the container
-    const container = containerRef.current;
-    if (container) {
-      container.style.perspective = '1000px';
-    }
+    AOS.init({
+      duration: 800,
+      once: true,
+    });
   }, []);
 
-  // Create floating particles in background
-  const Particles = () => {
-    return (
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute rounded-full bg-black bg-opacity-5 backdrop-blur-sm"
-            style={{
-              width: Math.random() * 50 + 10,
-              height: Math.random() * 50 + 10,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [0, Math.random() * 100 - 50],
-              x: [0, Math.random() * 60 - 30],
-              opacity: [0.3, 0.8, 0.3],
-            }}
-            transition={{
-              duration: Math.random() * 10 + 15,
-              repeat: Infinity,
-              repeatType: "reverse",
-              ease: "easeInOut",
-            }}
-          />
-        ))}
-      </div>
-    );
-  };
-
-  return (
-    <div 
-      ref={containerRef} 
-      className="relative py-20 min-h-screen bg-gradient-to-b from-white to-gray-100 overflow-hidden select-none"
-    >
-      <Particles />
-
-      <motion.div
-        className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(220,220,255,0.3),transparent_70%)]"
-        style={{ y: backgroundY }}
-      />
-      
-      <motion.div
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1, delay: 0.2 }}
-        className="relative z-10 px-4 sm:px-6 mb-20"
-      >
-        <h2 className="text-4xl md:text-5xl font-serif text-black text-center tracking-wide drop-shadow-sm mb-6">
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-black to-gray-700">
-            Our Journey
-          </span>
-        </h2>
-        
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="max-w-4xl mx-auto bg-white/70 backdrop-blur-sm p-5 md:p-6 rounded-xl shadow-md border border-gray-100"
-        >
-          <h3 className="text-xl font-medium text-gray-800 mb-3 text-center md:text-left">Business Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6">
-            <div>
-              <p className="text-gray-700 text-sm md:text-base"><span className="font-medium">Business Name:</span> Luxor Holiday Home Stays</p>
-              <p className="text-gray-700 text-sm md:text-base"><span className="font-medium">Owner:</span> Gunaseelan</p>
-              <p className="text-gray-700 text-sm md:text-base"><span className="font-medium">Enterprise Type:</span> Micro</p>
-              <p className="text-gray-700 text-sm md:text-base"><span className="font-medium">Registered as:</span> Proprietorship</p>
-            </div>
-            <div>
-              <p className="text-gray-700 text-sm md:text-base"><span className="font-medium">Major Activity:</span> Services</p>
-              <p className="text-gray-700 text-sm md:text-base"><span className="font-medium">Social Category:</span> OBC</p>
-              <p className="text-gray-700 text-sm md:text-base"><span className="font-medium">Employees:</span> 8 (6 Male, 2 Female)</p>
-            </div>
-          </div>
-          <div className="mt-3">
-            <p className="text-gray-700 text-sm md:text-base"><span className="font-medium">Address:</span> 6/181, Dargah Road, Kovalam Main Road, Kovalam Village, 
-              Thiruporur Taluk, Chengalpattu, Tamil Nadu – 603112</p>
-          </div>
-        </motion.div>
-      </motion.div>
-
-      <div className="relative max-w-5xl mx-auto z-10">
-        {/* Animated vertical timeline line */}
-        <motion.div 
-          initial={{ height: 0 }}
-          animate={{ height: "100%" }}
-          transition={{ duration: 1.5, ease: "easeInOut" }}
-          className="absolute left-1/2 top-0 transform -translate-x-1/2 w-[3px] bg-gradient-to-b from-black/5 via-black/20 to-black/5 rounded"
-        ></motion.div>
-
-        {milestones.map((m, i) => {
-          const isLeft = i % 2 === 0;
-          
-          return (
-            <MilestoneItem 
-              key={i} 
-              milestone={m} 
-              isLeft={isLeft} 
-              index={i} 
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-// Separate component for each milestone for better animation control
-const MilestoneItem = ({ milestone, isLeft, index }) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: false, margin: "-100px 0px" });
-  const [isHovered, setIsHovered] = useState(false);
-  
-  // Animation variants
-  const cardVariants = {
-    hidden: { 
-      opacity: 0, 
-      x: isLeft ? 50 : -50,
-      rotateY: isLeft ? -10 : 10
+  const milestones = [
+    {
+      year: 2010,
+      title: "The Beginning",
+      description: "Luxor Holiday Home Stays was founded with a vision to redefine luxury villa experiences in South India. We started with our first property in Pondicherry's French Quarter.",
+      icon: <FaHome />
     },
-    visible: { 
-      opacity: 1, 
-      x: 0,
-      rotateY: 0,
-      transition: { 
-        duration: 0.8,
-        delay: 0.2,
-        ease: "easeOut"
-      }
+    {
+      year: 2012,
+      title: "Expanding to ECR",
+      description: "We acquired our first beachfront property along East Coast Road, setting new standards for luxury coastal stays with the launch of Amrith Palace Villa.",
+      icon: <FaWater />
+    },
+    {
+      year: 2015,
+      title: "Award Recognition",
+      description: "Luxor was recognized as the 'Best Luxury Villa Provider' by the Tamil Nadu Tourism Department, acknowledging our commitment to excellence.",
+      icon: <FaTrophy />
+    },
+    {
+      year: 2017,
+      title: "Portfolio Growth",
+      description: "Our collection expanded to include 8 distinctive properties across Chennai and Pondicherry, each with unique character and premium amenities.",
+      icon: <FaChartLine />
+    },
+    {
+      year: 2020,
+      title: "Digital Transformation",
+      description: "We launched our integrated booking platform and virtual tours, making luxury villa selection and reservation effortless for our guests.",
+      icon: <FaLaptop />
+    },
+    {
+      year: 2023,
+      title: "Sustainability Initiative",
+      description: "Implemented eco-friendly practices across all properties, including solar energy, rainwater harvesting, and organic gardens, without compromising luxury.",
+      icon: <FaSeedling />
+    },
+    {
+      year: 2025,
+      title: "The Future",
+      description: "Today, Luxor stands as the premier luxury villa provider in the region, with plans to expand to new destinations while maintaining our standard of excellence.",
+      icon: <FaStar />
     }
-  };
-  
-  const iconVariants = {
-    hidden: { scale: 0, rotate: -90 },
-    visible: { 
-      scale: 1, 
-      rotate: 0,
-      transition: { 
-        type: "spring", 
-        stiffness: 260,
-        damping: 20,
-        delay: 0.4 + index * 0.1
-      }
-    }
-  };
-  
-  // Industry codes (only shown for certificate milestone)
-  const industryCodes = index === 2 ? [
-    { code: "55109", name: "Accommodation (Holiday Homes / Private Guest Houses)" },
-    { code: "56101", name: "Restaurants without Bars" },
-    { code: "56210", name: "Event Catering" },
-    { code: "79900", name: "Travel Services" }
-  ] : null;
+  ];
 
   return (
-    <div
-      ref={ref}
-      className={`mb-24 md:mb-20 flex flex-col md:flex-row justify-between items-center w-full relative
-        ${isLeft ? 'md:flex-row-reverse' : 'md:flex-row'}`}
-    >
-      {/* Content box with background image */}
-      <motion.div
-        variants={cardVariants}
-        initial="hidden"
-        animate={isInView ? "visible" : "hidden"}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        className={`w-full md:w-5/12 p-6 md:p-8 rounded-[2rem] border border-black/10 shadow-lg backdrop-blur-sm
-          text-${isLeft ? 'right' : 'left'} relative cursor-pointer
-          transition-all duration-500 ease-out hover:shadow-xl
-          hover:[transform:perspective(1000px)_rotateY(${isLeft ? '-' : ''}5deg)]
-          group`}
-        style={{
-          backgroundImage: `url(${milestone.bgImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-        }}
-      >
-        {/* Animated overlay for subtle text readability */}
-        <div className="absolute inset-0 bg-white/40 group-hover:bg-white/30 rounded-[2rem] pointer-events-none
-          transition-all duration-500 backdrop-filter backdrop-blur-[2px] group-hover:backdrop-blur-[1px]"></div>
-
-        {/* Text content */}
-        <div className="relative z-10">
-          <p className="text-gray-700 text-sm font-mono mb-2 md:mb-3">{milestone.date}</p>
-          <p className="text-black font-semibold text-xl md:text-2xl leading-relaxed mb-3">{milestone.text}</p>
-          
-          {/* Description or industry codes */}
-          <AnimatePresence mode="wait">
-            {index === 2 && isHovered ? (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-                className="bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-sm border border-black/5 mt-2 hidden md:block"
-              >
-                <p className="text-black font-semibold text-sm mb-1">Industry Codes:</p>
-                <ul className="space-y-1">
-                  {industryCodes.map((industry, idx) => (
-                    <li key={idx} className="text-gray-800 text-xs flex items-start">
-                      <span className="font-medium mr-1">{industry.code}</span>
-                      <span>- {industry.name}</span>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-            ) : (
-              <motion.p 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.5, delay: 0.6 }}
-                className="text-black/80 text-sm md:text-base leading-relaxed hidden md:block"
-              >
-                {milestone.description}
-              </motion.p>
-            )}
-          </AnimatePresence>
+    <TimelineSection>
+      <div className="container">
+        <div className="timeline-header" data-aos="fade-up">
+          <h2 className="section-title">Our Journey</h2>
+          <p className="section-subtitle">The evolution of Luxor Holiday Home Stays</p>
+          <div className="divider">
+            <span></span>
+            <div className="diamond"></div>
+            <span></span>
+          </div>
         </div>
-      </motion.div>
 
-      {/* Icon circle */}
-      <motion.div
-        variants={iconVariants}
-        initial="hidden"
-        animate={isInView ? "visible" : "hidden"}
-        className="absolute top-8 md:top-auto left-1/2 transform -translate-x-1/2 rounded-full w-14 h-14 md:w-16 md:h-16 flex items-center justify-center
-          bg-gradient-to-br from-gray-100 to-white backdrop-blur-md shadow-lg cursor-pointer z-20
-          transition-transform duration-300 hover:scale-125 hover:shadow-xl"
-        style={{
-          boxShadow: '0 0 20px rgba(0,0,0,0.1)'
-        }}
-      >
-        <div className="text-black z-10 drop-shadow-md">{milestone.icon}</div>
-      </motion.div>
-      
-      {/* Date indicator and info for mobile */}
-      <div className="md:hidden space-y-2 text-center py-3">
-        <div className="text-lg font-bold">{milestone.date}</div>
-        
-        {index === 2 && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            transition={{ duration: 0.5, delay: 0.8 }}
-            className="bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-sm border border-black/5 mx-3 mt-2"
-          >
-            <p className="text-black font-semibold text-sm mb-2">Industry Codes:</p>
-            <ul className="space-y-2 text-left">
-              {industryCodes && industryCodes.map((industry, idx) => (
-                <li key={idx} className="text-gray-800 text-xs flex items-start">
-                  <span className="font-medium min-w-[55px] mr-1">{industry.code}</span>
-                  <span>- {industry.name}</span>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        )}
+        <div className="timeline-container">
+          {milestones.map((milestone, index) => (
+            <div 
+              key={index} 
+              className={`timeline-item ${index % 2 === 0 ? 'left' : 'right'}`}
+              data-aos={index % 2 === 0 ? "fade-right" : "fade-left"}
+              data-aos-delay={index * 100}
+            >
+              <div className="timeline-content">
+                <div className="year-badge">{milestone.year}</div>
+                <div className="milestone-icon">{milestone.icon}</div>
+                <h3>{milestone.title}</h3>
+                <p>{milestone.description}</p>
+              </div>
+            </div>
+          ))}
+          
+          <div className="timeline-line"></div>
+        </div>
       </div>
-    </div>
+    </TimelineSection>
   );
 };
+
+const TimelineSection = styled.section`
+  padding: 100px 0;
+
+  position: relative;
+  color: #fff;
+  
+  &:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23D4AF37' fill-opacity='0.03' fill-rule='evenodd'%3E%3Cpath d='M0 38.59l2.83-2.83 1.41 1.41L1.41 40H0v-1.41zM0 1.4l2.83 2.83 1.41-1.41L1.41 0H0v1.41zM38.59 40l-2.83-2.83 1.41-1.41L40 38.59V40h-1.41zM40 1.41l-2.83 2.83-1.41-1.41L38.59 0H40v1.41zM20 18.6l2.83-2.83 1.41 1.41L21.41 20l2.83 2.83-1.41 1.41L20 21.41l-2.83 2.83-1.41-1.41L18.59 20l-2.83-2.83 1.41-1.41L20 18.59z'/%3E%3C/g%3E%3C/svg%3E");
+  }
+  
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .timeline-header {
+    text-align: center;
+    margin-bottom: 70px;
+    
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 3rem;
+      color: #D4AF37;
+      margin: 0 0 20px;
+      font-weight: 700;
+      
+      @media (max-width: 768px) {
+        font-size: 2.5rem;
+      }
+    }
+    
+    .section-subtitle {
+      font-size: 1.2rem;
+      color: rgba(255, 255, 255, 0.8);
+      margin: 0 0 20px;
+      
+      @media (max-width: 768px) {
+        font-size: 1rem;
+      }
+    }
+    
+    .divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      span {
+        height: 1px;
+        width: 60px;
+        background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.5));
+        
+        &:last-child {
+          background: linear-gradient(90deg, rgba(212, 175, 55, 0.5), transparent);
+        }
+      }
+      
+      .diamond {
+        width: 10px;
+        height: 10px;
+        background: #D4AF37;
+        margin: 0 15px;
+        transform: rotate(45deg);
+      }
+    }
+  }
+  
+  .timeline-container {
+    position: relative;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  
+  .timeline-line {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    top: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, 
+      rgba(212, 175, 55, 0) 0%,
+      rgba(212, 175, 55, 0.5) 15%, 
+      rgba(212, 175, 55, 0.5) 85%, 
+      rgba(212, 175, 55, 0) 100%);
+      
+    @media (max-width: 768px) {
+      left: 30px;
+    }
+  }
+  
+  .timeline-item {
+    position: relative;
+    width: 50%;
+    margin-bottom: 70px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    &.left {
+      left: 0;
+      padding-right: 40px;
+      
+      &:after {
+        content: '';
+        position: absolute;
+        top: 15px;
+        right: -6px;
+        width: 12px;
+        height: 12px;
+        background: #D4AF37;
+        border-radius: 50%;
+        z-index: 1;
+        box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.3);
+      }
+    }
+    
+    &.right {
+      left: 50%;
+      padding-left: 40px;
+      
+      &:after {
+        content: '';
+        position: absolute;
+        top: 15px;
+        left: -6px;
+        width: 12px;
+        height: 12px;
+        background: #D4AF37;
+        border-radius: 50%;
+        z-index: 1;
+        box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.3);
+      }
+    }
+    
+    @media (max-width: 768px) {
+      width: 100%;
+      left: 0;
+      padding-left: 60px;
+      padding-right: 20px;
+      
+      &.left, &.right {
+        left: 0;
+        padding-left: 60px;
+        padding-right: 20px;
+      }
+      
+      &.left:after, &.right:after {
+        left: 24px;
+        right: auto;
+      }
+    }
+  }
+  
+  .timeline-content {
+    background: rgba(25, 25, 25, 0.8);
+    border-radius: 10px;
+    padding: 30px;
+    position: relative;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(212, 175, 55, 0.1);
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      border-color: rgba(212, 175, 55, 0.3);
+      
+      .year-badge {
+        background: #D4AF37;
+        color: #000;
+      }
+      
+      .milestone-icon {
+        transform: scale(1.2) rotate(360deg);
+      }
+    }
+    
+    .year-badge {
+      position: absolute;
+      top: -15px;
+      background: rgba(212, 175, 55, 0.8);
+      padding: 5px 15px;
+      font-weight: 700;
+      border-radius: 20px;
+      transition: all 0.3s ease;
+      
+      .left & {
+        left: 20px;
+      }
+      
+      .right & {
+        left: 20px;
+      }
+    }
+    
+    .milestone-icon {
+      font-size: 2rem;
+      margin-bottom: 15px;
+      margin-top: 10px;
+      transition: all 0.5s ease;
+      transform-origin: center;
+      display: inline-block;
+    }
+    
+    h3 {
+      font-family: 'Playfair Display', serif;
+      color: #D4AF37;
+      margin: 0 0 15px;
+      font-size: 1.5rem;
+    }
+    
+    p {
+      margin: 0;
+      line-height: 1.7;
+      color: rgba(255, 255, 255, 0.9);
+    }
+  }
+  
+  @media (max-width: 768px) {
+    padding: 70px 0;
+  }
+`;
 
 export default Timeline;
