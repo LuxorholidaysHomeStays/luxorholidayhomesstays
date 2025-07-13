@@ -39,7 +39,7 @@ const PersonalIntro = () => {
             </div>
             
             <p className="intro-paragraph">
-              Welcome to Luxor Holiday Home Stays, where luxury meets comfort in the most beautiful locations of Chennai and Pondicherry. I'm <strong>Rajesh Kumar</strong>, the founder and curator of these exceptional villa experiences.
+              Welcome to Luxor Holiday Home Stays, where luxury meets comfort in the most beautiful locations of Chennai and Pondicherry. I'm <strong>Gunaseelan Neelakandan</strong>, the founder and curator of these exceptional villa experiences.
             </p>
             
             <p className="philosophy">
