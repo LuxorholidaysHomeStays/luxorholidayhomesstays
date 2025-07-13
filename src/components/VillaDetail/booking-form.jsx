@@ -1,6 +1,7 @@
 "use client"
-
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import { useAuth } from "../../context/AuthContext"
+import axios from "axios"
 import {
   Calendar,
   Plus,
@@ -21,7 +22,451 @@ import {
 import UnifiedCalendar from "../VillaDetail/unified-calender.jsx"
 import { getPriceForDate } from "../../data/villa-pricing.jsx"
 import Swal from "sweetalert2"
-import axios from "axios"
+
+// import axios from "axios"
+
+import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth"
+import { auth } from "../../utils/otp"
+
+
+// Replace the countryCodesList array with this fixed version
+const countryCodesList = [
+  { code: "+1", name: "United States", flag: "🇺🇸" },
+  { code: "+44", name: "United Kingdom", flag: "🇬🇧" },
+  { code: "+91", name: "India", flag: "🇮🇳" },
+  { code: "+86", name: "China", flag: "🇨🇳" },
+  { code: "+81", name: "Japan", flag: "🇯🇵" },
+  { code: "+49", name: "Germany", flag: "🇩🇪" },
+  { code: "+33", name: "France", flag: "🇫🇷" },
+  { code: "+39", name: "Italy", flag: "🇮🇹" },
+  { code: "+7", name: "Russia", flag: "🇷🇺" },
+  { code: "+55", name: "Brazil", flag: "🇧🇷" },
+  { code: "+61", name: "Australia", flag: "🇦🇺" },
+  { code: "+34", name: "Spain", flag: "🇪🇸" },
+  { code: "+82", name: "South Korea", flag: "🇰🇷" },
+  { code: "+65", name: "Singapore", flag: "🇸🇬" },
+  { code: "+971", name: "UAE", flag: "🇦🇪" },
+  { code: "+966", name: "Saudi Arabia", flag: "🇸🇦" },
+  { code: "+60", name: "Malaysia", flag: "🇲🇾" },
+  { code: "+66", name: "Thailand", flag: "🇹🇭" },
+  { code: "+84", name: "Vietnam", flag: "🇻🇳" },
+  { code: "+62", name: "Indonesia", flag: "🇮🇩" },
+  { code: "+63", name: "Philippines", flag: "🇵🇭" },
+  { code: "+880", name: "Bangladesh", flag: "🇧🇩" },
+  { code: "+94", name: "Sri Lanka", flag: "🇱🇰" },
+  { code: "+977", name: "Nepal", flag: "🇳🇵" },
+  { code: "+92", name: "Pakistan", flag: "🇵🇰" },
+  { code: "+27", name: "South Africa", flag: "🇿🇦" },
+  { code: "+20", name: "Egypt", flag: "🇪🇬" },
+  { code: "+234", name: "Nigeria", flag: "🇳🇬" },
+  { code: "+254", name: "Kenya", flag: "🇰🇪" },
+  { code: "+52", name: "Mexico", flag: "🇲🇽" },
+  { code: "+54", name: "Argentina", flag: "🇦🇷" },
+  { code: "+56", name: "Chile", flag: "🇨🇱" },
+  { code: "+57", name: "Colombia", flag: "🇨🇴" },
+  { code: "+51", name: "Peru", flag: "🇵🇪" },
+  { code: "+90", name: "Turkey", flag: "🇹🇷" },
+  { code: "+98", name: "Iran", flag: "🇮🇷" },
+  { code: "+964", name: "Iraq", flag: "🇮🇶" },
+  { code: "+972", name: "Israel", flag: "🇮🇱" },
+  { code: "+31", name: "Netherlands", flag: "🇳🇱" },
+  { code: "+46", name: "Sweden", flag: "🇸🇪" },
+  { code: "+47", name: "Norway", flag: "🇳🇴" },
+  { code: "+45", name: "Denmark", flag: "🇩🇰" },
+  { code: "+358", name: "Finland", flag: "🇫🇮" },
+  { code: "+41", name: "Switzerland", flag: "🇨🇭" },
+  { code: "+43", name: "Austria", flag: "🇦🇹" },
+  { code: "+32", name: "Belgium", flag: "🇧🇪" },
+  { code: "+351", name: "Portugal", flag: "🇵🇹" },
+  { code: "+48", name: "Poland", flag: "🇵🇱" },
+  { code: "+420", name: "Czech Republic", flag: "🇨🇿" },
+  { code: "+36", name: "Hungary", flag: "🇭🇺" },
+  { code: "+30", name: "Greece", flag: "🇬🇷" },
+  { code: "+385", name: "Croatia", flag: "🇭🇷" },
+  { code: "+386", name: "Slovenia", flag: "🇸🇮" },
+  { code: "+421", name: "Slovakia", flag: "🇸🇰" },
+  { code: "+370", name: "Lithuania", flag: "🇱🇹" },
+  { code: "+371", name: "Latvia", flag: "🇱🇻" },
+  { code: "+372", name: "Estonia", flag: "🇪🇪" },
+  { code: "+353", name: "Ireland", flag: "🇮🇪" },
+  { code: "+354", name: "Iceland", flag: "🇮🇸" },
+  { code: "+356", name: "Malta", flag: "🇲🇹" },
+  { code: "+357", name: "Cyprus", flag: "🇨🇾" },
+  { code: "+359", name: "Bulgaria", flag: "🇧🇬" },
+  { code: "+40", name: "Romania", flag: "🇷🇴" },
+  { code: "+381", name: "Serbia", flag: "🇷🇸" },
+  { code: "+382", name: "Montenegro", flag: "🇲🇪" },
+  { code: "+387", name: "Bosnia and Herzegovina", flag: "🇧🇦" },
+  { code: "+389", name: "North Macedonia", flag: "🇲🇰" },
+  { code: "+383", name: "Kosovo", flag: "🇽🇰" },
+  { code: "+355", name: "Albania", flag: "🇦🇱" },
+  { code: "+373", name: "Moldova", flag: "🇲🇩" },
+  { code: "+380", name: "Ukraine", flag: "🇺🇦" },
+  { code: "+375", name: "Belarus", flag: "🇧🇾" },
+  { code: "+995", name: "Georgia", flag: "🇬🇪" },
+  { code: "+374", name: "Armenia", flag: "🇦🇲" },
+  { code: "+994", name: "Azerbaijan", flag: "🇦🇿" },
+  { code: "+993", name: "Turkmenistan", flag: "🇹🇲" },
+  { code: "+992", name: "Tajikistan", flag: "🇹🇯" },
+  { code: "+996", name: "Kyrgyzstan", flag: "🇰🇬" },
+  { code: "+998", name: "Uzbekistan", flag: "🇺🇿" },
+  { code: "+7", name: "Kazakhstan", flag: "🇰🇿", id: "kaz" }, // Added id to make key unique
+  { code: "+976", name: "Mongolia", flag: "🇲🇳" },
+  { code: "+852", name: "Hong Kong", flag: "🇭🇰" },
+  { code: "+853", name: "Macau", flag: "🇲🇴" },
+  { code: "+886", name: "Taiwan", flag: "🇹🇼" },
+  { code: "+850", name: "North Korea", flag: "🇰🇵" },
+  { code: "+95", name: "Myanmar", flag: "🇲🇲" },
+  { code: "+856", name: "Laos", flag: "🇱🇦" },
+  { code: "+855", name: "Cambodia", flag: "🇰🇭" },
+  { code: "+673", name: "Brunei", flag: "🇧🇳" },
+  { code: "+670", name: "East Timor", flag: "🇹🇱" },
+  { code: "+975", name: "Bhutan", flag: "🇧🇹" },
+  { code: "+960", name: "Maldives", flag: "🇲🇻" },
+  { code: "+93", name: "Afghanistan", flag: "🇦🇫" },
+  // Removed duplicate Iran entry
+  // Removed duplicate Iraq entry
+  { code: "+965", name: "Kuwait", flag: "🇰🇼" },
+  { code: "+973", name: "Bahrain", flag: "🇧🇭" },
+  { code: "+974", name: "Qatar", flag: "🇶🇦" },
+  { code: "+968", name: "Oman", flag: "🇴🇲" },
+  { code: "+967", name: "Yemen", flag: "🇾🇪" },
+  { code: "+962", name: "Jordan", flag: "🇯🇴" },
+  { code: "+961", name: "Lebanon", flag: "🇱🇧" },
+  { code: "+963", name: "Syria", flag: "🇸🇾" },
+  { code: "+212", name: "Morocco", flag: "🇲🇦" },
+  { code: "+213", name: "Algeria", flag: "🇩🇿" },
+  { code: "+216", name: "Tunisia", flag: "🇹🇳" },
+  { code: "+218", name: "Libya", flag: "🇱🇾" },
+  { code: "+251", name: "Ethiopia", flag: "🇪🇹" },
+  { code: "+252", name: "Somalia", flag: "🇸🇴" },
+  { code: "+253", name: "Djibouti", flag: "🇩🇯" },
+  { code: "+256", name: "Uganda", flag: "🇺🇬" },
+  { code: "+255", name: "Tanzania", flag: "🇹🇿" },
+  { code: "+250", name: "Rwanda", flag: "🇷🇼" },
+  { code: "+257", name: "Burundi", flag: "🇧🇮" },
+  { code: "+260", name: "Zambia", flag: "🇿🇲" },
+  { code: "+263", name: "Zimbabwe", flag: "🇿🇼" },
+  { code: "+265", name: "Malawi", flag: "🇲🇼" },
+  { code: "+266", name: "Lesotho", flag: "🇱🇸" },
+  { code: "+267", name: "Botswana", flag: "🇧🇼" },
+  { code: "+268", name: "Eswatini", flag: "🇸🇿" },
+  { code: "+264", name: "Namibia", flag: "🇳🇦" },
+  { code: "+258", name: "Mozambique", flag: "🇲🇿" },
+  { code: "+261", name: "Madagascar", flag: "🇲🇬" },
+  { code: "+230", name: "Mauritius", flag: "🇲🇺" },
+  { code: "+248", name: "Seychelles", flag: "🇸🇨" },
+  { code: "+290", name: "Saint Helena", flag: "🇸🇭" },
+]
+// Phone Verification Component
+const PhoneVerificationForm = ({
+  userData,
+  setPhoneVerified,
+  authToken,
+  countryCode,
+  setCountryCode,
+  newPhone,
+  setNewPhone,
+}) => {
+  const [sendingOtp, setSendingOtp] = useState(false)
+  const [verifyingOtp, setVerifyingOtp] = useState(false)
+  const [showOtpInput, setShowOtpInput] = useState(false)
+  const [confirmationResult, setConfirmationResult] = useState(null)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+  const [otpCode, setOtpCode] = useState("")
+  const recaptchaVerifierRef = useRef(null)
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://luxorstay-backend.vercel.app"
+
+  useEffect(() => {
+    return () => {
+      if (recaptchaVerifierRef.current) {
+        try {
+          recaptchaVerifierRef.current.clear()
+        } catch (error) {
+          console.error("Error clearing recaptcha:", error)
+        }
+        recaptchaVerifierRef.current = null
+      }
+    }
+  }, [])
+
+  const startPhoneVerification = async () => {
+    try {
+      setSendingOtp(true)
+      setError("")
+      if (!newPhone || newPhone.length < 10) {
+        setError("Please enter a valid phone number")
+        setSendingOtp(false)
+        return
+      }
+      const formattedPhone = `${countryCode}${newPhone}`
+
+      // First check if this number already exists in the database
+      const checkResponse = await axios.get(
+        `${baseUrl}/api/profile/check-phone?phoneNumber=${encodeURIComponent(formattedPhone)}`
+      )
+      if (checkResponse.data.exists) {
+        // Show warning if the number is already associated with another account
+        Swal.fire({
+          icon: "error",
+          title: "Phone Number Already Registered",
+          text: "This phone number is already associated with another account. Please use a different phone number.",
+          confirmButtonColor: "#ca8a04",
+        })
+        setSendingOtp(false)
+        return
+      }
+
+      // If number is not already registered, proceed with OTP verification
+      if (recaptchaVerifierRef.current) {
+        try {
+          recaptchaVerifierRef.current.clear()
+        } catch (error) {
+          console.error("Error clearing recaptcha:", error)
+        }
+      }
+
+      recaptchaVerifierRef.current = new RecaptchaVerifier(auth, "recaptcha-container-booking", {
+        size: "invisible",
+        callback: () => {
+          console.log("Recaptcha verified")
+        },
+        "expired-callback": () => {
+          setError("reCAPTCHA expired. Please try again.")
+          setSendingOtp(false)
+        },
+      })
+
+      console.log("Sending OTP to:", formattedPhone)
+      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifierRef.current)
+      setConfirmationResult(confirmation)
+      setShowOtpInput(true)
+      setSendingOtp(false)
+      setSuccess("OTP sent successfully! Please check your phone.")
+    } catch (error) {
+      console.error("Error sending OTP:", error)
+      if (error.response && error.response.status === 401) {
+        // Handle unauthorized error
+        setError("Your session has expired. Please sign in again.")
+        // Potentially redirect to login page
+      } else {
+        setError(error.message || "Failed to verify phone number. Please try again.")
+      }
+      setSendingOtp(false)
+      if (recaptchaVerifierRef.current) {
+        try {
+          recaptchaVerifierRef.current.clear()
+        } catch (error) {
+          console.error("Error clearing recaptcha:", error)
+        }
+        recaptchaVerifierRef.current = null
+      }
+    }
+  }
+
+  const verifyPhoneOtp = async () => {
+    try {
+      setVerifyingOtp(true)
+      setError("")
+      if (!otpCode || otpCode.length !== 6) {
+        setError("Please enter a valid 6-digit OTP")
+        setVerifyingOtp(false)
+        return
+      }
+      if (!confirmationResult) {
+        setError("Session expired. Please request a new OTP.")
+        setVerifyingOtp(false)
+        return
+      }
+
+      // First verify the OTP with Firebase
+      await confirmationResult.confirm(otpCode)
+
+      // Then update the phone number in the backend profile
+      const response = await axios.post(
+        `${baseUrl}/api/profile/update-phone`,
+        { phone: newPhone, countryCode: countryCode },
+        { headers: { Authorization: `Bearer ${authToken}` } },
+      )
+
+      if (response.data.success) {
+        setSuccess("Phone number verified successfully!")
+        setPhoneVerified(true)
+        
+        // Store the verified phone data in our state
+        setUserPhoneData({
+          phone: newPhone,
+          countryCode: countryCode
+        })
+        
+        // Also update the main profile in the backend to ensure consistency
+        // This ensures the phone is stored in the user profile document, not just the auth record
+        try {
+          const profileUpdateResponse = await axios.put(
+            `${baseUrl}/api/profile/update`,
+            {
+              phone: newPhone,
+              countryCode: countryCode
+            },
+            { headers: { Authorization: `Bearer ${authToken}` } }
+          )
+          
+          if (profileUpdateResponse.data.success) {
+            console.log("Phone number successfully stored in user profile")
+          }
+        } catch (profileError) {
+          console.error("Error updating profile with phone number:", profileError)
+          // We don't need to show this error to the user as the phone verification was successful
+        }
+      }
+    } catch (error) {
+      console.error("Error verifying OTP:", error)
+      setError(error.message || "Failed to verify OTP. Please try again.")
+      setPhoneVerified(false)
+    } finally {
+      setVerifyingOtp(false)
+      setConfirmationResult(null)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      {error && <div className="p-2 bg-red-50 border-l-4 border-red-500 text-red-700 text-xs">{error}</div>}
+      {success && <div className="p-2 bg-green-50 border-l-4 border-green-500 text-green-700 text-xs">{success}</div>}
+      {!showOtpInput ? (
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Country Code</label>
+            <select
+              value={countryCode}
+              onChange={(e) => setCountryCode(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm appearance-none bg-white"
+              disabled={sendingOtp}
+            >
+              {countryCodesList.map((country, index) => (
+                <option 
+                  key={country.id || `${country.code}-${country.name}-${index}`} 
+                  value={country.code}
+                >
+                  {country.flag} {country.name} ({country.code})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Phone Number</label>
+            <div className="flex">
+              <div className="inline-flex items-center px-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md">
+                <span className="text-sm text-gray-500">{countryCode}</span>
+              </div>
+              <input
+                type="tel"
+                value={newPhone}
+                onChange={(e) => setNewPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                className="flex-1 border border-gray-300 rounded-r-md px-3 py-2 focus:ring-yellow-500 focus:border-yellow-500"
+                placeholder="Enter phone number"
+                disabled={sendingOtp}
+              />
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={startPhoneVerification}
+            disabled={sendingOtp || !newPhone || newPhone.length < 10}
+            className="w-full bg-gradient-to-r from-[#D4AF37] to-[#BFA181] hover:from-[#BFA181] hover:to-[#D4AF37] text-white py-2 px-4 rounded-lg transition-colors disabled:opacity-50 text-sm"
+          >
+            {sendingOtp ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Sending OTP...
+              </span>
+            ) : (
+              "Send OTP"
+            )}
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Enter OTP Code</label>
+            <input
+              type="text"
+              value={otpCode}
+              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-yellow-500 focus:border-yellow-500 text-center tracking-wider"
+              placeholder="Enter 6-digit code"
+              maxLength="6"
+            />
+            <p className="text-xs text-gray-500">
+              Enter the 6-digit code sent to {countryCode} {newPhone}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={verifyPhoneOtp}
+              disabled={verifyingOtp || !otpCode || otpCode.length !== 6}
+              className="flex-1 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] hover:from-[#BFA181] hover:to-[#D4AF37] text-white py-2 px-4 rounded-lg transition-colors disabled:opacity-50 text-sm"
+            >
+              {verifyingOtp ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Verifying...
+                </span>
+              ) : (
+                "Verify OTP"
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowOtpInput(false)
+                setOtpCode("")
+              }}
+              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg transition-colors text-sm"
+            >
+              Back
+            </button>
+          </div>
+
+          <p className="text-xs text-gray-500 mt-1">
+            Didn't receive the code?{" "}
+            <button
+              type="button"
+              onClick={startPhoneVerification}
+              disabled={sendingOtp}
+              className="text-[#D4AF37] hover:text-[#BFA181] transition-colors"
+            >
+              Resend
+            </button>
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function EnhancedBookingForm({
   villa,
@@ -61,11 +506,19 @@ export default function EnhancedBookingForm({
   const [isLoadingSavedAddresses, setIsLoadingSavedAddresses] = useState(false)
   const [selectedSavedAddress, setSelectedSavedAddress] = useState("")
   const [showNewAddressForm, setShowNewAddressForm] = useState(true)
-
   // New states for address editing
   const [addressEditMode, setAddressEditMode] = useState(false)
   const [hasAddressData, setHasAddressData] = useState(false)
   const [originalAddress, setOriginalAddress] = useState({})
+  const [phoneVerified, setPhoneVerified] = useState(false)
+  const [phoneVerificationError, setPhoneVerificationError] = useState("")
+  const [newPhone, setNewPhone] = useState("")
+  const [countryCode, setCountryCode] = useState("+91")
+  const [isLoadingPhoneCheck, setIsLoadingPhoneCheck] = useState(false)
+  const [userPhoneData, setUserPhoneData] = useState(null)
+
+  // Import useAuth
+  const { authToken } = useAuth()
 
   const checkInTime = "14:00 (2:00 PM)"
   const checkOutTime = "12:00 (12:00 PM)"
@@ -95,7 +548,6 @@ export default function EnhancedBookingForm({
     const villaMatch = Object.entries(villaFallbackPricing).find(([name]) =>
       villa.name.toLowerCase().includes(name.toLowerCase()),
     )
-
     if (villaMatch) {
       weekendPrice = villaMatch[1].weekend
       console.log(`Using fallback weekend price for ${villa.name}: ₹${weekendPrice}`)
@@ -107,21 +559,21 @@ export default function EnhancedBookingForm({
 
   // If weekendPrice is still 0, try to use fallback pricing
   if (weekendPrice === 0 || !weekendPrice) {
-    // Find a matching villa in our fallback pricing 
+    // Find a matching villa in our fallback pricing
     for (const [villaName, pricing] of Object.entries(villaFallbackPricing)) {
       if (villa?.name && villa.name.toLowerCase().includes(villaName.toLowerCase())) {
-        weekendPrice = pricing.weekend;
+        weekendPrice = pricing.weekend
         // Also set the weekday price if needed
         if (weekdayPrice === 0) {
-          weekdayPrice = pricing.weekday;
+          weekdayPrice = pricing.weekday
         }
-        break;
+        break
       }
     }
-    
+
     // If still no weekend price, use a multiplier on weekday price
     if ((weekendPrice === 0 || !weekendPrice) && weekdayPrice > 0) {
-      weekendPrice = Math.round(weekdayPrice * 1.5);
+      weekendPrice = Math.round(weekdayPrice * 1.5)
     }
   }
 
@@ -135,7 +587,6 @@ export default function EnhancedBookingForm({
 
   const calculateBasePrice = () => {
     if (!checkInDate || !checkOutDate || !villa) return 0
-
     try {
       let totalPrice = 0
       const startDate = new Date(checkInDate)
@@ -145,7 +596,6 @@ export default function EnhancedBookingForm({
       for (let i = 0; i < nights; i++) {
         const currentDate = new Date(startDate)
         currentDate.setDate(currentDate.getDate() + i)
-
         const dayOfWeek = currentDate.getDay()
         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
 
@@ -169,7 +619,6 @@ export default function EnhancedBookingForm({
       let totalPrice = 0
       const startDate = new Date(checkInDate)
       const endDate = new Date(checkOutDate)
-
       const nights = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)))
 
       for (let i = 0; i < nights; i++) {
@@ -177,6 +626,7 @@ export default function EnhancedBookingForm({
         currentDate.setDate(currentDate.getDate() + i)
         totalPrice += getPriceForDate(currentDate, villa)
       }
+
       const serviceFee = Math.round(totalPrice * 0.05)
       const taxAmount = Math.round((totalPrice + serviceFee) * 0.18)
       return Math.round(totalPrice + serviceFee + taxAmount)
@@ -230,9 +680,7 @@ export default function EnhancedBookingForm({
         villaId: villa?._id || villa?.id,
         returnUrl: window.location.pathname + window.location.search,
       }
-
       localStorage.setItem("pendingBookingData", JSON.stringify(bookingData))
-
       Swal.fire({
         icon: "info",
         title: "Login Required",
@@ -242,7 +690,6 @@ export default function EnhancedBookingForm({
       }).then(() => {
         window.location.href = "/sign-in?redirect=booking"
       })
-
       return
     }
 
@@ -250,6 +697,9 @@ export default function EnhancedBookingForm({
       checkInTime: extractRailwayTime(checkInTime),
       checkOutTime: extractRailwayTime(checkOutTime),
       address: address,
+      // Use userPhoneData if available (which combines data from all sources), otherwise fall back to props or form data
+      phone: userPhoneData?.phone || userData?.phone || newPhone,
+      countryCode: userPhoneData?.countryCode || userData?.countryCode || countryCode,
     }
     onBookNow(bookingData)
   }
@@ -305,6 +755,7 @@ export default function EnhancedBookingForm({
 
       const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://luxorstay-backend.vercel.app"
       const token = localStorage.getItem("token")
+
       if (!token) {
         console.log("No auth token available for fetching address")
         return
@@ -339,26 +790,24 @@ export default function EnhancedBookingForm({
     try {
       // Define India as a constant to ensure consistent naming
       const INDIA = { name: "India", code: "IN" }
-      
+
       const response = await fetch("https://countriesnow.space/api/v0.1/countries/positions")
       const data = await response.json()
-      
+
       if (data.data && Array.isArray(data.data)) {
         // Map countries to our format
         let mappedCountries = data.data
           .map((c) => ({ name: c.name, code: c.iso2 || "" }))
           // Sort alphabetically first
           .sort((a, b) => a.name.localeCompare(b.name))
-        
+
         // Remove India if it exists in the array
-        mappedCountries = mappedCountries.filter(country => 
-          country.name.toLowerCase() !== "india"
-        )
-        
+        mappedCountries = mappedCountries.filter((country) => country.name.toLowerCase() !== "india")
+
         // Always ensure India is at the beginning, regardless of API response
         const finalCountries = [INDIA, ...mappedCountries]
         console.log("Countries list prepared with India as first option:", finalCountries[0])
-        
+
         setCountries(finalCountries)
       } else {
         // Fallback if API doesn't return expected format
@@ -380,18 +829,15 @@ export default function EnhancedBookingForm({
       setCities([])
       return
     }
-
     setIsLoadingStates(true)
     setStates([])
     setCities([])
-
     try {
       const response = await fetch("https://countriesnow.space/api/v0.1/countries/states", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ country }),
       })
-
       const data = await response.json()
       if (data.data && data.data.states) {
         setStates(data.data.states)
@@ -401,7 +847,7 @@ export default function EnhancedBookingForm({
       }
     } catch (error) {
       console.error("Error fetching states:", error)
-      setStates([]) 
+      setStates([])
     } finally {
       setIsLoadingStates(false)
     }
@@ -412,17 +858,14 @@ export default function EnhancedBookingForm({
       setCities([])
       return
     }
-
     setIsLoadingCities(true)
     setCities([])
-
     try {
       const response = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ country, state }),
       })
-
       const data = await response.json()
       if (data.data) {
         setCities(data.data)
@@ -440,9 +883,7 @@ export default function EnhancedBookingForm({
 
   const fetchSavedAddresses = async () => {
     if (!isSignedIn) return
-
     setIsLoadingSavedAddresses(true)
-
     try {
       const token = localStorage.getItem("token") || localStorage.getItem("authToken")
       if (!token) return
@@ -460,7 +901,6 @@ export default function EnhancedBookingForm({
         if (addressResponse.data && addressResponse.data.success && addressResponse.data.addressInfo) {
           // If we have a successful response with address info, use it
           const addressInfo = addressResponse.data.addressInfo
-
           // Create a single address entry from the consolidated info
           const addressList = [
             {
@@ -490,6 +930,7 @@ export default function EnhancedBookingForm({
               }
             }
           }
+
           setIsLoadingSavedAddresses(false)
           return
         }
@@ -518,7 +959,6 @@ export default function EnhancedBookingForm({
         const profileData = await profileResponse.json()
         if (profileData.user) {
           const { address: streetAddress, city, state, zipCode, country } = profileData.user
-
           if (streetAddress || city || state || country) {
             addressList.push({
               id: "profile",
@@ -536,14 +976,12 @@ export default function EnhancedBookingForm({
 
       if (bookingsResponse.ok) {
         const bookingsData = await bookingsResponse.json()
-
         if (Array.isArray(bookingsData)) {
           // Handle the case where bookings are returned directly as an array
           bookingsData.forEach((booking) => {
             if (booking.address && typeof booking.address === "object") {
               if (booking.address.street || booking.address.city || booking.address.state || booking.address.country) {
                 const addressId = `booking-${booking._id}`
-
                 const isAddressAlreadyAdded = addressList.some(
                   (addr) =>
                     addr.street === booking.address.street &&
@@ -579,7 +1017,6 @@ export default function EnhancedBookingForm({
             if (booking.address && typeof booking.address === "object") {
               if (booking.address.street || booking.address.city || booking.address.state || booking.address.country) {
                 const addressId = `booking-${booking._id}`
-
                 const isAddressAlreadyAdded = addressList.some(
                   (addr) =>
                     addr.street === booking.address.street &&
@@ -655,7 +1092,6 @@ export default function EnhancedBookingForm({
     const selectedAddress = savedAddresses.find((addr) => addr.id === selectedId)
     if (selectedAddress) {
       console.log("Selected address:", selectedAddress)
-
       // Set the address first
       const newAddress = {
         street: selectedAddress.street || "",
@@ -664,7 +1100,6 @@ export default function EnhancedBookingForm({
         country: selectedAddress.country || "",
         zipCode: selectedAddress.zipCode || "",
       }
-
       setAddress(newAddress)
       setShowNewAddressForm(true)
 
@@ -684,25 +1119,23 @@ export default function EnhancedBookingForm({
       // If we have a country, proceed with normal dropdown population
       if (selectedAddress.country) {
         setAddressEditMode(false)
-
         try {
           console.log("Fetching states for country:", selectedAddress.country)
-          
+
           // Set loading states
           setIsLoadingStates(true)
           setIsLoadingCities(true)
-          
+
           // Clear existing data first
           setStates([])
           setCities([])
-          
+
           // Fetch states
           const statesResponse = await fetch("https://countriesnow.space/api/v0.1/countries/states", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ country: selectedAddress.country }),
           })
-
           const statesData = await statesResponse.json()
           if (statesData.data && statesData.data.states) {
             setStates(statesData.data.states)
@@ -713,16 +1146,15 @@ export default function EnhancedBookingForm({
           // If we have a state, also fetch cities
           if (selectedAddress.state) {
             console.log("Fetching cities for state:", selectedAddress.state)
-            
+
             const citiesResponse = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ 
-                country: selectedAddress.country, 
-                state: selectedAddress.state 
+              body: JSON.stringify({
+                country: selectedAddress.country,
+                state: selectedAddress.state,
               }),
             })
-
             const citiesData = await citiesResponse.json()
             if (citiesData.data) {
               setCities(citiesData.data)
@@ -730,7 +1162,6 @@ export default function EnhancedBookingForm({
             }
           }
           setIsLoadingCities(false)
-
         } catch (error) {
           console.error("Error fetching location data:", error)
           setIsLoadingStates(false)
@@ -790,6 +1221,212 @@ export default function EnhancedBookingForm({
   const handleCancelEdit = () => {
     setAddress(originalAddress)
     setAddressEditMode(false)
+  }
+
+  // Function to check for existing phone number in user profile and other sources
+  const checkUserPhoneNumber = async () => {
+    if (!isSignedIn || !userData) return
+    
+    try {
+      setIsLoadingPhoneCheck(true)
+      setPhoneVerificationError("") // Clear any previous errors
+      
+      // Define baseUrl within the function scope to ensure it's available
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://luxorstay-backend.vercel.app"
+      
+      // First check if phone exists in userData
+      if (userData.phone && userData.countryCode) {
+        console.log("Phone found in user data:", userData.phone, userData.countryCode)
+        setUserPhoneData({
+          phone: userData.phone,
+          countryCode: userData.countryCode
+        })
+        setPhoneVerified(true)
+        return
+      }
+      
+      // Try different token sources to ensure we have one that works
+      const token = authToken || localStorage.getItem("authToken") || localStorage.getItem("token")
+      
+      if (!token) {
+        console.log("No auth token available for checking phone")
+        setPhoneVerificationError("Authentication required to verify phone number")
+        return
+      }
+      
+      // Try to fetch from profile endpoint
+      try {
+        console.log("Fetching user profile for phone information...")
+        const response = await axios.get(`${baseUrl}/api/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+        
+        if (response.data && response.data.user) {
+          const profileData = response.data.user
+          console.log("Got profile data:", profileData)
+          
+          // Check if profile has phone number
+          if (profileData.phone && profileData.countryCode) {
+            console.log("Phone found in profile data:", profileData.phone, profileData.countryCode)
+            setUserPhoneData({
+              phone: profileData.phone,
+              countryCode: profileData.countryCode
+            })
+            setPhoneVerified(true)
+            return
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching profile:", err)
+      }
+      
+      // If profile doesn't have phone, check user address endpoint
+      try {
+        console.log("Checking address info for phone data...")
+        const addressResponse = await axios.get(`${baseUrl}/api/bookings/user-address-info`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+        
+        if (addressResponse.data && addressResponse.data.phoneData) {
+          const phoneData = addressResponse.data.phoneData
+          if (phoneData.phone && phoneData.countryCode) {
+            console.log("Phone found in address info:", phoneData.phone, phoneData.countryCode)
+            setUserPhoneData({
+              phone: phoneData.phone,
+              countryCode: phoneData.countryCode
+            })
+            setPhoneVerified(true)
+            return
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching address info:", err)
+      }
+      
+      // Check previous bookings as a last resort
+      try {
+        console.log("Checking previous bookings for phone data...")
+        const bookingResponse = await axios.get(`${baseUrl}/api/bookings/user-bookings`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+        
+        // Check if any booking has phone info
+        if (bookingResponse.data && Array.isArray(bookingResponse.data) && bookingResponse.data.length > 0) {
+          const booking = bookingResponse.data.find(b => b.phone || b.phoneNumber)
+          if (booking) {
+            const phone = booking.phone || booking.phoneNumber
+            const countryCode = booking.countryCode || "+91" // Default if not available
+            
+            console.log("Phone found in previous booking:", phone, countryCode)
+            setUserPhoneData({
+              phone: phone,
+              countryCode: countryCode
+            })
+            setPhoneVerified(true)
+            return
+          }
+        }
+      } catch (bookingErr) {
+        console.error("Error fetching booking data:", bookingErr)
+      }
+      
+      // If all attempts failed, show phone verification form
+      console.log("No phone number found for user, verification will be required")
+      setPhoneVerified(false)
+      setUserPhoneData(null)
+    } catch (error) {
+      console.error("Error checking user phone number:", error)
+      // Use more specific error messages
+      if (error.response) {
+        if (error.response.status === 401) {
+          setPhoneVerificationError("Your session has expired. Please sign in again.")
+        } else {
+          setPhoneVerificationError(`Error: ${error.response.data?.message || "Server error occurred"}`)
+        }
+      } else if (error.request) {
+        setPhoneVerificationError("Network error. Please check your connection and try again.")
+      } else {
+        setPhoneVerificationError("Error checking phone information. Please try again.")
+      }
+      
+      setPhoneVerified(false)
+      setUserPhoneData(null)
+    } finally {
+      setIsLoadingPhoneCheck(false)
+    }
+  }
+  
+  // Call checkUserPhoneNumber when component mounts and when user data changes
+  useEffect(() => {
+    if (isSignedIn && userData) {
+      checkUserPhoneNumber()
+    }
+  }, [isSignedIn, userData])
+
+  // Modify the phone verification section in the booking form to use this data:
+  const renderPhoneVerificationSection = () => {
+    return (
+      <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 rounded-xl p-4 border border-[#D4AF37]/20">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Phone className="w-5 h-5 text-[#D4AF37]" />
+            <h4 className="font-semibold text-gray-900 text-sm">Phone Number Verification</h4>
+          </div>
+        </div>
+        <p className="text-xs text-gray-600 mb-4">Please verify your phone number for booking confirmation</p>
+
+        {/* Show loading state */}
+        {isLoadingPhoneCheck && (
+          <div className="flex justify-center py-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#D4AF37]"></div>
+          </div>
+        )}
+
+        {/* Show error message */}
+        {phoneVerificationError && (
+          <div className="p-2 mb-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-xs">
+            {phoneVerificationError}
+          </div>
+        )}
+
+        {/* Show verified phone number */}
+        {!isLoadingPhoneCheck && userPhoneData && (
+          <div className="space-y-3">
+            <div className="p-3 bg-white rounded-lg border border-gray-200">
+              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Phone Number</label>
+              <p className="text-sm font-medium text-gray-900 mt-1">
+                {userPhoneData.countryCode || "+"} {userPhoneData.phone}
+              </p>
+            </div>
+            <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+              <div className="flex items-center gap-2 text-green-700 text-xs">
+                <Check className="w-4 h-4" />
+                <span>Phone number verified</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Show verification form if no phone found */}
+        {!isLoadingPhoneCheck && !userPhoneData && (
+          <PhoneVerificationForm
+            userData={userData}
+            setPhoneVerified={setPhoneVerified}
+            authToken={authToken}
+            countryCode={countryCode}
+            setCountryCode={setCountryCode}
+            newPhone={newPhone}
+            setNewPhone={setNewPhone}
+          />
+        )}
+      </div>
+    )
   }
 
   return (
@@ -973,14 +1610,12 @@ export default function EnhancedBookingForm({
                   <h4 className="font-semibold text-gray-900 text-sm">How many guests?</h4>
                 </div>
                 <p className="text-xs text-gray-600 mb-2">Maximum {villa?.guests || 4} guests allowed</p>
-
                 {adults + children > (villa?.guests || 4) && (
                   <div className="mb-4 p-2 bg-red-50 rounded-md border border-red-200 text-xs text-red-700">
                     <strong>Warning:</strong> You have selected more guests than allowed for this villa. Please reduce
                     the number of guests.
                   </div>
                 )}
-
                 <div className="flex items-center justify-between mb-4 p-3 bg-white rounded-lg shadow-sm">
                   <div>
                     <div className="font-semibold text-gray-900 text-sm">Adults</div>
@@ -1004,7 +1639,6 @@ export default function EnhancedBookingForm({
                     </button>
                   </div>
                 </div>
-
                 <div className="flex items-center justify-between mb-4 p-3 bg-white rounded-lg shadow-sm">
                   <div>
                     <div className="font-semibold text-gray-900 text-sm">Children</div>
@@ -1028,7 +1662,6 @@ export default function EnhancedBookingForm({
                     </button>
                   </div>
                 </div>
-
                 <div className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
                   <div>
                     <div className="font-semibold text-gray-900 text-sm">Infants</div>
@@ -1051,7 +1684,6 @@ export default function EnhancedBookingForm({
                     </button>
                   </div>
                 </div>
-
                 <div className="mt-3 p-2 bg-white rounded-lg text-center shadow-sm">
                   <span className="font-semibold text-gray-900 text-sm">
                     Total: {adults + children} guest{adults + children > 1 ? "s" : ""}
@@ -1238,7 +1870,6 @@ export default function EnhancedBookingForm({
                         required
                       />
                     </div>
-
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-gray-700">Country</label>
                       <select
@@ -1259,10 +1890,9 @@ export default function EnhancedBookingForm({
                               {country.name}
                             </option>
                           ))
-                        )}
+                      )  }
                       </select>
                     </div>
-
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-gray-700">State/Province</label>
                       <select
@@ -1284,16 +1914,14 @@ export default function EnhancedBookingForm({
                               {state.name}
                             </option>
                           ))
-                        )}
-                        {/* Show current state even if not in the list */}
-                        {address.state && !states.find(s => s.name === address.state) && !isLoadingStates && (
+                          )  }
+                        {address.state && !states.find((s) => s.name === address.state) && !isLoadingStates && (
                           <option key={address.state} value={address.state}>
                             {address.state}
                           </option>
                         )}
                       </select>
                     </div>
-
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-gray-700">City</label>
                       <select
@@ -1315,7 +1943,7 @@ export default function EnhancedBookingForm({
                               {city}
                             </option>
                           ))
-                        )}
+                    )    }
                         {/* Show current city even if not in the list */}
                         {address.city && !cities.includes(address.city) && !isLoadingCities && (
                           <option key={address.city} value={address.city}>
@@ -1324,7 +1952,6 @@ export default function EnhancedBookingForm({
                         )}
                       </select>
                     </div>
-
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-gray-700">ZIP/Postal Code</label>
                       <input
@@ -1363,6 +1990,63 @@ export default function EnhancedBookingForm({
                 )}
               </div>
 
+              {/* New Phone Verification Section */}
+              <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#BFA181]/10 rounded-xl p-4 border border-[#D4AF37]/20">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-5 h-5 text-[#D4AF37]" />
+                    <h4 className="font-semibold text-gray-900 text-sm">Phone Number Verification</h4>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-600 mb-4">Please verify your phone number for booking confirmation</p>
+
+                {/* Show loading state */}
+                {isLoadingPhoneCheck && (
+                  <div className="flex justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#D4AF37]"></div>
+                  </div>
+                )}
+
+                {/* Show error message */}
+                {phoneVerificationError && (
+                  <div className="p-2 mb-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-xs">
+                    {phoneVerificationError}
+                  </div>
+                )}
+
+                {/* Show verified phone number */}
+                {!isLoadingPhoneCheck && userPhoneData && (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-white rounded-lg border border-gray-200">
+                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Phone Number</label>
+                      <p className="text-sm font-medium text-gray-900 mt-1">
+                        {userPhoneData.countryCode || "+"} {userPhoneData.phone}
+                      </p>
+                    </div>
+                    <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                      <div className="flex items-center gap-2 text-green-700 text-xs">
+                        <Check className="w-4 h-4" />
+                        <span>Phone number verified</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Show verification form if no phone found */}
+                {!isLoadingPhoneCheck && !userPhoneData && (
+                  <PhoneVerificationForm
+                    userData={userData}
+                    setPhoneVerified={setPhoneVerified}
+                    authToken={authToken}
+                    countryCode={countryCode}
+                    setCountryCode={setCountryCode}
+                    newPhone={newPhone}
+                    setNewPhone={setNewPhone}
+                  />
+                )}
+              </div>
+
+              {/* Continue button logic - add phoneVerified check */}
               <div className="space-y-2 mt-4">
                 <button
                   onClick={() => {
@@ -1375,18 +2059,24 @@ export default function EnhancedBookingForm({
                       })
                       return
                     }
+
+                    // Update this check to use our verified state
+                    if (!userPhoneData && !phoneVerified) {
+                      Swal.fire({
+                        icon: "warning",
+                        title: "Phone Verification Required",
+                        text: "Please verify your phone number to continue with booking.",
+                        confirmButtonColor: "#D4AF37",
+                      })
+                      return
+                    }
+
                     setBookingStep(4)
                   }}
                   className="w-full bg-gradient-to-r from-[#D4AF37] to-[#BFA181] hover:from-[#BFA181] hover:to-[#D4AF37] text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 text-sm"
                 >
                   Continue to Review
                 </button>
-                {/* <button
-                  onClick={() => setBookingStep(2)}
-                  className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-xl transition-all duration-300 text-sm"
-                >
-                  Back to Guests
-                </button> */}
               </div>
             </div>
           )}
@@ -1398,7 +2088,6 @@ export default function EnhancedBookingForm({
                   <CreditCard className="w-5 h-5 text-[#D4AF37]" />
                   <h4 className="font-semibold text-gray-900 text-sm">Booking Summary</h4>
                 </div>
-
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">
@@ -1441,6 +2130,16 @@ export default function EnhancedBookingForm({
                   <div className="flex justify-between">
                     <span className="text-gray-600">Booked by:</span>
                     <span className="font-medium text-xs">{userData?.name || userData?.email || "Guest User"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Phone Number:</span>
+                    <span className="font-medium text-xs">
+                      {userPhoneData ? 
+                        `${userPhoneData.countryCode || "+"} ${userPhoneData.phone}` : 
+                        userData?.phone ? `${userData?.countryCode || "+"} ${userData?.phone}` : 
+                        newPhone ? `${countryCode || "+"} ${newPhone}` : "Not provided"
+                      }
+                    </span>
                   </div>
                   {address.street && address.country && (
                     <div className="pt-2 mt-2 border-t border-gray-200">
@@ -1637,6 +2336,8 @@ export default function EnhancedBookingForm({
           </div>
         </div>
       )}
+
+      <div id="recaptcha-container-booking" style={{ visibility: "hidden" }}></div>
     </div>
   )
 }

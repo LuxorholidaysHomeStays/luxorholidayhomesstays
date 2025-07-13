@@ -1,4 +1,4 @@
-"use client"
+
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { ChevronLeft, ChevronRight, Home, Users, Maximize, MapPin, Star } from "lucide-react"

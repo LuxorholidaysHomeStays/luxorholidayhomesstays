@@ -583,8 +583,10 @@ const Profile = () => {
         return
       }
 
+      // First verify the OTP with Firebase
       await confirmationResult.confirm(otpCode)
 
+      // Then update the phone number in the backend profile
       const response = await axios.post(
         `${baseUrl}/api/profile/update-phone`,
         { phone: newPhone, countryCode: countryCode },
@@ -592,22 +594,45 @@ const Profile = () => {
       )
 
       if (response.data.success) {
+        // Update local state
         setPhoneVerificationSuccess(true)
         setPhoneOtpMode(false)
         setSuccess("Phone number updated successfully!")
+        
+        // Update profile data in component state
         setProfileData((prev) => ({
           ...prev,
           phone: newPhone,
           countryCode: countryCode,
         }))
-        setNewPhone("")
-        setOtpCode("")
+        
+        // Update user data in auth context
         if (setUserData) {
           setUserData((prev) => ({
             ...prev,
             phone: newPhone,
             countryCode: countryCode,
           }))
+        }
+        
+        // Clear the form fields
+        setNewPhone("")
+        setOtpCode("")
+        
+        // Important: Also update the main profile in the backend to ensure consistency
+        // This ensures the phone is stored in the user profile document, not just the auth record
+        const profileUpdateResponse = await axios.put(
+          `${baseUrl}/api/profile/update`,
+          {
+            ...profileData,
+            phone: newPhone,
+            countryCode: countryCode
+          },
+          { headers: { Authorization: `Bearer ${authToken}` } }
+        )
+        
+        if (profileUpdateResponse.data.success) {
+          console.log("Phone number successfully stored in user profile")
         }
       }
     } catch (error) {

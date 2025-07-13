@@ -346,31 +346,7 @@ const SignIn = () => {
       // Save the firebase user data
       setFirebaseUserData(firebaseUser);
       
-      // Check if this is a first-time user or existing user
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/check-phone-user`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber: firebaseUser.phoneNumber }),
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          
-          if (data.isNewUser || !data.hasEmail) {
-            // Show the email collection form
-            setIsFirstTimeUser(true);
-            setIsEmailStep(true);
-            setLoading(false);
-            return;
-          }
-        }
-      } catch (checkError) {
-        console.warn('Error checking if user is new:', checkError);
-        // Continue with normal flow if the check fails
-      }
-
-      // Get Firebase ID token
+      // Get Firebase ID token - we need this for backend verification
       const idToken = await firebaseUser.getIdToken();
 
       // Send to backend for verification and user login
@@ -393,24 +369,33 @@ const SignIn = () => {
 
         // Store auth token
         localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userId', data.user._id || data.user.id);
         
-        // Check if user needs to provide name and email
-        if (data.user.needsProfileUpdate || data.isNewUser || data.user.email.includes('@phone.luxor.com')) {
-          // Navigate to a profile completion page or show modal
+        // Check if user needs to complete their profile
+        if (data.user.needsProfileUpdate || data.isNewUser || 
+            (data.user.email && data.user.email.includes('@phone.luxor.com'))) {
+          // Navigate to profile completion page
           navigate('/complete-profile', { 
             state: { 
               phoneNumber: data.user.phoneNumber,
               authToken: data.token,
               currentName: data.user.name,
               currentEmail: data.user.email,
-              idToken // Pass the Firebase ID token
+              idToken
             } 
           });
         } else {
-          // Regular login flow for existing users
+          // User has a complete profile, update auth context and navigate home
           setUserData(data.user);
           setAuthToken(data.token);
-          navigate('/');
+          
+          // Show success message
+          addToast('Login successful! Welcome back.', 'success', 4000);
+          
+          // Navigate directly to home page
+          setTimeout(() => {
+            handleSuccessfulLogin();
+          }, 500);
         }
         
       } catch (error) {
@@ -426,8 +411,6 @@ const SignIn = () => {
       } else {
         setError(error.message || 'Verification failed. Please try again.');
       }
-      
-      clearRecaptcha();
     } finally {
       setLoading(false);
     }
