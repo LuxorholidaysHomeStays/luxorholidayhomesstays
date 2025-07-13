@@ -1,0 +1,17 @@
+/* Calendar modal styles */
+.calendar-modal-open {
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+  overflow: hidden;
+}
+
+/* Ensure the calendar modal has the highest z-index */
+.fixed.inset-0.bg-black\/50,
+.fixed.inset-0.bg-black\/60 {
+  z-index: 999999 !important;
+}
+
+.fixed.inset-0.bg-black\/50 > div,
+.fixed.inset-0.bg-black\/60 > div {
+  z-index: 9999999 !important;
+}

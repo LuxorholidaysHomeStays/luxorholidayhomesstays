@@ -47,9 +47,16 @@ export default function EnhancedBookingForm({
     city: "",
     zipCode: "",
   },
+  onCalendarVisibilityChange = () => {}, // Add this prop to notify parent component
 }) {
   const [bookingStep, setBookingStep] = useState(initialBookingStep)
   const [showCalendar, setShowCalendar] = useState(false)
+  
+  // Update parent component whenever calendar visibility changes
+  const updateCalendarVisibility = (isVisible) => {
+    setShowCalendar(isVisible);
+    onCalendarVisibilityChange(isVisible);
+  }
   const [address, setAddress] = useState(initialAddress)
   const [countries, setCountries] = useState([])
   const [states, setStates] = useState([])
@@ -203,16 +210,16 @@ export default function EnhancedBookingForm({
   const handleDateChangeWithTime = (checkIn, checkOut) => {
     if (checkIn && checkOut) {
       onDateChange(checkIn, checkOut)
-      setShowCalendar(false)
+      updateCalendarVisibility(false)
     } else if (checkIn && !checkInDate) {
       onDateChange(checkIn, checkOutDate)
     } else if (checkOut && checkInDate) {
       onDateChange(checkInDate, checkOut)
-      setShowCalendar(false)
+      updateCalendarVisibility(false)
     } else {
       onDateChange(checkIn, checkOut)
       if (checkIn && checkOut) {
-        setShowCalendar(false)
+        updateCalendarVisibility(false)
       }
     }
   }
@@ -868,7 +875,7 @@ export default function EnhancedBookingForm({
           {bookingStep === 1 && (
             <div className="space-y-3">
               <button
-                onClick={() => setShowCalendar(true)}
+                onClick={() => updateCalendarVisibility(true)}
                 className="w-full p-4 border-2 border-gray-200 rounded-xl hover:border-[#D4AF37] transition-all duration-200 text-left group"
               >
                 <div className="flex items-center justify-between">
@@ -1606,7 +1613,7 @@ export default function EnhancedBookingForm({
             style={{ zIndex: 99999 }}
           >
             <button
-              onClick={() => setShowCalendar(false)}
+              onClick={() => updateCalendarVisibility(false)}
               className="absolute right-4 top-4 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
               style={{ zIndex: 100000 }}
             >
@@ -1627,7 +1634,7 @@ export default function EnhancedBookingForm({
             </button>
             <UnifiedCalendar
               isVisible={true}
-              onClose={() => setShowCalendar(false)}
+              onClose={() => updateCalendarVisibility(false)}
               checkInDate={checkInDate}
               checkOutDate={checkOutDate}
               onDateSelect={handleDateChangeWithTime}
