@@ -7,7 +7,7 @@ import 'aos/dist/aos.css';
 import { signInWithGoogle } from '../utils/firebase';
 import { FcGoogle } from 'react-icons/fc';
 import { useToast } from '../context/ToastContext';
-import { setupRecaptcha, sendOTP, verifyOTP } from '../utils/otp';
+import { setupRecaptcha, sendOTP, verifyOTP, isSessionLikelyExpired } from '../utils/otp';
 
 const SignIn = () => {
   // Initialize AOS for animations
@@ -335,6 +335,15 @@ const SignIn = () => {
       if (!confirmationResult) {
         throw new Error('Please request a new OTP first');
       }
+      
+      // Check if session is likely expired before attempting verification
+      if (isSessionLikelyExpired(confirmationResult)) {
+        console.log('OTP session likely expired based on timestamp');
+        throw {
+          code: 'auth/session-expired',
+          message: 'Your verification session has expired. Please request a new code.'
+        };
+      }
 
       console.log('Verifying OTP with Firebase...');
       const result = await verifyOTP(confirmationResult, otp);
@@ -369,7 +378,13 @@ const SignIn = () => {
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || 'Phone authentication failed');
+          // Create enhanced error object with response data
+          const apiError = new Error(data.error || 'Phone authentication failed');
+          apiError.response = { 
+            status: response.status,
+            data: data 
+          };
+          throw apiError;
         }
 
         // Check if user needs to complete their profile
@@ -446,7 +461,27 @@ const SignIn = () => {
         
       } catch (error) {
         console.error('Error during backend verification:', error);
-        setError('Login failed: ' + (error.message || 'Server error'));
+        
+        // Check if this is a session expiration error from the backend
+        if (error.response && error.response.data && error.response.data.code === 'SESSION_EXPIRED') {
+          setError('Your verification session has expired. Please request a new code.');
+          // Automatically reset the flow to request new OTP
+          setShowOtpInput(false);
+          setOtp('');
+          setConfirmationResult(null);
+          
+          // Clear recaptcha
+          if (window.recaptchaVerifier) {
+            try {
+              window.recaptchaVerifier.clear();
+              window.recaptchaVerifier = null;
+            } catch (clearError) {
+              console.log('Failed to clear recaptcha after session expired:', clearError);
+            }
+          }
+        } else {
+          setError('Login failed: ' + (error.message || 'Server error'));
+        }
       }
       
     } catch (error) {
@@ -454,6 +489,21 @@ const SignIn = () => {
       
       if (error.code === 'auth/code-expired') {
         setError('Verification code has expired. Please request a new code.');
+      } else if (error.code === 'auth/session-expired' || error.message?.includes('session expired')) {
+        console.log('Firebase session expired - resetting OTP flow');
+        setError('Your verification session has expired. Please request a new code.');
+        setShowOtpInput(false);
+        setConfirmationResult(null);
+        
+        // Clear the recaptcha to allow a fresh start
+        try {
+          if (window.recaptchaVerifier) {
+            window.recaptchaVerifier.clear();
+            window.recaptchaVerifier = null;
+          }
+        } catch (clearError) {
+          console.log('Failed to clear expired recaptcha:', clearError);
+        }
       } else {
         setError(error.message || 'Verification failed. Please try again.');
       }
@@ -823,40 +873,72 @@ const SignIn = () => {
                         This step is required to finish creating your account
                       </p>
                     )}
+                    <p className="text-xs text-orange-600 mt-2">
+                      Note: The verification code expires after 10 minutes. If expired, click "Back" to request a new one.
+                    </p>
                   </div>
                   
-                  <div className="flex space-x-3" data-aos="fade-up" data-aos-delay="200">
+                  <div data-aos="fade-up" data-aos-delay="200">
+                    <div className="flex space-x-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowOtpInput(false);
+                          setOtp('');
+                          setConfirmationResult(null);
+                        }}
+                        className="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-all duration-300"
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="submit"
+                        className={`flex-1 py-3 px-4 rounded-lg text-white font-medium transition-all duration-300 ${
+                          loading 
+                          ? 'bg-gray-400 cursor-not-allowed' 
+                          : 'bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 shadow-lg hover:shadow-xl'
+                        }`}
+                        disabled={loading}
+                      >
+                        {loading ? (
+                          <div className="flex items-center justify-center">
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                            </svg>
+                            Verifying...
+                          </div>
+                        ) : (
+                          'Verify OTP'
+                        )}
+                      </button>
+                    </div>
+                    
                     <button
                       type="button"
                       onClick={() => {
+                        // Reset the OTP flow and allow to request a new OTP
                         setShowOtpInput(false);
                         setOtp('');
                         setConfirmationResult(null);
+                        setError('');
+                        setSuccess('Ready to request a new verification code');
+                        // Clear recaptcha if it exists
+                        if (window.recaptchaVerifier) {
+                          try {
+                            window.recaptchaVerifier.clear();
+                            window.recaptchaVerifier = null;
+                          } catch (clearError) {
+                            console.log('Failed to clear recaptcha:', clearError);
+                          }
+                        }
+                        
+                        // Add notification toast
+                        addToast('You can now request a new verification code', 'info');
                       }}
-                      className="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-all duration-300"
+                      className="w-full mt-2 py-2 px-4 border border-orange-300 rounded-lg text-orange-700 text-sm font-medium hover:bg-orange-50 transition-all duration-300"
                     >
-                      Back
-                    </button>
-                    <button
-                      type="submit"
-                      className={`flex-1 py-3 px-4 rounded-lg text-white font-medium transition-all duration-300 ${
-                        loading 
-                        ? 'bg-gray-400 cursor-not-allowed' 
-                        : 'bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 shadow-lg hover:shadow-xl'
-                      }`}
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <div className="flex items-center justify-center">
-                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                          </svg>
-                          Verifying...
-                        </div>
-                      ) : (
-                        'Verify OTP'
-                      )}
+                      Request New OTP (if expired)
                     </button>
                   </div>
                 </form>

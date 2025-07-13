@@ -113,6 +113,11 @@ export const sendOTP = async (phoneNumber, recaptchaVerifier) => {
     
     const confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifier);
     console.log('OTP sent successfully');
+    
+    // Store timestamp to track session lifetime
+    const sessionTimestamp = Date.now();
+    confirmationResult._sessionTimestamp = sessionTimestamp;
+    
     return confirmationResult;
   } catch (error) {
     console.error('Error sending OTP:', error);
@@ -127,7 +132,18 @@ export const sendOTP = async (phoneNumber, recaptchaVerifier) => {
       }
     }
     
-    throw error;
+    // Enhance error messages for common Firebase errors
+    if (error.code === 'auth/captcha-check-failed') {
+      throw new Error('Captcha verification failed. Please try again.');
+    } else if (error.code === 'auth/invalid-phone-number') {
+      throw new Error('The phone number format is incorrect. Please check and try again.');
+    } else if (error.code === 'auth/quota-exceeded') {
+      throw new Error('Too many requests. Please try again later.');
+    } else if (error.code === 'auth/user-disabled') {
+      throw new Error('This phone number has been disabled. Please contact support.');
+    } else {
+      throw error;
+    }
   }
 };
 
@@ -141,9 +157,29 @@ export const verifyOTP = async (confirmationResult, otp) => {
       throw new Error('Invalid OTP format');
     }
     
-    const result = await confirmationResult.confirm(otp);
-    console.log('OTP verified successfully');
-    return result;
+    // Try to confirm the OTP
+    try {
+      const result = await confirmationResult.confirm(otp);
+      console.log('OTP verified successfully');
+      return result;
+    } catch (confirmError) {
+      // Check for specific Firebase error codes
+      if (confirmError.code === 'auth/session-expired') {
+        console.error('Firebase session expired during OTP verification');
+        // Create a clearer error with the SESSION_EXPIRED code for our app
+        const sessionError = new Error('Your verification session has expired. Please request a new code.');
+        sessionError.code = 'auth/session-expired';
+        throw sessionError;
+      } else if (confirmError.code === 'auth/code-expired') {
+        console.error('Firebase OTP code expired');
+        const codeError = new Error('Your verification code has expired. Please request a new code.');
+        codeError.code = 'auth/code-expired';
+        throw codeError;
+      } else {
+        // For other errors, just rethrow
+        throw confirmError;
+      }
+    }
   } catch (error) {
     console.error('Error verifying OTP:', error);
     throw error;
@@ -160,6 +196,20 @@ export const clearRecaptcha = () => {
   } catch (error) {
     console.log('Recaptcha cleanup completed');
   }
+};
+
+// Helper to check if a session might be expired (Firebase sessions typically last 1 hour)
+export const isSessionLikelyExpired = (confirmationResult) => {
+  if (!confirmationResult || !confirmationResult._sessionTimestamp) {
+    // No timestamp found, conservatively assume it might be expired
+    return true;
+  }
+  
+  const now = Date.now();
+  const sessionAge = now - confirmationResult._sessionTimestamp;
+  const MAX_SESSION_AGE_MS = 55 * 60 * 1000; // 55 minutes (just under Firebase's 1 hour)
+  
+  return sessionAge > MAX_SESSION_AGE_MS;
 };
 
 export { auth };
