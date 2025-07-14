@@ -168,6 +168,7 @@ const PhoneVerificationForm = ({
   setCountryCode,
   newPhone,
   setNewPhone,
+  setUserPhoneData,
 }) => {
   const [sendingOtp, setSendingOtp] = useState(false)
   const [verifyingOtp, setVerifyingOtp] = useState(false)
@@ -1440,6 +1441,7 @@ export default function EnhancedBookingForm({
             setCountryCode={setCountryCode}
             newPhone={newPhone}
             setNewPhone={setNewPhone}
+            setUserPhoneData={setUserPhoneData}
           />
         )}
       </div>
@@ -2059,6 +2061,7 @@ export default function EnhancedBookingForm({
                     setCountryCode={setCountryCode}
                     newPhone={newPhone}
                     setNewPhone={setNewPhone}
+                    setUserPhoneData={setUserPhoneData}
                   />
                 )}
               </div>
