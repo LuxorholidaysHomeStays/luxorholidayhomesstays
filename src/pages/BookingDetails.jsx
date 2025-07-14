@@ -1114,9 +1114,9 @@ const BookingDetails = () => {
             {booking.cancelRequestPending && (
               <button
                 disabled
-                className="flex-1 bg-gray-100 text-gray-500 border border-gray-200 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg cursor-not-allowed flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm"
+                className="flex-1 bg-amber-50 text-amber-600 border border-amber-200 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg cursor-not-allowed flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm"
               >
-                <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5 animate-pulse" />
                 Cancellation Pending
               </button>
             )}

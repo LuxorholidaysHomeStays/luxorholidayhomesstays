@@ -678,48 +678,41 @@ const Profile = () => {
 
   const verifyEmailOtp = async () => {
     try {
-      setVerifyingOtp(true)
-      setError("")
-
+      setVerifyingOtp(true);
+      setError("");
       if (!otpCode) {
-        setError("Please enter the verification code")
-        setVerifyingOtp(false)
-        return
+        setError("Please enter the verification code");
+        setVerifyingOtp(false);
+        return;
       }
-
       const response = await axios.post(
         `${baseUrl}/api/profile/verify-email-otp`,
-        {
-          email: newEmail,
-          otp: otpCode,
-        },
-        {
-          headers: { Authorization: `Bearer ${authToken}` },
-        },
-      )
-
+        { email: newEmail, otp: otpCode },
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
       if (response.data.success) {
-        setEmailVerificationSuccess(true)
-        setEmailOtpMode(false)
-        setSuccess("Email updated successfully!")
+        setEmailVerificationSuccess(true);
+        setEmailOtpMode(false);
+        setSuccess("Email updated successfully!");
         setProfileData((prev) => ({
           ...prev,
           email: newEmail,
-        }))
-        setNewEmail("")
-        setOtpCode("")
+        }));
+        setNewEmail("");
+        setOtpCode("");
         if (setUserData) {
           setUserData((prev) => ({
             ...prev,
             email: newEmail,
-          }))
+          }));
         }
+      } else {
+        setError(response.data.message || "Failed to verify email");
       }
     } catch (error) {
-      console.error("Error verifying email OTP:", error)
-      setError(error.response?.data?.message || "Failed to verify email")
+      setError(error.response?.data?.message || "Failed to verify email");
     } finally {
-      setVerifyingOtp(false)
+      setVerifyingOtp(false);
     }
   }
 
@@ -1224,7 +1217,7 @@ const Profile = () => {
                                             Verifying...
                                           </span>
                                         ) : (
-                                          "Verify Code"
+                                          "Verify"
                                         )}
                                       </button>
                                     </div>

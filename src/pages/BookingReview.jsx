@@ -27,7 +27,11 @@ const villaImageMap = {
 
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
+    if (window.Razorpay) {
+      return resolve(true);
+    }
     const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.onload = () => resolve(true);
     script.onerror = () => resolve(false);
@@ -38,11 +42,12 @@ const loadRazorpayScript = () => {
 export default function BookingReview() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { authToken, isAuthenticated } = useAuth();
+  const { authToken, isAuthenticated, user } = useAuth();
   const [bookingData, setBookingData] = useState(null);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editedData, setEditedData] = useState(null);
+  const [bookingDetails, setBookingDetails] = useState(null);
   
   // States for dropdowns
   const [countries, setCountries] = useState([]);
@@ -221,28 +226,6 @@ export default function BookingReview() {
     setEditMode(false);
   };
 
-  if (!bookingData) {
-    return (
-      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-[#D4AF37]/10 to-[#BFA181]/10">
-        <div className="text-center p-8 rounded-3xl bg-white shadow-2xl max-w-md">
-          <div className="mx-auto mb-6 w-24 h-24 rounded-full bg-red-50 flex items-center justify-center">
-            <svg className="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-          <p className="text-2xl text-gray-700 mb-2 font-bold">No Booking Data</p>
-          <p className="text-gray-500 mb-6">Please start your booking again.</p>
-          <button
-            onClick={() => navigate('/rooms')}
-            className="bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-white px-6 py-3 rounded-2xl hover:from-[#BFA181] hover:to-[#D4AF37] transition-all font-medium"
-          >
-            Back to Villas
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const handleBack = () => {
     // Store the current edited data in localStorage before navigating back
     localStorage.setItem('pendingBookingData', JSON.stringify(editedData));
@@ -254,6 +237,137 @@ export default function BookingReview() {
         fromReview: true 
       } 
     });
+  };
+
+  const handlePayment = async (bookingData) => {
+    try {
+      setPaymentProcessing(true);
+      
+      // 1. First create the booking
+      const bookingResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/bookings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(bookingData)
+      });
+
+      if (!bookingResponse.ok) {
+        const error = await bookingResponse.json();
+        throw new Error(error.message || 'Failed to create booking');
+      }
+
+      const booking = await bookingResponse.json();
+      setBookingDetails(booking);
+
+      // 2. Create Razorpay order
+      const orderResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/payments/create-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          amount: booking.totalAmount * 100, // Convert to paise
+          currency: 'INR',
+          receipt: `booking_${booking._id}`,
+          notes: {
+            bookingId: booking._id,
+            villaId: booking.villa._id
+          }
+        })
+     } );
+
+      if (!orderResponse.ok) {
+        throw new Error('Failed to create payment order');
+      }
+
+      const order = await orderResponse.json();
+
+      // 3. Initialize Razorpay
+      await loadRazorpayScript();
+
+      const options = {
+        key: process.env.REACT_APP_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'Luxor Villas',
+        description: `Booking for ${booking.villa.name}`,
+        order_id: order.id,
+        handler: async function(response) {
+          try {
+            // Verify payment on the server
+            const verifyResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/payments/verify`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              },
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+                bookingId: booking._id
+              })
+            });
+
+            const result = await verifyResponse.json();
+
+            if (result.success) {
+              Swal.fire({
+                title: 'Success!',
+                text: 'Payment successful! Your booking is confirmed.',
+                icon: 'success',
+                confirmButtonText: 'View My Bookings'
+              }).then(() => {
+                navigate('/my-bookings');
+              });
+            } else {
+              throw new Error(result.message || 'Payment verification failed');
+            }
+          } catch (error) {
+            console.error('Payment verification error:', error);
+            Swal.fire({
+              title: 'Error',
+              text: error.message || 'Payment verification failed. Please contact support.',
+              icon: 'error'
+            });
+          } finally {
+            setPaymentProcessing(false);
+          }
+        },
+        prefill: {
+          name: booking.guestName,
+          email: booking.email,
+          contact: booking.phone || ''
+        },
+        theme: {
+          color: '#3399cc'
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+      
+      rzp.on('payment.failed', function(response) {
+        Swal.fire({
+          title: 'Payment Failed',
+          text: response.error.description || 'Payment was not completed successfully',
+          icon: 'error'
+        });
+        setPaymentProcessing(false);
+      });
+
+    } catch (error) {
+      console.error('Payment error:', error);
+      Swal.fire({
+        title: 'Error',
+        text: error.message || 'Something went wrong with the payment',
+        icon: 'error'
+      });
+      setPaymentProcessing(false);
+    }
   };
 
   const handlePay = async () => {
@@ -329,7 +443,38 @@ export default function BookingReview() {
         order_id: orderData.order.id,
         handler: async (response) => {
           try {
-            const verifyResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://luxorstay-backend.vercel.app'}/api/payments/verify`, {
+            setPaymentProcessing(true);
+            console.log("Payment response received:", response);
+            
+            // Get email from auth context if available
+            const userEmail = 
+              (user && user.email) || 
+              editedData.email || 
+              localStorage.getItem('userEmail') || 
+              '';
+            
+            // Prepare booking data with proper types and values
+            const bookingDetails = {
+              villaId: editedData.villaId,
+              villaName: editedData.villaName,
+              checkIn: new Date(editedData.checkInDate).toISOString(),
+              checkOut: new Date(editedData.checkOutDate).toISOString(),
+              checkInTime: editedData.checkInTime || '14:00',
+              checkOutTime: editedData.checkOutTime || '11:00',
+              guests: parseInt(editedData.adults || 0) + parseInt(editedData.children || 0) || 1,
+              infants: parseInt(editedData.infants || 0),
+              guestName: editedData.guestName || user?.name || 'Guest',
+              email: userEmail,
+              phone: editedData.phone,
+              totalAmount: parseInt(editedData.totalAmount) || calculatedTotalAmount,
+              totalDays: Math.ceil((new Date(editedData.checkOutDate) - new Date(editedData.checkInDate)) / (1000 * 60 * 60 * 24)) || 1,
+              address: editedData.address || {}
+            };
+            
+            console.log("Sending booking details:", bookingDetails);
+            
+            // Send payment details to store-payment endpoint
+            const paymentResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/payments/store-payment`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -339,43 +484,40 @@ export default function BookingReview() {
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_signature: response.razorpay_signature,
-                bookingData: {
-                  ...editedData,
-                  totalAmount: calculatedTotalAmount,
-                },
+                bookingDetails
               }),
             });
 
-            const verifyRawResponse = await verifyResponse.text();
-            let verifyData;
-            try {
-              verifyData = JSON.parse(verifyRawResponse);
-            } catch {
-              throw new Error('Invalid response from server during verification');
+            if (!paymentResponse.ok) {
+              const errorText = await paymentResponse.text();
+              console.error("Payment storage failed:", errorText);
+              throw new Error(`Payment storage failed: ${errorText}`);
             }
 
-            if (verifyResponse.ok && verifyData.success) {
-              // Clear stored booking data after successful payment
-              localStorage.removeItem('pendingBookingReview');
-              localStorage.removeItem('pendingBookingData');
-              
-              Swal.fire({
-                icon: 'success',
-                title: 'Booking Confirmed! 🎉',
-                text: 'Your payment was successful and booking has been confirmed!',
-                confirmButtonColor: '#D4AF37',
-                confirmButtonText: 'View My Bookings',
-              }).then(() => {
-                navigate('/my-bookings', { replace: true });
-              });
-            } else {
-              throw new Error(verifyData.message || 'Payment verification failed');
-            }
+            const result = await paymentResponse.json();
+            
+            // Clear stored booking data after successful payment
+            localStorage.removeItem('pendingBookingReview');
+            localStorage.removeItem('pendingBookingData');
+            
+            Swal.fire({
+              icon: 'success',
+              title: 'Booking Confirmed! 🎉',
+              text: 'Your payment was successful and booking has been confirmed!',
+              confirmButtonColor: '#D4AF37',
+              confirmButtonText: 'View My Bookings',
+            }).then(() => {
+              navigate('/my-bookings', { replace: true });
+            });
+            
           } catch (error) {
+            console.error("Payment processing error:", error);
+            
+            // Show a more user-friendly message
             Swal.fire({
               icon: 'warning',
-              title: 'Payment Verification Issue',
-              text: `Your payment was processed, but we're having trouble confirming it. Error: ${error.message}. Our team will contact you shortly.`,
+              title: 'Payment Processing',
+              text: 'Your payment was received, but we need to confirm your booking. Our team will contact you shortly.',
               confirmButtonColor: '#D4AF37',
             });
           } finally {
@@ -767,4 +909,4 @@ export default function BookingReview() {
       </div>
     </div>
   );
-} 
+}
