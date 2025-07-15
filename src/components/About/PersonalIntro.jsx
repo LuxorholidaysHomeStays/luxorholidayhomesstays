@@ -23,7 +23,7 @@ const PersonalIntro = () => {
               <img src={founderImage} alt="Founder" className="founder-image" />
             </div>
             <div className="experience-badge">
-              <span className="years">15</span>
+              <span className="years">3</span>
               <span className="text">Years of Excellence</span>
             </div>
           </div>

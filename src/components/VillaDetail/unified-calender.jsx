@@ -30,6 +30,40 @@ export default function UnifiedCalendar({
   villa, 
   blockedDates = [] 
 }) {
+  // Add global styles for iOS compatibility when the component mounts
+  useEffect(() => {
+    // Create a style element
+    const style = document.createElement('style');
+    style.id = 'ios-calendar-fixes';
+    style.textContent = `
+      /* iOS Safari specific fixes */
+      @supports (-webkit-touch-callout: none) {
+        .calendar-wrapper * {
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+        }
+        
+        .calendar-day {
+          transform: translateZ(0);
+          -webkit-transform: translateZ(0);
+        }
+        
+        .calendar-day:active {
+          opacity: 0.7;
+        }
+      }
+    `;
+    
+    // Add it to the document head
+    document.head.appendChild(style);
+    
+    // Clean up
+    return () => {
+      const styleElem = document.getElementById('ios-calendar-fixes');
+      if (styleElem) styleElem.remove();
+    };
+  }, []);
+
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectionMode, setSelectionMode] = useState("checkin")
   const [tempCheckIn, setTempCheckIn] = useState(checkInDate)
@@ -198,6 +232,11 @@ export default function UnifiedCalendar({
 
     const year = displayMonth.getFullYear()
     const month = displayMonth.getMonth()
+    
+    // Add iOS detection
+    const isIOS = typeof navigator !== 'undefined' && 
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && 
+      !window.MSStream;
     const firstDay = new Date(year, month, 1)
     const startDate = new Date(firstDay)
     startDate.setDate(startDate.getDate() - firstDay.getDay())
@@ -217,7 +256,14 @@ export default function UnifiedCalendar({
           </h3>
         </div>
 
-        <div className="grid grid-cols-7 gap-1 mb-2">
+        <div 
+          className="grid grid-cols-7 gap-1 mb-2 calendar-wrapper" 
+          style={{
+            touchAction: "manipulation",
+            WebkitAppearance: "none",
+            appearance: "none",
+          }}
+        >
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
             <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
               {day}
@@ -225,7 +271,9 @@ export default function UnifiedCalendar({
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-1">
+        <div 
+          className="grid grid-cols-7 gap-1 calendar-wrapper"
+        >
           {days.map((date, index) => {
             const today = new Date()
             today.setHours(0, 0, 0, 0)
@@ -269,6 +317,13 @@ export default function UnifiedCalendar({
                   }
                 `}
                 onClick={() => handleDateClick(date)}
+                style={{
+                  WebkitAppearance: "none",
+                  appearance: "none",
+                  touchAction: "manipulation",
+                  WebkitTapHighlightColor: "transparent",
+                  userSelect: "none"
+                }}
               >
                 <div className="text-sm font-medium">{date.getDate()}</div>
                 {isCurrentMonth && !isPast && !isBlocked && (
@@ -303,14 +358,25 @@ export default function UnifiedCalendar({
 
   useEffect(() => {
     if (isVisible && typeof document !== 'undefined' && document.body) {
-      // Simple approach: just prevent background scrolling
+      // Enhanced approach for iOS compatibility:
       document.body.style.overflow = "hidden"
+      document.body.style.position = "fixed"
+      document.body.style.width = "100%"
+      document.body.style.height = "100%"
+      
+      // Force layout recalculation for iOS
+      setTimeout(() => {
+        window.scrollTo(0, 0)
+      }, 10)
     }
     
     return () => {
       if (typeof document !== 'undefined' && document.body) {
         // Restore normal scrolling
         document.body.style.overflow = ""
+        document.body.style.position = ""
+        document.body.style.width = ""
+        document.body.style.height = ""
       }
     }
   }, [isVisible])
@@ -325,10 +391,31 @@ export default function UnifiedCalendar({
         top: 0, 
         left: 0, 
         right: 0, 
-        bottom: 0
+        bottom: 0,
+        WebkitBackdropFilter: "blur(0px)",
+        backdropFilter: "blur(0px)",
+        pointerEvents: "auto",
+        touchAction: "auto",
+        opacity: 1
+      }}
+      onClick={(e) => {
+        // Close the calendar when clicking outside
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
       }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-[95%] sm:w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden relative z-[10000]">
+      <div 
+        className="bg-white rounded-2xl shadow-2xl max-w-4xl w-[95%] sm:w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden relative z-[10000]"
+        style={{
+          WebkitAppearance: "none",
+          appearance: "none",
+          opacity: 1,
+          transform: "translateZ(0)",
+          WebkitTransform: "translateZ(0)",
+          pointerEvents: "auto",
+          touchAction: "auto"
+        }}>
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-[#D4AF37] to-[#BFA181]">
           <div>
             <h2 className="text-xl font-bold text-white">Select your dates</h2>
@@ -351,9 +438,15 @@ export default function UnifiedCalendar({
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <button
             onClick={() => navigateMonth("prev")}
-            className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gradient-to-r hover:from-[#D4AF37] hover:to-[#BFA181] hover:text-white flex items-center justify-center transition-all hover:scale-110"
+            className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gradient-to-r hover:from-[#D4AF37] hover:to-[#BFA181] hover:text-white flex items-center justify-center transition-all hover:scale-110"
+            style={{
+              WebkitTapHighlightColor: "transparent",
+              touchAction: "manipulation",
+              WebkitAppearance: "none",
+              appearance: "none",
+            }}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-5 w-5" />
           </button>
 
           <div className="flex items-center gap-2 flex-wrap justify-center">
@@ -387,13 +480,25 @@ export default function UnifiedCalendar({
 
           <button
             onClick={() => navigateMonth("next")}
-            className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gradient-to-r hover:from-[#D4AF37] hover:to-[#BFA181] hover:text-white flex items-center justify-center transition-all hover:scale-110"
+            className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gradient-to-r hover:from-[#D4AF37] hover:to-[#BFA181] hover:text-white flex items-center justify-center transition-all hover:scale-110"
+            style={{
+              WebkitTapHighlightColor: "transparent",
+              touchAction: "manipulation",
+              WebkitAppearance: "none",
+              appearance: "none",
+            }}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="px-2 py-3 overflow-y-auto max-h-[45vh] sm:max-h-[55vh]">
+        <div 
+          className="px-2 py-3 overflow-y-auto max-h-[45vh] sm:max-h-[55vh]"
+          style={{
+            WebkitOverflowScrolling: "touch", // For iOS smooth scrolling
+            overscrollBehavior: "contain"
+          }}
+        >
           <div className="flex gap-4 md:gap-6 flex-col md:flex-row justify-center">
             <div className="w-full md:max-w-[260px]">{renderCalendar(0)}</div>
             <div className="hidden lg:block w-full md:max-w-[260px]">{renderCalendar(1)}</div>
@@ -437,17 +542,25 @@ export default function UnifiedCalendar({
             )}
 
             {/* BUTTONS SECTION - Always visible on all devices */}
-            <div className="flex gap-3 w-full justify-center mt-2 sticky bottom-0 z-10 py-2 bg-gray-50">
+            <div className="flex gap-3 w-full justify-center mt-2 sticky bottom-0 z-10 py-4 bg-gray-50">
               <button
                 onClick={() => {
                   setTempCheckIn("")
                   setTempCheckOut("")
                   setSelectionMode("checkin")
                 }}
-                className="w-[30%] max-w-[120px] py-2 text-gray-700 hover:text-gray-900 font-medium text-base border border-gray-300 rounded-lg hover:border-[#D4AF37] bg-white hover:bg-gray-50 transition-all duration-200"
+                className="w-[40%] max-w-[140px] py-3 text-gray-700 hover:text-gray-900 font-medium text-base border border-gray-300 rounded-lg hover:border-[#D4AF37] bg-white hover:bg-gray-50 transition-all duration-200"
+                style={{
+                  WebkitTapHighlightColor: "transparent",
+                  touchAction: "manipulation",
+                  WebkitAppearance: "none",
+                  appearance: "none",
+                  transform: "translateZ(0)",
+                  WebkitTransform: "translateZ(0)"
+                }}
               >
                 <span className="flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                   Clear
@@ -455,10 +568,18 @@ export default function UnifiedCalendar({
               </button>
               <button
                 onClick={onClose}
-                className="w-[30%] max-w-[120px] py-2 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-white rounded-lg hover:from-[#BFA181] hover:to-[#D4AF37] font-medium text-base transition-all duration-200 hover:shadow-lg"
+                className="w-[40%] max-w-[140px] py-3 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-white rounded-lg hover:from-[#BFA181] hover:to-[#D4AF37] font-medium text-base transition-all duration-200 hover:shadow-lg"
+                style={{
+                  WebkitTapHighlightColor: "transparent",
+                  touchAction: "manipulation",
+                  WebkitAppearance: "none", 
+                  appearance: "none",
+                  transform: "translateZ(0)",
+                  WebkitTransform: "translateZ(0)"
+                }}
               >
                 <span className="flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   Done

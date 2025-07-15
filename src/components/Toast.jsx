@@ -3,6 +3,21 @@ import { useToast } from '../context/ToastContext';
 
 const Toast = () => {
   const { toasts, removeToast } = useToast();
+  
+  // Use useEffect to automatically remove toasts after 2 seconds
+  React.useEffect(() => {
+    if (toasts.length === 0) return;
+    
+    const timeouts = toasts.map(toast => {
+      return setTimeout(() => {
+        removeToast(toast.id);
+      }, 2000);
+    });
+    
+    return () => {
+      timeouts.forEach(timeout => clearTimeout(timeout));
+    };
+  }, [toasts, removeToast]);
 
   return (
     <div className="fixed top-4 right-4 z-[9999] space-y-3 w-full sm:w-auto px-4 sm:px-0 max-w-full">

@@ -77,7 +77,7 @@ const Mission = () => {
                   "We envision a world where luxury travel is not just about lavish amenities, 
                   but about transformative experiences that enrich lives and create lasting memories."
                 </p>
-                <div className="quote-author">— Rajesh Kumar, Founder</div>
+                <div className="quote-author">— Gunaseelan Neelakandan, Co Founder & Managing Director</div>
               </div>
             </div>
           </div>
