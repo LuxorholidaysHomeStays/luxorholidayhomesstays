@@ -72,7 +72,7 @@ const Dashboard = () => {
   const [revenueByVilla, setRevenueByVilla] = useState({});
   const [bookingsByStatus, setBookingsByStatus] = useState({});
   const [bookingsByMonth, setBookingsByMonth] = useState({});
-  const [selectedTimeRange, setSelectedTimeRange] = useState('total');
+  const [selectedTimeRange, setSelectedTimeRange] = useState('today');
   const [villaOccupancyRate, setVillaOccupancyRate] = useState({});
   const [bookingsByVilla, setBookingsByVilla] = useState({});
   
@@ -544,13 +544,13 @@ const Dashboard = () => {
                 onChange={(e) => setSelectedTimeRange(e.target.value)}
                 className="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm text-amber-800"
               >
-                <option value="total">Total Revenue</option>
                 <option value="today">Today</option>
                 <option value="last7Days">Last 7 Days</option>
                 <option value="last30Days">Last 30 Days</option>
                 <option value="last90Days">Last 90 Days</option>
                 <option value="thisYear">This Year</option>
                 <option value="lastYear">Last Year</option>
+                <option value="total">Total Revenue</option>
               </select>
             </div>
           </div>
