@@ -45,7 +45,7 @@ const About = () => {
             <Mission />
             
             {/* Stats Counter Section */}
-            <StatsCounter />
+            {/* <StatsCounter /> */}
     
             <Gallery />
         </AboutWrapper>

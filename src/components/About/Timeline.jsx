@@ -14,45 +14,45 @@ const Timeline = () => {
 
   const milestones = [
     {
-      year: 2010,
-      title: "The Beginning",
-      description: "Luxor Holiday Home Stays was founded with a vision to redefine luxury villa experiences in South India. We started with our first property in Pondicherry's French Quarter.",
+      year: 2024,
+      title: "Official Registration",
+      description: "Luxor Holiday Home Stays was formally registered as a business under UDYAM on April 1st, 2024, marking the official start of our journey in the luxury accommodation sector.",
       icon: <FaHome />
     },
     {
-      year: 2012,
-      title: "Expanding to ECR",
-      description: "We acquired our first beachfront property along East Coast Road, setting new standards for luxury coastal stays with the launch of Amrith Palace Villa.",
+      year: 2024,
+      title: "Commencement of Business",
+      description: "We officially opened our doors to the public in April 2024, offering premium short-stay accommodation and curated guest experiences in Kovalam, Chennai.",
       icon: <FaWater />
     },
     {
-      year: 2015,
-      title: "Award Recognition",
-      description: "Luxor was recognized as the 'Best Luxury Villa Provider' by the Tamil Nadu Tourism Department, acknowledging our commitment to excellence.",
-      icon: <FaTrophy />
-    },
-    {
-      year: 2017,
-      title: "Portfolio Growth",
-      description: "Our collection expanded to include 8 distinctive properties across Chennai and Pondicherry, each with unique character and premium amenities.",
+      year: 2024,
+      title: "Property Development",
+      description: "Based in Kovalam Village on East Coast Road, we established our luxury villas with a focus on providing exceptional guest experiences in a prime beachside location.",
       icon: <FaChartLine />
     },
     {
-      year: 2020,
-      title: "Digital Transformation",
-      description: "We launched our integrated booking platform and virtual tours, making luxury villa selection and reservation effortless for our guests.",
+      year: 2024,
+      title: "Service Expansion",
+      description: "Beyond accommodation, we expanded our offerings to include restaurant services, event catering, and specialized travel services to create complete vacation experiences.",
       icon: <FaLaptop />
     },
     {
-      year: 2023,
-      title: "Sustainability Initiative",
-      description: "Implemented eco-friendly practices across all properties, including solar energy, rainwater harvesting, and organic gardens, without compromising luxury.",
+      year: 2025,
+      title: "Official Certification",
+      description: "Received our official Udyam certification on February 17th, 2025, recognizing Luxor as a Micro Enterprise specializing in premium accommodation and hospitality services.",
+      icon: <FaTrophy />
+    },
+    {
+      year: 2025,
+      title: "Team Growth",
+      description: "Expanded our dedicated team to 8 staff members, enhancing our ability to provide personalized service and maintain the highest standards across all our properties.",
       icon: <FaSeedling />
     },
     {
       year: 2025,
-      title: "The Future",
-      description: "Today, Luxor stands as the premier luxury villa provider in the region, with plans to expand to new destinations while maintaining our standard of excellence.",
+      title: "Looking Forward",
+      description: "With our official establishment complete, Luxor continues to enhance the luxury villa experience in Tamil Nadu, with plans to expand our offerings while maintaining excellence.",
       icon: <FaStar />
     }
   ];

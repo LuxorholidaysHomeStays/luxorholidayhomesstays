@@ -23,7 +23,7 @@ const PersonalIntro = () => {
               <img src={founderImage} alt="Founder" className="founder-image" />
             </div>
             <div className="experience-badge">
-              <span className="years">3</span>
+              <span className="years">2</span>
               <span className="text">Years of Excellence</span>
             </div>
           </div>
@@ -31,7 +31,7 @@ const PersonalIntro = () => {
           <div className="text-container" data-aos="fade-left">
             <div className="section-heading">
               <h4 className="subtitle">About the Founder</h4>
-              <h2 className="title">The Visionary Behind <span className="highlight">Luxor Holiday Homes</span></h2>
+              <h2 className="title">The Visionary Behind <span className="highlight">Luxor Holiday Home Stays</span></h2>
             </div>
             
             <div className="divider">
@@ -52,7 +52,7 @@ const PersonalIntro = () => {
             
             <div className="signature-block">
               <div className="signature">Gunaseelan Neelakandan</div>
-              <div className="designation">Co Founder & Managing Director</div>
+              <div className="designation">Founder & Managing Director</div>
             </div>
             
             <div className="awards-section">

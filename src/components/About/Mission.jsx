@@ -77,12 +77,12 @@ const Mission = () => {
                   "We envision a world where luxury travel is not just about lavish amenities, 
                   but about transformative experiences that enrich lives and create lasting memories."
                 </p>
-                <div className="quote-author">— Gunaseelan Neelakandan, Co Founder & Managing Director</div>
+                <div className="quote-author">— Gunaseelan Neelakandan, Founder & Managing Director</div>
               </div>
             </div>
           </div>
           
-          <div className="values-box" data-aos="fade-up">
+          {/* <div className="values-box" data-aos="fade-up">
             <h3 className="values-title">Core Values</h3>
             
             <div className="values-grid">
@@ -110,7 +110,7 @@ const Mission = () => {
                 <p>We operate with integrity and respect for communities and the environment.</p>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </MissionSection>

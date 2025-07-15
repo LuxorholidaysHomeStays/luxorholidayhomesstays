@@ -80,6 +80,10 @@ const Footer = () => {
     window.open('https://wa.me/918015924647?text=Hi, I would like to know more about Luxor Holiday Home Stays', '_blank');
   };
   
+  const handleLinkedinClick = () => {
+    window.open('https://www.linkedin.com/in/luxorholidayhome-stays-137a31374/', '_blank');
+  };
+  
   const handleEmailChange = (e) => {
     setEmail(e.target.value);
     // Clear any previous messages when user starts typing again
@@ -182,6 +186,23 @@ const Footer = () => {
                 alt="whatsapp-icon" 
                 className='w-5 brightness-0 invert'
               />
+            </motion.div>
+            <motion.div 
+              className='w-10 h-10 rounded-full bg-[#D4AF37] flex items-center justify-center cursor-pointer hover:bg-[#BFA181] transition-all duration-300 shadow-md hover:shadow-lg'
+              onClick={handleLinkedinClick}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              role="button"
+              aria-label="Visit our LinkedIn"
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="w-5 h-5 brightness-0 invert" 
+                viewBox="0 0 24 24" 
+                fill="currentColor"
+              >
+                <path d="M4.98 3.5c0 1.381-1.11 2.5-2.48 2.5s-2.48-1.119-2.48-2.5c0-1.38 1.11-2.5 2.48-2.5s2.48 1.12 2.48 2.5zm.02 4.5h-5v16h5v-16zm7.982 0h-4.968v16h4.969v-8.399c0-4.67 6.029-5.052 6.029 0v8.399h4.988v-10.131c0-7.88-8.922-7.593-11.018-3.714v-2.155z" />
+              </svg>
             </motion.div>
           </div>
         </div>

@@ -161,10 +161,22 @@ export default function Contact() {
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setFormState((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
+    
+    // For phone field, only allow numbers and limit to 10 digits
+    if (name === 'phone') {
+      const numericValue = value.replace(/[^0-9]/g, '');
+      const limitedValue = numericValue.slice(0, 10);
+      
+      setFormState((prev) => ({
+        ...prev,
+        [name]: limitedValue,
+      }))
+    } else {
+      setFormState((prev) => ({
+        ...prev,
+        [name]: value,
+      }))
+    }
 
     if (formErrors[name]) {
       setFormErrors((prev) => ({
@@ -189,6 +201,8 @@ export default function Contact() {
     if (!formState.name.trim()) errors.name = "Name is required";
     if (!formState.email.trim()) errors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(formState.email)) errors.email = "Email is invalid";
+    if (!formState.phone.trim()) errors.phone = "Phone number is required";
+    else if (!/^\d{10}$/.test(formState.phone.replace(/\s+/g, ''))) errors.phone = "Please enter a valid 10-digit phone number";
     if (!formState.message.trim()) errors.message = "Message is required";
 
     if (Object.keys(errors).length > 0) {
@@ -678,7 +692,7 @@ export default function Contact() {
                       transition={{ delay: 0.25 }}
                     >
                       <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                        Phone (Optional)
+                        Phone
                       </label>
                       <motion.input
                         whileFocus={{ boxShadow: "0 0 0 3px rgba(0, 0, 0, 0.2)" }}
@@ -689,8 +703,23 @@ export default function Contact() {
                         onChange={handleChange}
                         onFocus={() => handleFocus("phone")}
                         onBlur={handleBlur}
-                        className="w-full px-4 py-3 bg-white/60 backdrop-blur-sm border border-gray-100 rounded-xl focus:outline-none focus:border-black transition-all duration-300 text-black shadow-sm"
+                        required
+                        className={`w-full px-4 py-3 bg-white/60 backdrop-blur-sm border ${
+                          formErrors.phone ? "border-red-400" : "border-gray-100"
+                        } rounded-xl focus:outline-none focus:border-black transition-all duration-300 text-black shadow-sm`}
                       />
+                      <AnimatePresence>
+                        {formErrors.phone && (
+                          <motion.p
+                            className="mt-1 text-sm text-red-500 flex items-center"
+                            initial={{ opacity: 0, y: -5, height: 0 }}
+                            animate={{ opacity: 1, y: 0, height: "auto" }}
+                            exit={{ opacity: 0, y: -5, height: 0 }}
+                          >
+                            {formErrors.phone}
+                          </motion.p>
+                        )}
+                      </AnimatePresence>
                     </motion.div>
 
                     <motion.div
