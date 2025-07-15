@@ -39,18 +39,51 @@ export default function UnifiedCalendar({
       /* iOS Safari specific fixes */
       @supports (-webkit-touch-callout: none) {
         .calendar-wrapper * {
-          -webkit-tap-highlight-color: transparent;
-          touch-action: manipulation;
+          -webkit-tap-highlight-color: transparent !important;
+          touch-action: manipulation !important;
         }
         
-        .calendar-day {
+        .calendar-day, .calendar-wrapper div {
           transform: translateZ(0);
           -webkit-transform: translateZ(0);
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
         }
         
-        .calendar-day:active {
-          opacity: 0.7;
+        .calendar-day:active, .calendar-wrapper button:active {
+          opacity: 0.7 !important;
         }
+
+        /* Force hardware acceleration for iOS */
+        .calendar-modal {
+          -webkit-transform: translateZ(0) !important;
+          transform: translateZ(0) !important;
+          -webkit-backface-visibility: hidden !important;
+          backface-visibility: hidden !important;
+          -webkit-perspective: 1000px !important;
+          perspective: 1000px !important;
+        }
+      }
+      
+      /* Additional iOS fixes for all browsers */
+      .calendar-wrapper button {
+        cursor: pointer;
+        -webkit-appearance: none;
+        appearance: none;
+      }
+
+      /* Ensure modal displays properly */
+      .calendar-modal {
+        position: fixed !important;
+        z-index: 9999 !important;
+        overflow: hidden;
+      }
+
+      /* Increase touch target sizes for better iOS interaction */
+      .calendar-day {
+        min-height: 48px !important;
+        min-width: 40px !important;
+        padding: 5px !important;
       }
     `;
     
@@ -226,6 +259,13 @@ export default function UnifiedCalendar({
     setCurrentMonth(newDate)
   }
 
+  // Add direct iOS detection function
+  const isIOSDevice = () => {
+    return typeof navigator !== 'undefined' && 
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && 
+      !window.MSStream;
+  };
+  
   const renderCalendar = (monthOffset = 0) => {
     const displayMonth = new Date(currentMonth)
     displayMonth.setMonth(displayMonth.getMonth() + monthOffset)
@@ -233,10 +273,8 @@ export default function UnifiedCalendar({
     const year = displayMonth.getFullYear()
     const month = displayMonth.getMonth()
     
-    // Add iOS detection
-    const isIOS = typeof navigator !== 'undefined' && 
-      /iPad|iPhone|iPod/.test(navigator.userAgent) && 
-      !window.MSStream;
+    // Use iOS detection
+    const isIOS = isIOSDevice();
     const firstDay = new Date(year, month, 1)
     const startDate = new Date(firstDay)
     startDate.setDate(startDate.getDate() - firstDay.getDay())
@@ -299,7 +337,7 @@ export default function UnifiedCalendar({
                 key={index}
                 className={`
                   relative flex flex-col items-center justify-center rounded-lg cursor-pointer 
-                  min-h-[45px] transition-all duration-200 select-none border
+                  min-h-[45px] transition-all duration-200 select-none border calendar-day
                   ${!isCurrentMonth ? "opacity-40" : ""}
                   ${isPast
                     ? "bg-gray-100 text-gray-400 cursor-not-allowed border-transparent opacity-60"
@@ -322,7 +360,14 @@ export default function UnifiedCalendar({
                   appearance: "none",
                   touchAction: "manipulation",
                   WebkitTapHighlightColor: "transparent",
-                  userSelect: "none"
+                  userSelect: "none",
+                  WebkitUserSelect: "none",
+                  transform: "translateZ(0)",
+                  WebkitTransform: "translateZ(0)",
+                  backfaceVisibility: "hidden",
+                  WebkitBackfaceVisibility: "hidden",
+                  width: "100%",
+                  boxSizing: "border-box"
                 }}
               >
                 <div className="text-sm font-medium">{date.getDate()}</div>
@@ -358,25 +403,45 @@ export default function UnifiedCalendar({
 
   useEffect(() => {
     if (isVisible && typeof document !== 'undefined' && document.body) {
+      // Store current scroll position
+      const scrollX = window.scrollX;
+      const scrollY = window.scrollY;
+      
       // Enhanced approach for iOS compatibility:
       document.body.style.overflow = "hidden"
       document.body.style.position = "fixed"
       document.body.style.width = "100%"
       document.body.style.height = "100%"
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.left = `-${scrollX}px`
       
       // Force layout recalculation for iOS
-      setTimeout(() => {
-        window.scrollTo(0, 0)
-      }, 10)
-    }
-    
-    return () => {
-      if (typeof document !== 'undefined' && document.body) {
-        // Restore normal scrolling
-        document.body.style.overflow = ""
-        document.body.style.position = ""
-        document.body.style.width = ""
-        document.body.style.height = ""
+      const iosTimer = setTimeout(() => {
+        // Force reflow specifically for iOS
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
+          document.body.style.webkitTransform = 'scale(1)';
+          document.body.style.transform = 'scale(1)';
+          window.scrollTo(0, 0);
+        }
+      }, 10);
+      
+      return () => {
+        if (typeof document !== 'undefined' && document.body) {
+          // Restore normal scrolling
+          document.body.style.overflow = ""
+          document.body.style.position = ""
+          document.body.style.width = ""
+          document.body.style.height = ""
+          document.body.style.top = ""
+          document.body.style.left = ""
+          document.body.style.webkitTransform = ""
+          document.body.style.transform = ""
+          
+          // Restore scroll position
+          window.scrollTo(scrollX, scrollY);
+          
+          clearTimeout(iosTimer);
+        }
       }
     }
   }, [isVisible])
@@ -385,7 +450,7 @@ export default function UnifiedCalendar({
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4"
+      className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4 calendar-modal"
       style={{ 
         position: "fixed", 
         top: 0, 
@@ -396,7 +461,11 @@ export default function UnifiedCalendar({
         backdropFilter: "blur(0px)",
         pointerEvents: "auto",
         touchAction: "auto",
-        opacity: 1
+        opacity: 1,
+        WebkitTransform: "translateZ(0)",
+        transform: "translateZ(0)",
+        WebkitUserSelect: "none",
+        userSelect: "none"
       }}
       onClick={(e) => {
         // Close the calendar when clicking outside
@@ -406,15 +475,20 @@ export default function UnifiedCalendar({
       }}
     >
       <div 
-        className="bg-white rounded-2xl shadow-2xl max-w-4xl w-[95%] sm:w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden relative z-[10000]"
+        className="bg-white rounded-2xl shadow-2xl max-w-4xl w-[95%] sm:w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden relative z-[10000] calendar-wrapper"
         style={{
           WebkitAppearance: "none",
           appearance: "none",
           opacity: 1,
           transform: "translateZ(0)",
           WebkitTransform: "translateZ(0)",
+          WebkitBackfaceVisibility: "hidden",
+          backfaceVisibility: "hidden",
           pointerEvents: "auto",
-          touchAction: "auto"
+          touchAction: "auto",
+          WebkitUserSelect: "none",
+          userSelect: "none",
+          WebkitTapHighlightColor: "transparent"
         }}>
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-[#D4AF37] to-[#BFA181]">
           <div>
@@ -444,6 +518,12 @@ export default function UnifiedCalendar({
               touchAction: "manipulation",
               WebkitAppearance: "none",
               appearance: "none",
+              transform: "translateZ(0)",
+              WebkitTransform: "translateZ(0)",
+              backfaceVisibility: "hidden",
+              WebkitBackfaceVisibility: "hidden",
+              cursor: "pointer",
+              outline: "none"
             }}
           >
             <ChevronLeft className="h-5 w-5" />
@@ -486,6 +566,12 @@ export default function UnifiedCalendar({
               touchAction: "manipulation",
               WebkitAppearance: "none",
               appearance: "none",
+              transform: "translateZ(0)",
+              WebkitTransform: "translateZ(0)",
+              backfaceVisibility: "hidden",
+              WebkitBackfaceVisibility: "hidden",
+              cursor: "pointer",
+              outline: "none"
             }}
           >
             <ChevronRight className="h-5 w-5" />
@@ -493,10 +579,16 @@ export default function UnifiedCalendar({
         </div>
 
         <div 
-          className="px-2 py-3 overflow-y-auto max-h-[45vh] sm:max-h-[55vh]"
+          className="px-2 py-3 overflow-y-auto max-h-[45vh] sm:max-h-[55vh] calendar-wrapper"
           style={{
             WebkitOverflowScrolling: "touch", // For iOS smooth scrolling
-            overscrollBehavior: "contain"
+            overscrollBehavior: "contain",
+            transform: "translateZ(0)",
+            WebkitTransform: "translateZ(0)",
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
+            perspective: 1000,
+            WebkitPerspective: 1000
           }}
         >
           <div className="flex gap-4 md:gap-6 flex-col md:flex-row justify-center">
@@ -556,7 +648,11 @@ export default function UnifiedCalendar({
                   WebkitAppearance: "none",
                   appearance: "none",
                   transform: "translateZ(0)",
-                  WebkitTransform: "translateZ(0)"
+                  WebkitTransform: "translateZ(0)",
+                  backfaceVisibility: "hidden",
+                  WebkitBackfaceVisibility: "hidden",
+                  cursor: "pointer",
+                  outline: "none"
                 }}
               >
                 <span className="flex items-center justify-center">
@@ -575,7 +671,11 @@ export default function UnifiedCalendar({
                   WebkitAppearance: "none", 
                   appearance: "none",
                   transform: "translateZ(0)",
-                  WebkitTransform: "translateZ(0)"
+                  WebkitTransform: "translateZ(0)",
+                  backfaceVisibility: "hidden",
+                  WebkitBackfaceVisibility: "hidden",
+                  cursor: "pointer",
+                  outline: "none"
                 }}
               >
                 <span className="flex items-center justify-center">
