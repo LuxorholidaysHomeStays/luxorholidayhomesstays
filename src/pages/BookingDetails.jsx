@@ -261,13 +261,39 @@ const BookingDetails = () => {
       navigate("/sign-in")
       return
     }
+
+    // Check if we're coming from the review page with form data
+    if (location.state?.fromReview) {
+      // Use the data passed from the review page
+      setBooking(location.state);
+      setLoading(false);
+      return;
+    }
+    
+    // Check for data in localStorage as fallback
+    const savedData = localStorage.getItem("pendingBookingData");
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        if (parsedData.fromReview) {
+          setBooking(parsedData);
+          setLoading(false);
+          localStorage.removeItem("pendingBookingData"); // Clean up after use
+          return;
+        }
+      } catch (e) {
+        console.error("Error parsing saved booking data:", e);
+      }
+    }
+
+    // If we have a booking ID, fetch the details
     if (bookingId) {
       fetchBookingDetails()
     } else {
       setError("Booking ID not found")
       setLoading(false)
     }
-  }, [bookingId, authToken, navigate])
+  }, [bookingId, authToken, navigate, location.state])
 
   useEffect(() => {
     if (booking && booking.email) {

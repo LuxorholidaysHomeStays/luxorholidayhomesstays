@@ -189,7 +189,11 @@ function App() {
                   <BookingDetails />
                 </AuthGuard>
               } />
-              <Route path="/booking-review" element={<BookingReview />} />
+              <Route path="/booking-review" element={
+                <AuthGuard>
+                  <BookingReview />
+                </AuthGuard>
+              } />
               
               {/* Admin protected routes */}
               <Route path="/dashboard" element={
