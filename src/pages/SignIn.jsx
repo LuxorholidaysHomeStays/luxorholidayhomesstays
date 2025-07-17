@@ -181,63 +181,26 @@ const SignIn = () => {
     setError('');
     
     try {
-      // Validation
-      if (!isLogin && password !== confirmPassword) {
-        throw new Error("Passwords don't match");
-      }
-      
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
       
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Important for cookies
         body: JSON.stringify({ email, password, name }),
       });
       
       const data = await response.json();
       
       if (!response.ok) {
-        // Add special handling for user not found
-        if (data.code === 'USER_NOT_FOUND') {
-          addToast('User does not exist. Please sign up instead.', 'error');
-          // Optional: Switch to sign up mode
-          setIsLogin(false);
-          return;
-        }
-        
         throw new Error(data.error || 'Authentication failed');
       }
       
-      // Check if OTP verification is required
-      if (data.requiresVerification) {
-        // Store email in session storage for OTP verification page
-        sessionStorage.setItem('verificationEmail', email);
-        
-        // If registration requires verification (OTP), redirect to verification page
-        setSuccess("Verification code sent to your email.");
-        
-        // Add a small delay before navigation to show the success message
-        setTimeout(() => {
-          navigate('/verify-otp', { state: { email, isRegistration: !isLogin } });
-        }, 1000);
-        return;
-      }
-      
-      // If no verification required, proceed with normal login
-      
-      // Store auth token
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('userId', data.user._id || data.user.id);
-      localStorage.setItem('userEmail', data.user.email);
-      
-      // Update auth context
-      setAuthToken(data.token);
+      // Update auth context with user data only (no token needed)
       setUserData(data.user);
       
-      // Show success message
       setSuccess(isLogin ? "Login successful!" : "Account created successfully!");
       
-      // Add a small delay before navigation to show the success message
       setTimeout(() => {
         handleSuccessfulLogin();
       }, 1000);
@@ -257,33 +220,27 @@ const SignIn = () => {
     
     try {
       const result = await handleGoogleSignIn();
-      console.log("Google sign-in result:", result); // Debug log
       
       if (result.success) {
-        // Add a styled success toast message
         addToast(
           result.isAdmin ? 'Admin login successful!' : 'Login successful! Welcome back.',
           'success',
           4000
         );
         
-        // Special handling for admin users
         if (result.isAdmin) {
-          console.log("Admin detected, navigating to admin dashboard");
-          // Use /owner instead of /dashboard (adjust this to match your actual admin route)
           setTimeout(() => {
             navigate('/owner');
           }, 500);
         } else {
-          // Regular user flow
           handleSuccessfulLogin();
         }
       } else {
-        addToast(result.message || 'Login failed. Please check your credentials.', 'error', 6000);
+        addToast(result.message || 'Login failed', 'error', 6000);
       }
     } catch (error) {
       console.error("Google sign-in error:", error);
-      addToast('An error occurred during login. Please try again later.', 'error', 6000);
+      addToast('Login failed', 'error', 6000);
     } finally {
       setLoading(false);
     }
