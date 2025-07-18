@@ -4,7 +4,7 @@ import 'aos/dist/aos.css';
 import styled from 'styled-components';
 
 // Assume you'll add this image to your assets
-import founderImage from '../../assets/About/owner.jpg'; // Update with the correct path to your founder image
+import founderImage from '../../assets/About/owner1.jpg'; // Update with the correct path to your founder image
 
 const PersonalIntro = () => {
   useEffect(() => {
