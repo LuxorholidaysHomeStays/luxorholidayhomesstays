@@ -3,27 +3,30 @@ import { assets } from '../assets/assets'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
-// Create a custom hook to detect if calendar modal is open
+
 const useCalendarModalDetection = () => {
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   
+
   useEffect(() => {
-    // Function to check if calendar modal is open by looking for its elements
+ 
     const checkForCalendarModal = () => {
       const calendarElements = document.querySelectorAll('.fixed.inset-0.bg-black\\/50, .fixed.inset-0.bg-black\\/60');
       setIsCalendarModalOpen(calendarElements.length > 0);
     };
     
-    // Set up a mutation observer to watch for changes in the DOM
+   
     const observer = new MutationObserver((mutations) => {
       checkForCalendarModal();
     });
     
+
     // Start observing the body for changes
     observer.observe(document.body, { childList: true, subtree: true });
     
     // Initial check
     checkForCalendarModal();
+    
     
     // Clean up the observer when component unmounts
     return () => observer.disconnect();
@@ -404,7 +407,7 @@ const Footer = () => {
               disabled={isSubmitting}
             >
               {isSubmitting ? (
-                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -462,13 +465,94 @@ const Footer = () => {
         transition={{ duration: 0.8, delay: 0.7 }}
       />
       <motion.div 
+        className='py-8 border-t border-gray-200 mt-8'
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.7 }}
+      >
+        <div className='container mx-auto px-4'>
+          <h3 className='text-lg font-medium text-center mb-6 text-gray-800'>Development Team</h3>
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
+            <div className='text-center'>
+              <h4 className='font-medium text-[#D4AF37]'>Ramji B</h4>
+              <p className='text-sm text-gray-600 mb-2'>Full Stack Developer</p>
+              <a 
+                href='https://www.linkedin.com/in/ramji-b-613539308' 
+                target='_blank' 
+                rel='noopener noreferrer'
+                className='text-sm text-blue-600 hover:underline block mb-1'
+              >
+                LinkedIn Profile
+              </a>
+              <a 
+                href='mailto:itzrvm2337@gmail.com' 
+                className='inline-flex items-center text-xs text-gray-600 hover:text-[#D4AF37] transition-colors'
+              >
+                <svg className='w-3 h-3 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'>
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' />
+                </svg>
+                itzrvm2337@gmail.com
+              </a>
+            </div>
+            <div className='text-center'>
+              <h4 className='font-medium text-[#D4AF37]'>Arun A</h4>
+              <p className='text-sm text-gray-600 mb-2'>MERN Stack Developer</p>
+              <a 
+                href='https://www.linkedin.com/in/arun-a-25b6a5289' 
+                target='_blank' 
+                rel='noopener noreferrer'
+                className='text-sm text-blue-600 hover:underline block mb-1'
+              >
+                LinkedIn Profile
+              </a>
+              <a 
+                href='mailto:arunarvialgan797@gmail.com' 
+                className='inline-flex items-center text-xs text-gray-600 hover:text-[#D4AF37] transition-colors'
+              >
+                <svg className='w-3 h-3 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'>
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' />
+                </svg>
+            arunarivalagan774@gmail.com
+              </a>
+            </div>
+            <div className='text-center'>
+              <h4 className='font-medium text-[#D4AF37]'>Aravinth Rajan K</h4>
+              <p className='text-sm text-gray-600 mb-2'>Frontend Developer</p>
+              <a 
+                href='https://www.linkedin.com/in/aravinthrajan-k-819664290' 
+                target='_blank' 
+                rel='noopener noreferrer'
+                className='text-sm text-blue-600 hover:underline block mb-1'
+              >
+                LinkedIn Profile
+              </a>
+              <a 
+                href='mailto:aravinthrajan390@gmail.com' 
+                className='inline-flex items-center text-xs text-gray-600 hover:text-[#D4AF37] transition-colors'
+              >
+                <svg className='w-3 h-3 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'>
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' />
+                </svg>
+                aravinthrajan390@gmail.com
+              </a>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+      <motion.hr 
+        className='border-gray-200 mt-4'
+        initial={{ opacity: 0, width: "0%" }}
+        animate={{ opacity: 1, width: "100%" }}
+        transition={{ duration: 0.8, delay: 0.7 }}
+      />
+      <motion.div 
         className='flex flex-col md:flex-row gap-4 items-center justify-between py-6'
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.8 }}
       >
         <p className="text-sm text-center md:text-left">
-          © {new Date().getFullYear()} <span className="font-medium text-[#D4AF37]">Luxor Holiday Home Stays</span>. All rights reserved.
+          {new Date().getFullYear()} <span className="font-medium text-[#D4AF37]">Luxor Holiday Home Stays</span>. All rights reserved.
         </p>
         <ul className='flex flex-wrap items-center justify-center md:justify-end gap-4 md:gap-6'>
           <li>
