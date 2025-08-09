@@ -563,13 +563,13 @@ const Footer = () => {
                       Ramji B - Full Stack Developer
                     </div>
                     
-                    {/* Contact info on hover/tap */}
+                    {/* Contact info on hover/tap - moved to LEFT side */}
                     <div 
-                      className={`absolute ${isMobile ? 'top-full left-0 mt-1' : 'left-full top-0 ml-2'} w-52 
+                      className={`absolute ${isMobile ? 'top-full left-0 mt-1' : 'right-full top-0 mr-2'} w-52 
                         ${isMobile 
                           ? (activeDeveloper === 'ramji' ? 'opacity-100 visible' : 'opacity-0 invisible') 
                           : 'opacity-0 invisible group-hover/dev:opacity-100 group-hover/dev:visible'} 
-                        transition-all duration-200 bg-white rounded-md shadow-md p-2 border border-gray-200 z-20`}
+                        transition-all duration-200 bg-white rounded-md shadow-md p-2 border border-gray-200 z-10`}
                     >
                       <div className="flex flex-col space-y-1.5">
                         <a 
@@ -608,13 +608,13 @@ const Footer = () => {
                       Arun A - MERN Stack Developer
                     </div>
                     
-                    {/* Contact info on hover/tap */}
+                    {/* Contact info on hover/tap - moved to LEFT side */}
                     <div 
-                      className={`absolute ${isMobile ? 'top-full left-0 mt-1' : 'left-full top-0 ml-2'} w-52 
+                      className={`absolute ${isMobile ? 'top-full left-0 mt-1' : 'right-full top-0 mr-2'} w-52 
                         ${isMobile 
                           ? (activeDeveloper === 'arun' ? 'opacity-100 visible' : 'opacity-0 invisible') 
                           : 'opacity-0 invisible group-hover/dev:opacity-100 group-hover/dev:visible'} 
-                        transition-all duration-200 bg-white rounded-md shadow-md p-2 border border-gray-200 z-20`}
+                        transition-all duration-200 bg-white rounded-md shadow-md p-2 border border-gray-200 z-10`}
                     >
                       <div className="flex flex-col space-y-1.5">
                         <a 
@@ -653,13 +653,13 @@ const Footer = () => {
                       Aravinth Rajan K - Frontend Developer
                     </div>
                     
-                    {/* Contact info on hover/tap */}
+                    {/* Contact info on hover/tap - moved to LEFT side */}
                     <div 
-                      className={`absolute ${isMobile ? 'top-full left-0 mt-1' : 'left-full top-0 ml-2'} w-52 
+                      className={`absolute ${isMobile ? 'top-full left-0 mt-1' : 'right-full top-0 mr-2'} w-52 
                         ${isMobile 
                           ? (activeDeveloper === 'aravinth' ? 'opacity-100 visible' : 'opacity-0 invisible') 
                           : 'opacity-0 invisible group-hover/dev:opacity-100 group-hover/dev:visible'} 
-                        transition-all duration-200 bg-white rounded-md shadow-md p-2 border border-gray-200 z-20`}
+                        transition-all duration-200 bg-white rounded-md shadow-md p-2 border border-gray-200 z-10`}
                     >
                       <div className="flex flex-col space-y-1.5">
                         <a 
