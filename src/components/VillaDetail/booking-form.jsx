@@ -19,7 +19,8 @@ import {
   Save,
   X,
 } from "lucide-react"
-import UnifiedCalendar from "../VillaDetail/unified-calender.jsx"
+import UnifiedCalendar from "./unified-calender.jsx"
+import BasicCalendar from "./basic-calendar.jsx"
 import { getPriceForDate } from "../../data/villa-pricing.jsx"
 import Swal from "sweetalert2"
 
@@ -501,8 +502,21 @@ export default function EnhancedBookingForm({
   
   // Update parent component whenever calendar visibility changes
   const updateCalendarVisibility = (isVisible) => {
+    // Just update the state - no delays or conditional rendering
     setShowCalendar(isVisible);
     onCalendarVisibilityChange(isVisible);
+    
+    // Apply iOS-specific fixes when opening calendar
+    if (isVisible) {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (isIOS) {
+        // Force iOS to recalculate layout
+        document.body.style.WebkitTransform = 'scale(1)';
+        void document.body.offsetHeight; // Force reflow
+        document.body.style.WebkitTransform = '';
+      }
+    }
   }
   const [address, setAddress] = useState(initialAddress)
   const [countries, setCountries] = useState([])
@@ -2315,47 +2329,16 @@ export default function EnhancedBookingForm({
         )}
       </div>
 
-      {showCalendar && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center"
-          style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999 }}
-        >
-          <div
-            className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-auto"
-            style={{ zIndex: 99999 }}
-          >
-            <button
-              onClick={() => updateCalendarVisibility(false)}
-              className="absolute right-4 top-4 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-              style={{ zIndex: 100000 }}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-            <UnifiedCalendar
-              isVisible={true}
-              onClose={() => updateCalendarVisibility(false)}
-              checkInDate={checkInDate}
-              checkOutDate={checkOutDate}
-              onDateSelect={handleDateChangeWithTime}
-              villa={villa}
-              blockedDates={blockedDates}
-            />
-          </div>
-        </div>
-      )}
+      {/* Direct rendering of UnifiedCalendar without nested containers */}
+      <UnifiedCalendar
+        isVisible={showCalendar}
+        onClose={() => updateCalendarVisibility(false)}
+        checkInDate={checkInDate}
+        checkOutDate={checkOutDate}
+        onDateSelect={handleDateChangeWithTime}
+        villa={villa}
+        blockedDates={blockedDates}
+      />
 
       <div id="recaptcha-container-booking" style={{ visibility: "hidden" }}></div>
     </div>

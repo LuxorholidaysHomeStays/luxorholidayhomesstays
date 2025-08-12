@@ -2,6 +2,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { applyIOSViewportFix, cleanupIOSViewportFix } from "./ios-viewport-fix"
 
 // Fix the price formatting function to avoid adding "+" to the price
 const formatPrice = (price) => {
@@ -31,6 +32,9 @@ export default function UnifiedCalendar({
   villa, 
   blockedDates = [] 
 }) {
+  console.log("UnifiedCalendar rendering with isVisible:", isVisible);
+  
+  // Initialize all state at component top level
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectionMode, setSelectionMode] = useState("checkin")
   const [tempCheckIn, setTempCheckIn] = useState(checkInDate)
@@ -302,34 +306,50 @@ export default function UnifiedCalendar({
     )
   }
 
+  // Simple effect to prevent background scrolling
   useEffect(() => {
-    if (isVisible && typeof document !== 'undefined' && document.body) {
-      // Simple approach: just prevent background scrolling
-      document.body.style.overflow = "hidden"
+    if (isVisible && typeof document !== 'undefined') {
+      // Simple approach to prevent background scrolling
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        document.body.style.overflow = '';
+      };
     }
-    
-    return () => {
-      if (typeof document !== 'undefined' && document.body) {
-        // Restore normal scrolling
-        document.body.style.overflow = ""
-      }
+  }, [isVisible]);
+  
+  // Update check-in/check-out mode
+  useEffect(() => {
+    if (checkInDate && !checkOutDate) {
+      setSelectionMode("checkout");
+    } else {
+      setSelectionMode("checkin");
     }
-  }, [isVisible])
+  }, [checkInDate, checkOutDate]);
 
-  if (!isVisible) return null
+  // Early return if not visible - no hooks below this point!
+  if (!isVisible) return null;
 
+  // Return the component UI - simplified structure
   return (
     <div
-      className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4"
+      className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999]"
       style={{ 
         position: "fixed", 
         top: 0, 
         left: 0, 
         right: 0, 
-        bottom: 0
+        bottom: 0,
+        zIndex: 9999
+      }}
+      onClick={(e) => {
+        // Close when clicking the backdrop
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
       }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-[95%] sm:w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden relative z-[10000]">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-[95%] sm:w-full max-h-[90vh] overflow-hidden relative z-[10000]">
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-[#D4AF37] to-[#BFA181]">
           <div>
             <h2 className="text-xl font-bold text-white">Select your dates</h2>
@@ -394,7 +414,7 @@ export default function UnifiedCalendar({
           </button>
         </div>
 
-        <div className="px-2 py-3 overflow-y-auto max-h-[45vh] sm:max-h-[55vh]">
+        <div className="px-2 py-3 overflow-y-auto max-h-[45vh] sm:max-h-[50vh]">
           <div className="flex gap-4 md:gap-6 flex-col md:flex-row justify-center">
             <div className="w-full md:max-w-[260px]">{renderCalendar(0)}</div>
             <div className="hidden lg:block w-full md:max-w-[260px]">{renderCalendar(1)}</div>
