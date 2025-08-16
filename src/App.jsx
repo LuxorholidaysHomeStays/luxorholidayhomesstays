@@ -44,6 +44,7 @@ import AmenitiesManagement from './pages/Admin/AmenitiesManagement';
 import NewsletterManagement from './pages/Admin/NewsletterManagement';
 import UserProfilesManagement from './pages/Admin/UserProfilesManagement';
 import ManualBookingManagement from './pages/Admin/ManualBookingManagement';
+import OffersManagement from './pages/Admin/OffersManagement';
 import "./App.css";
 import { ToastProvider } from './context/ToastContext';
 import Toast from './components/Toast';
@@ -285,6 +286,14 @@ function App() {
   <ProtectedRoute>
     <Layout>
       <ManualBookingManagement />
+    </Layout>
+  </ProtectedRoute>
+} />
+
+<Route path="/offers" element={
+  <ProtectedRoute>
+    <Layout>
+      <OffersManagement />
     </Layout>
   </ProtectedRoute>
 } />

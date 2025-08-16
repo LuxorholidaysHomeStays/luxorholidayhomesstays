@@ -21,7 +21,8 @@ import {
 } from "lucide-react"
 import UnifiedCalendar from "./unified-calender.jsx"
 import BasicCalendar from "./basic-calendar.jsx"
-import { getPriceForDate } from "../../data/villa-pricing.jsx"
+import { getPriceForDate, getPriceForDateSync } from "../../data/villa-pricing.jsx"
+import { fetchVillaOfferForDate, calculatePricingWithOffers } from "../../utils/offersApi"
 import Swal from "sweetalert2"
 
 // import axios from "axios"
@@ -537,6 +538,11 @@ export default function EnhancedBookingForm({
   const [phoneVerificationError, setPhoneVerificationError] = useState("")
   const [newPhone, setNewPhone] = useState("")
   const [countryCode, setCountryCode] = useState("+91")
+  
+  // Offers state
+  const [pricingWithOffers, setPricingWithOffers] = useState({})
+  const [isLoadingOffers, setIsLoadingOffers] = useState(false)
+  const [offerError, setOfferError] = useState("")
   const [isLoadingPhoneCheck, setIsLoadingPhoneCheck] = useState(false)
   const [userPhoneData, setUserPhoneData] = useState(null)
   const navigate = useNavigate();
@@ -557,6 +563,10 @@ export default function EnhancedBookingForm({
         children,
         bookingStep: 3, // Continue to step 3 after login
         totalAmount,
+        originalAmount: basePriceData.originalPrice,
+        finalAmount: basePriceData.finalPrice,
+        hasOffers: basePriceData.hasOffers,
+        pricingWithOffers: pricingWithOffers,
         returnUrl: window.location.pathname + window.location.search
       }
       
@@ -653,10 +663,65 @@ export default function EnhancedBookingForm({
     usingFallback: villa?.weekendPrice === 0 || villa?.weekendprice === 0,
   })
 
+  // Function to fetch offers for the entire date range
+  const fetchOffersForDateRange = async () => {
+    if (!checkInDate || !checkOutDate || !villa?._id) {
+      setPricingWithOffers({})
+      return
+    }
+
+    setIsLoadingOffers(true)
+    setOfferError("")
+    
+    try {
+      const startDate = new Date(checkInDate)
+      const endDate = new Date(checkOutDate)
+      const nights = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)))
+      const dateOffers = {}
+
+      for (let i = 0; i < nights; i++) {
+        const currentDate = new Date(startDate)
+        currentDate.setDate(currentDate.getDate() + i)
+        
+        try {
+          const pricingResult = await calculatePricingWithOffers(villa._id, currentDate)
+          dateOffers[currentDate.toDateString()] = pricingResult
+        } catch (error) {
+          console.warn(`Error fetching offers for ${currentDate.toDateString()}:`, error)
+          // Fallback to regular pricing
+          const dayOfWeek = currentDate.getDay()
+          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+          const originalPrice = isWeekend ? weekendPrice : weekdayPrice
+          
+          dateOffers[currentDate.toDateString()] = {
+            hasOffer: false,
+            originalPrice: originalPrice,
+            finalPrice: originalPrice
+          }
+        }
+      }
+
+      setPricingWithOffers(dateOffers)
+    } catch (error) {
+      console.error("Error fetching offers for date range:", error)
+      setOfferError("Failed to load offers")
+    } finally {
+      setIsLoadingOffers(false)
+    }
+  }
+
+  // Effect to fetch offers when dates or villa change
+  useEffect(() => {
+    if (checkInDate && checkOutDate && villa?._id) {
+      fetchOffersForDateRange()
+    }
+  }, [checkInDate, checkOutDate, villa?._id])
+
   const calculateBasePrice = () => {
-    if (!checkInDate || !checkOutDate || !villa) return 0
+    if (!checkInDate || !checkOutDate || !villa) return { finalPrice: 0, originalPrice: 0, hasOffers: false }
     try {
       let totalPrice = 0
+      let originalTotalPrice = 0
       const startDate = new Date(checkInDate)
       const endDate = new Date(checkOutDate)
       const nights = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)))
@@ -664,20 +729,34 @@ export default function EnhancedBookingForm({
       for (let i = 0; i < nights; i++) {
         const currentDate = new Date(startDate)
         currentDate.setDate(currentDate.getDate() + i)
+        const dateKey = currentDate.toDateString()
         const dayOfWeek = currentDate.getDay()
         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
 
-        if (isWeekend) {
-          totalPrice += Number(weekendPrice)
+        // Calculate original price
+        const originalDayPrice = isWeekend ? Number(weekendPrice) : Number(weekdayPrice)
+        originalTotalPrice += originalDayPrice
+
+        // Check if we have offer pricing for this date
+        if (pricingWithOffers[dateKey]) {
+          totalPrice += pricingWithOffers[dateKey].finalPrice
         } else {
-          totalPrice += Number(weekdayPrice)
+          totalPrice += originalDayPrice
         }
       }
 
-      return totalPrice
+      return {
+        finalPrice: totalPrice,
+        originalPrice: originalTotalPrice,
+        hasOffers: Object.values(pricingWithOffers).some(p => p.hasOffer)
+      }
     } catch (error) {
       console.error("Error calculating base price:", error)
-      return 0
+      return {
+        finalPrice: 0,
+        originalPrice: 0,
+        hasOffers: false
+      }
     }
   }
 
@@ -692,7 +771,15 @@ export default function EnhancedBookingForm({
       for (let i = 0; i < nights; i++) {
         const currentDate = new Date(startDate)
         currentDate.setDate(currentDate.getDate() + i)
-        totalPrice += getPriceForDate(currentDate, villa)
+        const dateKey = currentDate.toDateString()
+        
+        // Check if we have offer pricing for this date
+        if (pricingWithOffers[dateKey]) {
+          totalPrice += pricingWithOffers[dateKey].finalPrice
+        } else {
+          // Fallback to regular pricing
+          totalPrice += getPriceForDateSync(currentDate, villa)
+        }
       }
 
       const serviceFee = Math.round(totalPrice * 0.05)
@@ -704,7 +791,7 @@ export default function EnhancedBookingForm({
     }
   }
 
-  const basePrice = calculateBasePrice()
+  const basePriceData = calculateBasePrice()
   const totalAmount = calculateTotalAmount()
 
   const formatTimeDisplay = (timeString) => {
@@ -746,6 +833,10 @@ export default function EnhancedBookingForm({
         address: address,
         bookingStep,
         villaId: villa?._id || villa?.id,
+        originalAmount: basePriceData.originalPrice,
+        finalAmount: basePriceData.finalPrice,
+        hasOffers: basePriceData.hasOffers,
+        pricingWithOffers: pricingWithOffers,
         returnUrl: window.location.pathname + window.location.search,
       }
       localStorage.setItem("pendingBookingData", JSON.stringify(bookingData))
@@ -776,6 +867,12 @@ export default function EnhancedBookingForm({
       countryCode: userPhoneData?.countryCode || userData?.countryCode || countryCode,
       checkInTime: extractRailwayTime(checkInTime),
       checkOutTime: extractRailwayTime(checkOutTime),
+      originalAmount: basePriceData.originalPrice,
+      finalAmount: basePriceData.finalPrice,
+      totalAmount: totalAmount,
+      hasOffers: basePriceData.hasOffers,
+      pricingWithOffers: pricingWithOffers,
+      offerSavings: basePriceData.originalPrice - basePriceData.finalPrice,
       // Add more fields as needed
     };
     // Navigate to review page
@@ -1577,6 +1674,18 @@ export default function EnhancedBookingForm({
                 Weekends: <span className="font-semibold">₹{weekendPrice?.toLocaleString()}</span>
               </div>
             </div>
+            {basePriceData.hasOffers && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-2 mt-3">
+                <div className="text-xs text-green-700 font-medium">
+                  🎉 Special offers available for your dates!
+                </div>
+              </div>
+            )}
+            {isLoadingOffers && (
+              <div className="text-xs text-blue-600 mt-2">
+                <span className="animate-pulse">Loading offers...</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -2239,18 +2348,35 @@ export default function EnhancedBookingForm({
                       <span className="text-gray-600">
                         {totalNights} night{totalNights > 1 ? "s" : ""}
                       </span>
-                      <span className="font-medium">₹{basePrice.toLocaleString()}</span>
+                      <div className="flex flex-col items-end">
+                        {basePriceData.hasOffers && basePriceData.originalPrice !== basePriceData.finalPrice ? (
+                          <>
+                            <span className="text-gray-400 line-through text-xs">₹{basePriceData.originalPrice.toLocaleString()}</span>
+                            <span className="font-medium text-green-600">₹{basePriceData.finalPrice.toLocaleString()}</span>
+                            <span className="text-xs text-green-600 font-medium">Offer Applied!</span>
+                          </>
+                        ) : (
+                          <span className="font-medium">₹{basePriceData.finalPrice.toLocaleString()}</span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Service fee (5%)</span>
-                      <span className="font-medium">₹{Math.round(basePrice * 0.05).toLocaleString()}</span>
+                      <span className="font-medium">₹{Math.round(basePriceData.finalPrice * 0.05).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Taxes (18%)</span>
                       <span className="font-medium">
-                        ₹{Math.round((basePrice + Math.round(basePrice * 0.05)) * 0.18).toLocaleString()}
+                        ₹{Math.round((basePriceData.finalPrice + Math.round(basePriceData.finalPrice * 0.05)) * 0.18).toLocaleString()}
                       </span>
                     </div>
+                    {basePriceData.hasOffers && (
+                      <div className="bg-green-50 rounded-lg p-2 mt-2">
+                        <div className="text-xs text-green-700 font-medium text-center">
+                          🎉 You saved ₹{(basePriceData.originalPrice - basePriceData.finalPrice).toLocaleString()} with current offers!
+                        </div>
+                      </div>
+                    )}
                     <div className="border-t border-[#D4AF37]/30 pt-2 mt-2">
                       <div className="flex justify-between font-bold">
                         <span className="text-gray-900">Total Amount</span>

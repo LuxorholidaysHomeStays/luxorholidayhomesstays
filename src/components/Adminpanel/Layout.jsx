@@ -12,7 +12,8 @@ import {
   ExclamationTriangleIcon,
   SparklesIcon,
   UserCircleIcon,
-  EnvelopeIcon
+  EnvelopeIcon,
+  TagIcon
 } from '@heroicons/react/24/outline';
 
 const Layout = ({ children }) => {
@@ -27,6 +28,7 @@ const Layout = ({ children }) => {
     { name: 'Bookings', href: '/bookings', icon: CalendarDaysIcon },
     { name: 'Manual Booking', href: '/manual-booking', icon: CalendarDaysIcon },
     { name: 'Cancel Requests', href: '/cancel-requests', icon: ExclamationTriangleIcon },
+    { name: 'Offers', href: '/offers', icon: TagIcon },
     { name: 'Amenities', href: '/amenities', icon: SparklesIcon },
     { name: 'Users', href: '/users', icon: UsersIcon },
     { name: 'Phone Users', href: '/phone-users', icon: UsersIcon },

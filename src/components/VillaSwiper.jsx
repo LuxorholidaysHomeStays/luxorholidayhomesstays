@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect, useRef, useCallback } from "react"
 import { ChevronLeft, ChevronRight, Home, Users, Maximize, MapPin, Star } from "lucide-react"
 import { useNavigate } from "react-router-dom"
@@ -1092,7 +1090,7 @@ const VillaSwiper = () => {
       // Apply subtle borders to distinguish slides
       border: !isCenter ? "1px solid rgba(0,0,0,0.05)" : "none",
       borderRadius: !isCenter ? "12px" : "0",
-      // Add subtle rotation for a more dynamic feel when not centered
+      // Combine the transform properties into one
       transform: isAdjacent
         ? `translateX(${translateX}px) scale(${scale}) rotate(${position * 0.5}deg)`
         : `translateX(${translateX}px) scale(${scale})`,
