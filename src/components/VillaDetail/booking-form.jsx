@@ -544,6 +544,50 @@ export default function EnhancedBookingForm({
   // Import useAuth
   const { authToken } = useAuth()
 
+  // Utility function to check authentication before proceeding to booking step 3
+  const checkAuthenticationForBookingStep = () => {
+    if (!authToken) {
+      // Save current booking state for redirect back after login
+      const currentBookingData = {
+        villaId: villa?.id || villa?._id,
+        villaName: villa?.name,
+        checkInDate,
+        checkOutDate,
+        adults,
+        children,
+        bookingStep: 3, // Continue to step 3 after login
+        totalAmount,
+        returnUrl: window.location.pathname + window.location.search
+      }
+      
+      // Store in localStorage to persist across navigation
+      localStorage.setItem('pendingBookingData', JSON.stringify(currentBookingData))
+      
+      Swal.fire({
+        icon: "warning", 
+        title: "Login Required",
+        text: "Please sign in to continue with your booking.",
+        confirmButtonColor: "#ca8a04",
+        confirmButtonText: "Go to Sign In",
+        showCancelButton: true,
+        cancelButtonText: "Cancel",
+        allowOutsideClick: false,
+        allowEscapeKey: false
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate("/sign-in", { 
+            state: { 
+              from: window.location.pathname,
+              bookingData: currentBookingData
+            }
+          })
+        }
+      })
+      return false // Not authenticated
+    }
+    return true // Authenticated
+  }
+
   const checkInTime = "14:00 (2:00 PM)"
   const checkOutTime = "12:00 (12:00 PM)"
 
@@ -720,6 +764,8 @@ export default function EnhancedBookingForm({
     const bookingData = {
       villaId: villa?._id || villa?.id,
       villaName: villa?.name,
+      pricePerNight: villa?.price || 10000, // Add the villa's base price
+      weekendPrice: villa?.weekendPrice || villa?.weekendprice || villa?.price * 1.5 || 15000, // Add weekend price
       checkInDate,
       checkOutDate,
       adults,
@@ -2250,7 +2296,11 @@ export default function EnhancedBookingForm({
                     })
                     return
                   }
-                  setBookingStep(3)
+                  
+                  // Check authentication before proceeding to step 3
+                  if (checkAuthenticationForBookingStep()) {
+                    setBookingStep(3)
+                  }
                 }}
                 className="w-full bg-gradient-to-r from-[#D4AF37] to-[#BFA181] hover:from-[#BFA181] hover:to-[#D4AF37] text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 text-sm"
               >
@@ -2293,7 +2343,12 @@ export default function EnhancedBookingForm({
                 )}
               </button>
               <button
-                onClick={() => setBookingStep(3)}
+                onClick={() => {
+                  // Check authentication before going back to step 3
+                  if (checkAuthenticationForBookingStep()) {
+                    setBookingStep(3)
+                  }
+                }}
                 className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-xl transition-all duration-300 text-sm"
               >
                 Back to Address

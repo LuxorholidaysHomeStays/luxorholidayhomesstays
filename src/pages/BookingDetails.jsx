@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useParams, useNavigate, useLocation } from "react-router-dom"
 import { API_BASE_URL } from "../config/api"
 import { useAuth } from "../context/AuthContext"
+import Swal from "sweetalert2"
 import {
   Calendar,
   Users,
@@ -256,10 +257,101 @@ const BookingDetails = () => {
     }, 3000)
   }
 
+  // Utility function to check authentication before proceeding to booking steps
+  const checkAuthenticationForBooking = (step = "booking step") => {
+    if (!authToken) {
+      // Save current location and state for redirect back after login
+      const currentState = {
+        pathname: location.pathname,
+        search: location.search,
+        state: location.state,
+        bookingId: bookingId,
+        villaImage: villaImage,
+        villaName: villaName,
+        booking: booking // Include current booking data
+      }
+      
+      // Store in sessionStorage to persist across navigation
+      sessionStorage.setItem('redirectAfterLogin', JSON.stringify(currentState))
+      
+      Swal.fire({
+        icon: "warning",
+        title: "Authentication Required",
+        text: `Please log in to proceed with ${step}.`,
+        confirmButtonColor: "#ca8a04",
+        confirmButtonText: "Go to Sign In",
+        showCancelButton: true,
+        cancelButtonText: "Cancel",
+        allowOutsideClick: false,
+        allowEscapeKey: false
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate("/sign-in", { 
+            state: { 
+              redirectTo: location.pathname,
+              redirectState: currentState
+            }
+          })
+        }
+      })
+      return false // Not authenticated
+    }
+    return true // Authenticated
+  }
+
   useEffect(() => {
     if (!authToken) {
-      navigate("/sign-in")
+      // Save current location and state for redirect back after login
+      const currentState = {
+        pathname: location.pathname,
+        search: location.search,
+        state: location.state,
+        bookingId: bookingId,
+        villaImage: villaImage,
+        villaName: villaName
+      }
+      
+      // Store in sessionStorage to persist across navigation
+      sessionStorage.setItem('redirectAfterLogin', JSON.stringify(currentState))
+      
+      Swal.fire({
+        icon: "warning",
+        title: "Authentication Required",
+        text: "Please log in to view your booking details.",
+        confirmButtonColor: "#ca8a04",
+        confirmButtonText: "Go to Sign In",
+        allowOutsideClick: false,
+        allowEscapeKey: false
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate("/sign-in", { 
+            state: { 
+              redirectTo: location.pathname,
+              redirectState: currentState
+            }
+          })
+        }
+      })
       return
+    }
+
+    // Check if we're returning from login and have saved state
+    const savedRedirectData = sessionStorage.getItem('redirectAfterLogin')
+    if (savedRedirectData) {
+      try {
+        const redirectData = JSON.parse(savedRedirectData)
+        // Clear the saved state
+        sessionStorage.removeItem('redirectAfterLogin')
+        
+        // If we have saved booking data, use it
+        if (redirectData.state?.fromReview) {
+          setBooking(redirectData.state)
+          setLoading(false)
+          return
+        }
+      } catch (e) {
+        console.error("Error parsing redirect data:", e)
+      }
     }
 
     // Check if we're coming from the review page with form data

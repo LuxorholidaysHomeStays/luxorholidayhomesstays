@@ -105,7 +105,25 @@ const SignIn = () => {
   
   // Function to handle post-login navigation
   const handleSuccessfulLogin = () => {
-    // First check for auth redirect URL
+    // First check for sessionStorage redirect data (from BookingDetails)
+    const redirectAfterLogin = sessionStorage.getItem('redirectAfterLogin');
+    if (redirectAfterLogin) {
+      try {
+        const redirectData = JSON.parse(redirectAfterLogin);
+        sessionStorage.removeItem('redirectAfterLogin');
+        
+        // Navigate back to the exact location with state
+        navigate(redirectData.pathname + redirectData.search, { 
+          state: redirectData.state,
+          replace: true 
+        });
+        return;
+      } catch (error) {
+        console.error("Error parsing redirect after login data:", error);
+      }
+    }
+    
+    // Then check for auth redirect URL
     const redirectUrl = localStorage.getItem("authRedirectUrl");
     if (redirectUrl) {
       localStorage.removeItem("authRedirectUrl");
@@ -146,6 +164,17 @@ const SignIn = () => {
       }
       
       navigate(fromLocation);
+      return;
+    }
+    
+    // Check for redirectTo from location state (enhanced redirect handling)
+    const redirectTo = location.state?.redirectTo;
+    const redirectState = location.state?.redirectState;
+    if (redirectTo && redirectState) {
+      navigate(redirectTo, { 
+        state: redirectState.state,
+        replace: true 
+      });
       return;
     }
     

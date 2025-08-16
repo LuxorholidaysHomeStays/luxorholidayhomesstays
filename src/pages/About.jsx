@@ -17,7 +17,7 @@ const About = () => {
     useEffect(() => {
         // Initialize AOS
         AOS.init({
-            duration: 800,
+            duration: 200,
             once: true,
             disable: 'mobile'
         });

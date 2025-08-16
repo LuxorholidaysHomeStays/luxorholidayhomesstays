@@ -295,43 +295,7 @@ export default function VillaInfo ({ villa, villaPricing }) {
       case "amenities":
         return (
           <div className="bg-white rounded-lg p-8 shadow-md">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center">
-              <span className="w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center mr-3">
-                <Star className="h-4 w-4 text-white" />
-              </span>
-              What this place offers
-            </h2>
-            
-            {/* Simple list view of amenities */}
-            <div className="mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                {(showAllAmenities ? villaAmenities : villaAmenities.slice(0, 12)).map((amenity, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-[#D4AF37]/10 rounded-full flex items-center justify-center">
-                      <div className="w-5 h-5 text-[#D4AF37] flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                        </svg>
-                      </div>
-                    </div>
-                    <span className="text-gray-700">{amenity}</span>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Show more/less button if there are more than 12 amenities */}
-              {villaAmenities.length > 12 && (
-                <button 
-                  onClick={() => setShowAllAmenities(!showAllAmenities)}
-                  className="mt-6 flex items-center gap-2 text-[#D4AF37] font-medium hover:underline"
-                >
-                  {showAllAmenities ? 'Show fewer amenities' : 'Show all amenities'}
-                  <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 transition-transform ${showAllAmenities ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-              )}
-            </div>
+            <AmenitiesSection amenities={villaAmenities} villaName={villa?.name} />
           </div>
         )
 

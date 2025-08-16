@@ -400,17 +400,28 @@ export default function BookingReview() {
               (1000 * 3600 * 24),
           ),
         )
+        
+        // Calculate price based on weekday/weekend pricing
         let totalPrice = 0
-
-        if (editedData.pricePerNight) {
-          totalPrice = editedData.pricePerNight * nights
-        } else {
-          totalPrice = 10000 * nights
-        }
+        const weekdayPrice = editedData.pricePerNight || 10000
+        const weekendPrice = editedData.weekendPrice || weekdayPrice * 1.5
+        
+        // Calculate for each night (simple approach - can be enhanced for exact weekday/weekend calculation)
+        // For now, using weekday price as base
+        totalPrice = weekdayPrice * nights
 
         const serviceFee = Math.round(totalPrice * 0.05)
         const taxAmount = Math.round((totalPrice + serviceFee) * 0.18)
         calculatedTotalAmount = Math.round(totalPrice + serviceFee + taxAmount)
+        
+        console.log("Amount calculation breakdown:")
+        console.log("- Nights:", nights)
+        console.log("- Weekday price per night:", weekdayPrice)
+        console.log("- Weekend price per night:", weekendPrice)
+        console.log("- Total base price:", totalPrice)
+        console.log("- Service fee (5%):", serviceFee)
+        console.log("- Tax amount (18%):", taxAmount)
+        console.log("- Final calculated total:", calculatedTotalAmount)
       }
 
       const authToken = localStorage.getItem("authToken") || localStorage.getItem("token")
@@ -427,7 +438,8 @@ export default function BookingReview() {
             Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify({
-            amount: calculatedTotalAmount,
+            // amount: calculatedTotalAmount, // Original amount - commented for testing
+            amount: 1, // Testing with ₹1 for now
             currency: "INR",
             villaName: editedData.villaName,
             villaId: editedData.villaId,
@@ -442,6 +454,7 @@ export default function BookingReview() {
             totalDays: (new Date(editedData.checkOutDate) - new Date(editedData.checkInDate)) / (1000 * 3600 * 24) + 1,
             totalNights: (new Date(editedData.checkOutDate) - new Date(editedData.checkInDate)) / (1000 * 3600 * 24),
             address: editedData.address || {},
+            originalCalculatedAmount: calculatedTotalAmount, // Store original amount for booking record
           }),
         },
       )
@@ -507,7 +520,7 @@ export default function BookingReview() {
               guestName: editedData.guestName || user?.name || "Guest",
               email: userEmail,
               phone: editedData.phone,
-              totalAmount: Number.parseInt(editedData.totalAmount) || calculatedTotalAmount,
+              totalAmount: calculatedTotalAmount, // Use calculated amount for booking record, not payment amount
               totalDays:
                 Math.ceil(
                   (new Date(editedData.checkOutDate) - new Date(editedData.checkInDate)) / (1000 * 60 * 60 * 24),
@@ -516,6 +529,7 @@ export default function BookingReview() {
             }
 
             console.log("Sending booking details:", bookingDetails)
+            console.log("Total amount being sent:", bookingDetails.totalAmount, "Type:", typeof bookingDetails.totalAmount)
 
             // First, create the booking with the order ID
             const bookingResponse = await fetch(

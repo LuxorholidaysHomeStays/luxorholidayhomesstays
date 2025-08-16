@@ -195,6 +195,8 @@ const MyBookings = () => {
         return 'bg-red-100 text-red-700';
       case 'completed':
         return 'bg-blue-100 text-blue-700';
+      case 'expired':
+        return 'bg-orange-100 text-orange-700';
       default:
         return 'bg-gray-100 text-gray-700';
     }
@@ -211,6 +213,8 @@ const MyBookings = () => {
         return <AlertCircle className="w-4 h-4 text-red-600" />;
       case 'completed':
         return <CheckCircle className="w-4 h-4 text-blue-600" />;
+      case 'expired':
+        return <Clock className="w-4 h-4 text-orange-600" />;
       default:
         return <Clock className="w-4 h-4 text-gray-600" />;
     }
@@ -307,6 +311,17 @@ const MyBookings = () => {
             }`}
           >
             <CheckCircle className="w-4 h-4" /> Completed
+          </button>
+          
+          <button
+            onClick={() => filterBookings('expired')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center gap-1 ${
+              activeFilter === 'expired' 
+                ? 'bg-orange-100 text-orange-800 border border-orange-200' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
+            }`}
+          >
+            <Clock className="w-4 h-4" /> Expired
           </button>
         </div>
 
@@ -443,6 +458,21 @@ const MyBookings = () => {
                         <p className="font-medium text-gray-800">{booking.totalDays} {booking.totalDays === 1 ? 'Day' : 'Days'}</p>
                       </div>
                     </div>
+
+                    {/* Expiry Information - Show only for expired bookings */}
+                    {booking.status === 'expired' && booking.expiredAt && (
+                      <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-orange-600" />
+                          <p className="text-sm text-orange-700">
+                            <span className="font-medium">Expired on:</span> {formatDate(booking.expiredAt)}
+                          </p>
+                        </div>
+                        <p className="text-xs text-orange-600 mt-1">
+                          This booking has expired as the checkout date has passed.
+                        </p>
+                      </div>
+                    )}
                     
                     {/* Payment Info & Actions */}
                     <div className="mt-6 pt-5 border-t border-gray-200 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4">
