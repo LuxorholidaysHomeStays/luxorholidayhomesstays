@@ -33,6 +33,15 @@ export default function UnifiedCalendar({
   blockedDates = [] 
 }) {
   console.log("UnifiedCalendar rendering with isVisible:", isVisible);
+  console.log("UnifiedCalendar received blockedDates:", blockedDates);
+  console.log("UnifiedCalendar blockedDates count:", blockedDates?.length || 0);
+  
+  // Log types of blocked dates received
+  if (blockedDates && blockedDates.length > 0) {
+    const bookingBlocks = blockedDates.filter(d => d.type === 'booking');
+    const adminBlocks = blockedDates.filter(d => d.type === 'blocked');
+    console.log(`UnifiedCalendar: ${bookingBlocks.length} booking blocks, ${adminBlocks.length} admin blocks`);
+  }
   
   // Initialize all state at component top level
   const [currentMonth, setCurrentMonth] = useState(new Date())
@@ -134,7 +143,19 @@ export default function UnifiedCalendar({
       checkOut.setHours(0, 0, 0, 0)
 
       // Check if the date falls within any blocked range (inclusive)
-      return currentDate >= checkIn && currentDate <= checkOut
+      const isInRange = currentDate >= checkIn && currentDate <= checkOut;
+      
+      // Debug logging for specific dates
+      if (isInRange) {
+        console.log(`Date ${dateStr} is blocked by:`, {
+          type: blockedRange.type,
+          checkIn: blockedRange.checkIn,
+          checkOut: blockedRange.checkOut,
+          reason: blockedRange.reason
+        });
+      }
+      
+      return isInRange;
     })
 
     if (blockInfo) {

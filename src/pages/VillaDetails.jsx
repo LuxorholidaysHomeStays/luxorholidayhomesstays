@@ -430,6 +430,15 @@ export default function VillaDetails() {
       if (response.ok) {
         const data = await response.json()
         console.log("[VILLA DETAILS] Received blocked dates:", data.blockedDates)
+        console.log("[VILLA DETAILS] Blocked dates count:", data.blockedDates?.length || 0)
+        
+        // Log types of blocked dates
+        if (data.blockedDates && data.blockedDates.length > 0) {
+          const bookingBlocks = data.blockedDates.filter(d => d.type === 'booking');
+          const adminBlocks = data.blockedDates.filter(d => d.type === 'blocked');
+          console.log(`[VILLA DETAILS] ${bookingBlocks.length} booking blocks, ${adminBlocks.length} admin blocks`);
+        }
+        
         setBlockedDates(data.blockedDates || [])
       } else {
         console.error("Failed to fetch blocked dates")
