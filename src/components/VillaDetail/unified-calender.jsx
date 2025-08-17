@@ -118,15 +118,15 @@ export default function UnifiedCalendar({
     return `${year}-${month}-${day}`
   }
 
-  // Helper function to check if a date is blocked
-  const isDateBlocked = (date) => {
-    if (!blockedDates || blockedDates.length === 0) return false;
+  // Helper function to check if a date is blocked and return the block type
+  const getDateBlockInfo = (date) => {
+    if (!blockedDates || blockedDates.length === 0) return { isBlocked: false, type: null, reason: null };
 
     const dateStr = formatDateToYYYYMMDD(date)
     const currentDate = new Date(date)
     currentDate.setHours(0, 0, 0, 0) // Normalize time part for comparison
 
-    return blockedDates.some((blockedRange) => {
+    const blockInfo = blockedDates.find((blockedRange) => {
       // Handle potential date format issues
       const checkIn = new Date(blockedRange.checkIn)
       checkIn.setHours(0, 0, 0, 0)
@@ -136,6 +136,22 @@ export default function UnifiedCalendar({
       // Check if the date falls within any blocked range (inclusive)
       return currentDate >= checkIn && currentDate <= checkOut
     })
+
+    if (blockInfo) {
+      return {
+        isBlocked: true,
+        type: blockInfo.type || 'booking', // 'booking' or 'blocked'
+        reason: blockInfo.reason || null,
+        category: blockInfo.category || null
+      }
+    }
+
+    return { isBlocked: false, type: null, reason: null }
+  }
+
+  // Helper function to check if a date is blocked (backward compatibility)
+  const isDateBlocked = (date) => {
+    return getDateBlockInfo(date).isBlocked
   }
 
   // Helper function to check if a date range overlaps with any blocked dates
@@ -237,7 +253,9 @@ export default function UnifiedCalendar({
             const isCurrentMonth = date.getMonth() === month
             const isToday = date.toDateString() === today.toDateString()
             const isPast = date < today && !isToday
-            const isBlocked = isDateBlocked(date)
+            const blockInfo = getDateBlockInfo(date)
+            const isBlocked = blockInfo.isBlocked
+            const blockType = blockInfo.type
             const dateStr = formatDateToYYYYMMDD(date)
             const isCheckIn = tempCheckIn === dateStr
             const isCheckOut = tempCheckOut === dateStr
@@ -251,6 +269,18 @@ export default function UnifiedCalendar({
               price = 0 // Show 0 if there's an error - makes it obvious there's an issue
             }
 
+            // Different styling for different block types
+            const getBlockedStyle = () => {
+              if (!isBlocked) return "";
+              
+              if (blockType === 'booking') {
+                return "bg-red-100 text-red-600 cursor-not-allowed border-red-200";
+              } else if (blockType === 'blocked') {
+                return "bg-orange-100 text-orange-600 cursor-not-allowed border-orange-200";
+              }
+              return "bg-gray-200 text-gray-500 cursor-not-allowed border-gray-300";
+            };
+
             return (
               <div
                 key={index}
@@ -261,7 +291,7 @@ export default function UnifiedCalendar({
                   ${isPast
                     ? "bg-gray-100 text-gray-400 cursor-not-allowed border-transparent opacity-60"
                     : isBlocked
-                      ? "bg-gray-200 text-gray-500 cursor-not-allowed border-gray-300 opacity-80"
+                      ? getBlockedStyle()
                       : isCheckIn
                         ? "bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-white font-bold border-[#D4AF37] shadow-lg scale-105"
                         : isCheckOut
@@ -274,6 +304,13 @@ export default function UnifiedCalendar({
                   }
                 `}
                 onClick={() => handleDateClick(date)}
+                title={isBlocked ? 
+                  (blockType === 'booking' ? 
+                    "Already booked" : 
+                    `Blocked: ${blockInfo.reason || 'Not available'}`
+                  ) : 
+                  undefined
+                }
               >
                 <div className="text-sm font-medium">{date.getDate()}</div>
                 {isCurrentMonth && !isPast && !isBlocked && (
@@ -290,9 +327,19 @@ export default function UnifiedCalendar({
                 )}
                 {isBlocked && isCurrentMonth && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-6 h-0.5 bg-red-500 rotate-45 z-10"></div>
-                    <div className="w-6 h-0.5 bg-red-500 -rotate-45 absolute z-10"></div>
-                    <div className="absolute inset-0 bg-gray-200 opacity-60 rounded-lg"></div>
+                    {blockType === 'booking' ? (
+                      // Red X for bookings
+                      <>
+                        <div className="w-6 h-0.5 bg-red-500 rotate-45 z-10"></div>
+                        <div className="w-6 h-0.5 bg-red-500 -rotate-45 absolute z-10"></div>
+                      </>
+                    ) : (
+                      // Orange prohibition sign for admin blocks
+                      <>
+                        <div className="w-6 h-6 rounded-full border-2 border-orange-500 z-10"></div>
+                        <div className="w-4 h-0.5 bg-orange-500 absolute z-10"></div>
+                      </>
+                    )}
                   </div>
                 )}
                 {isToday && !isCheckIn && !isCheckOut && !isBlocked && (
@@ -391,13 +438,22 @@ export default function UnifiedCalendar({
               <span>Range</span>
             </div>
             <div className="flex items-center gap-1 text-xs mr-1">
-              <div className="w-3 h-3 bg-gray-200 rounded relative">
+              <div className="w-3 h-3 bg-red-100 border border-red-200 rounded relative">
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-3 h-0.5 bg-red-500 rotate-45"></div>
-                  <div className="w-3 h-0.5 bg-red-500 -rotate-45 absolute"></div>
+                  <div className="w-2 h-0.5 bg-red-500 rotate-45"></div>
+                  <div className="w-2 h-0.5 bg-red-500 -rotate-45 absolute"></div>
                 </div>
               </div>
               <span>Booked</span>
+            </div>
+            <div className="flex items-center gap-1 text-xs mr-1">
+              <div className="w-3 h-3 bg-orange-100 border border-orange-200 rounded relative">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-2 h-2 rounded-full border border-orange-500"></div>
+                  <div className="w-1.5 h-0.5 bg-orange-500 absolute"></div>
+                </div>
+              </div>
+              <span>Blocked</span>
             </div>
             <div className="flex items-center gap-1 text-xs">
               <span className="text-yellow-700 font-medium text-xs">₹</span>

@@ -45,6 +45,7 @@ import NewsletterManagement from './pages/Admin/NewsletterManagement';
 import UserProfilesManagement from './pages/Admin/UserProfilesManagement';
 import ManualBookingManagement from './pages/Admin/ManualBookingManagement';
 import OffersManagement from './pages/Admin/OffersManagement';
+import BlockedDatesManagement from './pages/Admin/BlockedDatesManagement';
 import "./App.css";
 import { ToastProvider } from './context/ToastContext';
 import Toast from './components/Toast';
@@ -294,6 +295,14 @@ function App() {
   <ProtectedRoute>
     <Layout>
       <OffersManagement />
+    </Layout>
+  </ProtectedRoute>
+} />
+
+<Route path="/blocked-dates" element={
+  <ProtectedRoute>
+    <Layout>
+      <BlockedDatesManagement />
     </Layout>
   </ProtectedRoute>
 } />
