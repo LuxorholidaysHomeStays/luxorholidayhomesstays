@@ -154,17 +154,25 @@ export const getPriceForDateSync = (date, villa) => {
     }
   } else {
     // Villa is an object
-    villaData = villa;
+    villaData = villa || {};
   }
   
-  // Get weekday price
-  const weekdayPrice = Number(villaData.price || villaData.weekday || 25000);
+  // Get weekday price with proper fallback
+  const weekdayPrice = Number(villaData.price || villaData.weekday || villaData.weekdayPrice || 25000);
+  
+  // Validate weekdayPrice is a valid number
+  if (isNaN(weekdayPrice) || weekdayPrice <= 0) {
+    console.warn('Invalid weekday price detected, using fallback');
+    const defaultWeekday = 25000;
+    const defaultWeekend = 35000;
+    return isWeekend ? defaultWeekend : defaultWeekday;
+  }
   
   // Get weekend price from any possible source
-  let weekendPrice = Number(villaData.weekendPrice || villaData.weekendprice);
+  let weekendPrice = Number(villaData.weekendPrice || villaData.weekendprice || 0);
   
   // If weekend price is still 0 or NaN, apply fallback pricing
-  if (!weekendPrice) {
+  if (!weekendPrice || isNaN(weekendPrice)) {
     // Try to find a match in our fallback pricing data
     if (villaData.name) {
       const fallbackPricing = Object.entries(villaFallbackPricing).find(([name]) => 
@@ -183,8 +191,9 @@ export const getPriceForDateSync = (date, villa) => {
     }
   }
   
-  // Return the appropriate price based on day
-  return isWeekend ? weekendPrice : weekdayPrice;
+  // Final validation to ensure we never return NaN
+  const finalPrice = isWeekend ? weekendPrice : weekdayPrice;
+  return (finalPrice && !isNaN(finalPrice) && finalPrice > 0) ? finalPrice : 25000;
 };
 
 export const formatPrice = (price) => {

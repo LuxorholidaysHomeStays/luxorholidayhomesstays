@@ -619,8 +619,16 @@ export default function EnhancedBookingForm({
     "Empire Anand Villa Samudra": { weekday: 40000, weekend: 60000 },
   }
 
-  let weekdayPrice = villa?.price || 0
-  let weekendPrice = villa?.weekendPrice || villa?.weekendprice || 0
+  let weekdayPrice = Number(villa?.price) || Number(villa?.weekdayPrice) || 0
+  let weekendPrice = Number(villa?.weekendPrice) || Number(villa?.weekendprice) || 0
+
+  // Validate prices are proper numbers
+  if (isNaN(weekdayPrice) || weekdayPrice <= 0) {
+    weekdayPrice = 25000; // Default fallback
+  }
+  if (isNaN(weekendPrice) || weekendPrice <= 0) {
+    weekendPrice = 0; // Will be calculated below
+  }
 
   if (weekendPrice === 0 && villa?.name) {
     const villaMatch = Object.entries(villaFallbackPricing).find(([name]) =>
@@ -636,13 +644,13 @@ export default function EnhancedBookingForm({
   }
 
   // If weekendPrice is still 0, try to use fallback pricing
-  if (weekendPrice === 0 || !weekendPrice) {
+  if (weekendPrice === 0 || !weekendPrice || isNaN(weekendPrice)) {
     // Find a matching villa in our fallback pricing
     for (const [villaName, pricing] of Object.entries(villaFallbackPricing)) {
       if (villa?.name && villa.name.toLowerCase().includes(villaName.toLowerCase())) {
         weekendPrice = pricing.weekend
         // Also set the weekday price if needed
-        if (weekdayPrice === 0) {
+        if (weekdayPrice === 0 || isNaN(weekdayPrice)) {
           weekdayPrice = pricing.weekday
         }
         break
@@ -650,9 +658,17 @@ export default function EnhancedBookingForm({
     }
 
     // If still no weekend price, use a multiplier on weekday price
-    if ((weekendPrice === 0 || !weekendPrice) && weekdayPrice > 0) {
+    if ((weekendPrice === 0 || !weekendPrice || isNaN(weekendPrice)) && weekdayPrice > 0) {
       weekendPrice = Math.round(weekdayPrice * 1.5)
     }
+  }
+
+  // Final validation to ensure we never have invalid prices
+  if (isNaN(weekdayPrice) || weekdayPrice <= 0) {
+    weekdayPrice = 25000; // Default fallback
+  }
+  if (isNaN(weekendPrice) || weekendPrice <= 0) {
+    weekendPrice = Math.round(weekdayPrice * 1.5); // Default weekend multiplier
   }
 
   console.log("Booking form prices:", {
@@ -733,21 +749,24 @@ export default function EnhancedBookingForm({
         const dayOfWeek = currentDate.getDay()
         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
 
-        // Calculate original price
-        const originalDayPrice = isWeekend ? Number(weekendPrice) : Number(weekdayPrice)
+        // Calculate original price with proper validation
+        const originalDayPrice = isWeekend ? 
+          (Number(weekendPrice) && !isNaN(Number(weekendPrice)) ? Number(weekendPrice) : 25000) : 
+          (Number(weekdayPrice) && !isNaN(Number(weekdayPrice)) ? Number(weekdayPrice) : 25000)
         originalTotalPrice += originalDayPrice
 
         // Check if we have offer pricing for this date
         if (pricingWithOffers[dateKey]) {
-          totalPrice += pricingWithOffers[dateKey].finalPrice
+          const offerPrice = pricingWithOffers[dateKey].finalPrice
+          totalPrice += (offerPrice && !isNaN(offerPrice) ? offerPrice : originalDayPrice)
         } else {
           totalPrice += originalDayPrice
         }
       }
 
       return {
-        finalPrice: totalPrice,
-        originalPrice: originalTotalPrice,
+        finalPrice: (totalPrice && !isNaN(totalPrice) && totalPrice > 0) ? totalPrice : 0,
+        originalPrice: (originalTotalPrice && !isNaN(originalTotalPrice) && originalTotalPrice > 0) ? originalTotalPrice : 0,
         hasOffers: Object.values(pricingWithOffers).some(p => p.hasOffer)
       }
     } catch (error) {
@@ -773,18 +792,31 @@ export default function EnhancedBookingForm({
         currentDate.setDate(currentDate.getDate() + i)
         const dateKey = currentDate.toDateString()
         
+        let dayPrice = 0
+        
         // Check if we have offer pricing for this date
         if (pricingWithOffers[dateKey]) {
-          totalPrice += pricingWithOffers[dateKey].finalPrice
+          dayPrice = pricingWithOffers[dateKey].finalPrice
         } else {
           // Fallback to regular pricing
-          totalPrice += getPriceForDateSync(currentDate, villa)
+          dayPrice = getPriceForDateSync(currentDate, villa)
         }
+        
+        // Ensure dayPrice is a valid number
+        if (isNaN(dayPrice) || dayPrice <= 0) {
+          console.warn(`Invalid price for date ${dateKey}, using fallback`);
+          dayPrice = 25000; // Default fallback price
+        }
+        
+        totalPrice += dayPrice
       }
 
       const serviceFee = Math.round(totalPrice * 0.05)
       const taxAmount = Math.round((totalPrice + serviceFee) * 0.18)
-      return Math.round(totalPrice + serviceFee + taxAmount)
+      const finalTotal = Math.round(totalPrice + serviceFee + taxAmount)
+      
+      // Final validation to ensure we never return NaN
+      return (finalTotal && !isNaN(finalTotal) && finalTotal > 0) ? finalTotal : 0
     } catch (error) {
       console.error("Error calculating total amount:", error)
       return 0
@@ -2351,36 +2383,55 @@ export default function EnhancedBookingForm({
                       <div className="flex flex-col items-end">
                         {basePriceData.hasOffers && basePriceData.originalPrice !== basePriceData.finalPrice ? (
                           <>
-                            <span className="text-gray-400 line-through text-xs">₹{basePriceData.originalPrice.toLocaleString()}</span>
-                            <span className="font-medium text-green-600">₹{basePriceData.finalPrice.toLocaleString()}</span>
+                            <span className="text-gray-400 line-through text-xs">
+                              ₹{basePriceData.originalPrice && !isNaN(basePriceData.originalPrice) ? 
+                                basePriceData.originalPrice.toLocaleString() : "0"}
+                            </span>
+                            <span className="font-medium text-green-600">
+                              ₹{basePriceData.finalPrice && !isNaN(basePriceData.finalPrice) ? 
+                                basePriceData.finalPrice.toLocaleString() : "0"}
+                            </span>
                             <span className="text-xs text-green-600 font-medium">Offer Applied!</span>
                           </>
                         ) : (
-                          <span className="font-medium">₹{basePriceData.finalPrice.toLocaleString()}</span>
+                          <span className="font-medium">
+                            ₹{basePriceData.finalPrice && !isNaN(basePriceData.finalPrice) ? 
+                              basePriceData.finalPrice.toLocaleString() : "0"}
+                          </span>
                         )}
                       </div>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Service fee (5%)</span>
-                      <span className="font-medium">₹{Math.round(basePriceData.finalPrice * 0.05).toLocaleString()}</span>
+                      <span className="font-medium">
+                        ₹{basePriceData.finalPrice && !isNaN(basePriceData.finalPrice) ? 
+                          Math.round(basePriceData.finalPrice * 0.05).toLocaleString() : 
+                          "0"
+                        }
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Taxes (18%)</span>
                       <span className="font-medium">
-                        ₹{Math.round((basePriceData.finalPrice + Math.round(basePriceData.finalPrice * 0.05)) * 0.18).toLocaleString()}
+                        ₹{basePriceData.finalPrice && !isNaN(basePriceData.finalPrice) ? 
+                          Math.round((basePriceData.finalPrice + Math.round(basePriceData.finalPrice * 0.05)) * 0.18).toLocaleString() :
+                          "0"
+                        }
                       </span>
                     </div>
                     {basePriceData.hasOffers && (
                       <div className="bg-green-50 rounded-lg p-2 mt-2">
                         <div className="text-xs text-green-700 font-medium text-center">
-                          🎉 You saved ₹{(basePriceData.originalPrice - basePriceData.finalPrice).toLocaleString()} with current offers!
+                          🎉 You saved ₹{basePriceData.originalPrice && basePriceData.finalPrice && 
+                            !isNaN(basePriceData.originalPrice) && !isNaN(basePriceData.finalPrice) ? 
+                            (basePriceData.originalPrice - basePriceData.finalPrice).toLocaleString() : "0"} with current offers!
                         </div>
                       </div>
                     )}
                     <div className="border-t border-[#D4AF37]/30 pt-2 mt-2">
                       <div className="flex justify-between font-bold">
                         <span className="text-gray-900">Total Amount</span>
-                        <span className="text-[#D4AF37]">₹{totalAmount.toLocaleString()}</span>
+                        <span className="text-[#D4AF37]">₹{(totalAmount && !isNaN(totalAmount) ? totalAmount : 0).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -2465,7 +2516,7 @@ export default function EnhancedBookingForm({
                     {paymentProcessing ? "Processing Payment..." : "Processing..."}
                   </div>
                 ) : (
-                  `Pay & Confirm ₹${totalAmount.toLocaleString()}`
+                  `Pay & Confirm ₹${(totalAmount && !isNaN(totalAmount) ? totalAmount : 0).toLocaleString()}`
                 )}
               </button>
               <button
