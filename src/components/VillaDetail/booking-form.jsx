@@ -208,7 +208,12 @@ const PhoneVerificationForm = ({
 
       // First check if this number already exists in the database
       const checkResponse = await axios.get(
-        `${baseUrl}/api/profile/check-phone?phoneNumber=${encodeURIComponent(formattedPhone)}`
+        `${baseUrl}/api/profile/check-phone?phoneNumber=${encodeURIComponent(formattedPhone)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken") || localStorage.getItem("token")}`
+          }
+        }
       )
       if (checkResponse.data.exists) {
         // Show warning if the number is already associated with another account
