@@ -1079,24 +1079,43 @@ const BookingDetails = () => {
               Payment Details
             </h3>
             <div className="space-y-3 sm:space-y-4">
-              <div className="flex justify-between items-center">
-                <div className="text-gray-500 text-xs sm:text-sm">Base Price × {booking.totalDays} nights</div>
-                <div className="font-medium text-gray-700 text-xs sm:text-sm">
-                  ₹{Math.round(booking.totalAmount / 1.23).toLocaleString()}
-                </div>
-              </div>
-              <div className="flex justify-between items-center">
-                <div className="text-gray-500 text-xs sm:text-sm">Service Fee (5%)</div>
-                <div className="font-medium text-gray-700 text-xs sm:text-sm">
-                  ₹{Math.round(booking.totalAmount * 0.05).toLocaleString()}
-                </div>
-              </div>
-              <div className="flex justify-between items-center">
-                <div className="text-gray-500 text-xs sm:text-sm">Taxes (18%)</div>
-                <div className="font-medium text-gray-700 text-xs sm:text-sm">
-                  ₹{Math.round(booking.totalAmount * 0.18).toLocaleString()}
-                </div>
-              </div>
+              {(() => {
+                // Calculate the correct breakdown from totalAmount
+                // Formula: totalAmount = basePrice + serviceFee + taxAmount
+                // Where: serviceFee = basePrice * 0.05, taxAmount = (basePrice + serviceFee) * 0.18
+                // Solving: totalAmount = basePrice + (basePrice * 0.05) + ((basePrice + basePrice * 0.05) * 0.18)
+                // totalAmount = basePrice * (1 + 0.05 + (1.05 * 0.18))
+                // totalAmount = basePrice * (1 + 0.05 + 0.189)
+                // totalAmount = basePrice * 1.239
+                // Therefore: basePrice = totalAmount / 1.239
+                
+                const basePrice = Math.round(booking.totalAmount / 1.239);
+                const serviceFee = Math.round(basePrice * 0.05);
+                const taxAmount = Math.round((basePrice + serviceFee) * 0.18);
+                
+                return (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <div className="text-gray-500 text-xs sm:text-sm">Base Price × {booking.totalDays} nights</div>
+                      <div className="font-medium text-gray-700 text-xs sm:text-sm">
+                        ₹{basePrice.toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="text-gray-500 text-xs sm:text-sm">Service Fee (5%)</div>
+                      <div className="font-medium text-gray-700 text-xs sm:text-sm">
+                        ₹{serviceFee.toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="text-gray-500 text-xs sm:text-sm">Taxes (18%)</div>
+                      <div className="font-medium text-gray-700 text-xs sm:text-sm">
+                        ₹{taxAmount.toLocaleString()}
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
               <div className="border-t border-gray-200 pt-3 sm:pt-4 mt-3 sm:mt-4">
                 <div className="flex justify-between items-center text-sm sm:text-lg">
                   <div className="font-semibold text-gray-700">Total Amount</div>
