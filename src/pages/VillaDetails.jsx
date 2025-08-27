@@ -857,8 +857,9 @@ export default function VillaDetails() {
               </div>
             </div>
 
+   
             <div className="flex items-center gap-2">
-              <button
+              {/* <button
                 onClick={handleSaveVilla}
                 className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 transition-all duration-200 group backdrop-blur-sm"
               >
@@ -868,12 +869,78 @@ export default function VillaDetails() {
                   }`}
                 />
                 <span className="font-medium text-white hidden sm:inline">{isSaved ? "Saved" : "Save"}</span>
-              </button>
-              <button className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm">
+              </button> */}
+              <button 
+                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
+                onClick={async () => {
+                  const shareData = {
+                    title: `${villa.name} - LuxorStay Holiday Homes`,
+                    text: `Check out this amazing villa: ${villa.name} in ${villa.location}. Starting from ₹${villa.price?.toLocaleString()}/night`,
+                    url: window.location.href,
+                  };
+
+                  if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+                    try {
+                      await navigator.share(shareData);
+                    } catch (err) {
+                      if (err.name !== 'AbortError') {
+                        console.error('Error sharing:', err);
+                        // Fallback to clipboard
+                        try {
+                          await navigator.clipboard.writeText(window.location.href);
+                          Swal.fire({
+                            icon: "success",
+                            title: "Link Copied!",
+                            text: "Villa link copied to clipboard.",
+                            confirmButtonColor: "#D4AF37",
+                            timer: 2000,
+                            showConfirmButton: false,
+                          });
+                        } catch {
+                          Swal.fire({
+                            icon: "info",
+                            title: "Share",
+                            text: `Check out ${villa.name} at ${window.location.href}`,
+                            confirmButtonColor: "#D4AF37",
+                          });
+                        }
+                      }
+                    }
+                  } else {
+                    // Fallback: copy link to clipboard
+                    try {
+                      await navigator.clipboard.writeText(window.location.href);
+                      Swal.fire({
+                        icon: "success",
+                        title: "Link Copied!",
+                        text: "Villa link copied to clipboard. You can now share it anywhere!",
+                        confirmButtonColor: "#D4AF37",
+                        timer: 2500,
+                        showConfirmButton: false,
+                      });
+                    } catch {
+                      // Ultimate fallback - show the URL for manual copying
+                      Swal.fire({
+                        icon: "info",
+                        title: "Share This Villa",
+                        html: `
+                          <p class="mb-3">Copy this link to share:</p>
+                          <div class="bg-gray-100 p-3 rounded-lg text-sm break-all">
+                            ${window.location.href}
+                          </div>
+                        `,
+                        confirmButtonColor: "#D4AF37",
+                        confirmButtonText: "Close"
+                      });
+                    }
+                  }
+                }}
+              >
                 <Share className="h-4 w-4 text-[#D4AF37]" />
                 <span className="font-medium text-white hidden sm:inline">Share</span>
               </button>
             </div>
+
           </div>
 
           {/* Villa Title & Info */}
