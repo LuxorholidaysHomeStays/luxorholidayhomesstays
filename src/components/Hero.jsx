@@ -948,9 +948,9 @@ const Hero = () => {
 
   return (
     <div
-      className="hero-container relative w-full overflow-hidden"
+      className="hero-container relative w-full h-100vh"
       style={{
-        minHeight: `calc(110vh - ${navbarHeight}px)`, /* Reduced from 100vh to 90vh */
+        minHeight: `calc(110vh - ${navbarHeight}px)`,  /* Reduced from 100vh to 90vh */
         marginTop: 0, 
         paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
