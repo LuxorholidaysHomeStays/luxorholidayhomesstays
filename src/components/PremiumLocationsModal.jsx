@@ -67,11 +67,15 @@ const PremiumLocationsModal = ({ isOpen, onClose, navigate, clickPosition = null
       document.body.classList.remove('premium-modal-open-mobile');
       
       // Restore scroll position
-      const scrollY = document.body.style.top;
+      const storedScrollY = parseInt(document.body.style.top) * -1 || 0;
       document.body.style.position = '';
       document.body.style.top = '';
       document.body.style.width = '';
-      window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      
+      // Use requestAnimationFrame to ensure restoration happens after DOM updates
+      requestAnimationFrame(() => {
+        window.scrollTo(0, storedScrollY);
+      });
     }
     
     return () => {

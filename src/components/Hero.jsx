@@ -460,6 +460,26 @@ const Hero = () => {
   const [datePickerOpen, setDatePickerOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   
+  // Ensure body scroll is enabled when Hero component mounts
+  useEffect(() => {
+    // Reset body styles to allow scrolling
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    document.body.classList.remove('premium-modal-open');
+    document.body.classList.remove('premium-modal-open-mobile');
+    document.body.classList.remove('calendar-modal-open');
+    
+    return () => {
+      // Cleanup when component unmounts
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+    };
+  }, []);
+  
   // Check for mobile screen size
   useEffect(() => {
     const handleResize = () => {
