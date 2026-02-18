@@ -79,10 +79,31 @@ export const AuthProvider = ({ children }) => {
         return { success: true, isAdmin: true };
       }
 
-      // For regular users, continue with your existing logic
-      // ...existing login code...
-      
-      return { success: false, message: "Invalid credentials" };
+      // For regular users — call backend
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, message: data.error || data.message || 'Login failed', requiresVerification: data.requiresVerification, email: data.email };
+      }
+
+      // Save token and user to localStorage
+      if (data.token) {
+        localStorage.setItem('authToken', data.token);
+      }
+      if (data.user) {
+        localStorage.setItem('userData', JSON.stringify(data.user));
+        setUserData(data.user);
+      }
+      setAuthToken(data.token || null);
+
+      return { success: true, isAdmin: false };
     } catch (error) {
       console.error("Login error:", error);
       return { success: false, message: "Login failed" };

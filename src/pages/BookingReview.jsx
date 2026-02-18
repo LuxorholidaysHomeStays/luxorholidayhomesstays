@@ -8,7 +8,6 @@ import { useAuth } from "../context/AuthContext"
 
 
 // Import with lazy loading
-import OptimizedImage from "../components/OptimizedImage"
 
 // Define paths instead of importing directly
 const villaImageMap = {
@@ -254,13 +253,14 @@ export default function BookingReview() {
   const handlePayment = async (bookingData) => {
     try {
       setPaymentProcessing(true)
+      const API_URL = import.meta.env.VITE_API_BASE_URL || "https://luxorstay-backend.vercel.app"
 
       // 1. First create the booking
-      const bookingResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/bookings`, {
+      const bookingResponse = await fetch(`${API_URL}/api/bookings`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
         },
         body: JSON.stringify(bookingData),
       })
@@ -274,11 +274,11 @@ export default function BookingReview() {
       setBookingDetails(booking)
 
       // 2. Create Razorpay order
-      const orderResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/payments/create-order`, {
+      const orderResponse = await fetch(`${API_URL}/api/payments/create-order`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
         },
         body: JSON.stringify({
           amount: booking.totalAmount * 100, // Convert to paise
@@ -301,7 +301,7 @@ export default function BookingReview() {
       await loadRazorpayScript()
 
       const options = {
-        key: process.env.REACT_APP_RAZORPAY_KEY_ID,
+        key: import.meta.env.VITE_RAZORPAY_KEY || "rzp_live_quNHH9YfEhaAru",
         amount: order.amount,
         currency: order.currency,
         name: "Luxor Villas",
@@ -310,11 +310,11 @@ export default function BookingReview() {
         handler: async (response) => {
           try {
             // Verify payment on the server
-            const verifyResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/payments/verify`, {
+            const verifyResponse = await fetch(`${API_URL}/api/payments/verify`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
+                Authorization: `Bearer ${localStorage.getItem("authToken")}`,
               },
               body: JSON.stringify({
                 razorpay_payment_id: response.razorpay_payment_id,

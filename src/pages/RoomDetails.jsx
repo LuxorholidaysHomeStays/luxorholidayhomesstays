@@ -103,7 +103,7 @@ const RoomDetails = () => {
   const handleBookNow = async () => {
     if (!userData || !authToken) {
       alert("Please log in to book a room");
-      return navigate('/login');
+      return navigate('/sign-in');
     }
     if (!checkIn || !checkOut || nights === 0) {
       alert("Please select check-in and check-out dates");

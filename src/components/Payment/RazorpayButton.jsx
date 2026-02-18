@@ -43,14 +43,15 @@ const RazorpayButton = ({ amount, bookingData, onSuccess, onError }) => {
     }
 
     setLoading(true);
+    const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://luxorstay-backend.vercel.app';
 
     try {
       // 1. Create a booking first
-      const bookingResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/bookings`, {
+      const bookingResponse = await fetch(`${API_URL}/api/bookings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         },
         body: JSON.stringify({
           ...bookingData,
@@ -91,11 +92,11 @@ const RazorpayButton = ({ amount, bookingData, onSuccess, onError }) => {
 
       console.log('Creating order with data:', orderData);
 
-      const orderResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/payments/create-order`, {
+      const orderResponse = await fetch(`${API_URL}/api/payments/create-order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         },
         body: JSON.stringify(orderData)
       });
@@ -110,7 +111,7 @@ const RazorpayButton = ({ amount, bookingData, onSuccess, onError }) => {
 
       // 3. Initialize Razorpay payment
       const options = {
-        key: process.env.REACT_APP_RAZORPAY_KEY_ID,
+        key: import.meta.env.VITE_RAZORPAY_KEY || 'rzp_live_quNHH9YfEhaAru',
         amount: order.amount,
         currency: order.currency,
         name: 'Luxor Villas',
@@ -119,11 +120,11 @@ const RazorpayButton = ({ amount, bookingData, onSuccess, onError }) => {
         handler: async function(response) {
           try {
             // Verify payment on the server
-            const verifyResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/payments/verify`, {
+            const verifyResponse = await fetch(`${API_URL}/api/payments/verify`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
               },
               body: JSON.stringify({
                 razorpay_payment_id: response.razorpay_payment_id,

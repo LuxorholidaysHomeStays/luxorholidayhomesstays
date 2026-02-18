@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run optimize-images && vite build && node scripts/sitemap-generator.js",
-    "build:prod": "npm run optimize-images && vite build --mode production && node scripts/sitemap-generator.js",
+    "build": "vite build && node scripts/sitemap-generator.js",
+    "build:prod": "vite build --mode production && node scripts/sitemap-generator.js",
     "generate-sitemap": "node scripts/sitemap-generator.js",
     "optimize-images": "node scripts/optimize-images.js",
     "optimize": "npm run optimize-images",
@@ -54,7 +54,6 @@
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
     "terser": "^5.44.0",
-    "vite": "^6.3.5",
-    "vite-plugin-imagemin": "^0.6.1"
+    "vite": "^6.3.5"
   }
 }

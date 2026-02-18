@@ -14,7 +14,7 @@ import axios from "axios"
 // Import existing dependencies
 import { useAuth } from "../context/AuthContext"
 import { API_BASE_URL } from "../config/api"
-import { getVillaPricing, getPriceForDate } from "../data/villa-pricing.jsx"
+import { getVillaPricing, getPriceForDate, getPriceForDateSync } from "../data/villa-pricing.jsx"
 
 // Import all villa images (keeping existing imports)
 import AP1 from "/AmrithPalace/AP1.jpg"
@@ -523,7 +523,7 @@ export default function VillaDetails() {
       for (let i = 0; i < nights; i++) {
         const currentDate = new Date(startDate)
         currentDate.setDate(currentDate.getDate() + i)
-        totalPrice += getPriceForDate(currentDate, villa.name)
+        totalPrice += getPriceForDateSync(currentDate, villa.name)
       }
 
       const serviceFee = Math.round(totalPrice * 0.05)

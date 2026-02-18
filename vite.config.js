@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { splitVendorChunkPlugin } from 'vite'
 import { resolve } from 'path'
-import viteImagemin from 'vite-plugin-imagemin'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -11,56 +10,6 @@ export default defineConfig({
     react(),
     tailwindcss(),
     splitVendorChunkPlugin(),
-    viteImagemin({
-      gifsicle: {
-        optimizationLevel: 7,
-        interlaced: false,
-      },
-      optipng: {
-        optimizationLevel: 7,
-      },
-      mozjpeg: {
-        quality: 80,
-        progressive: true,
-      },
-      pngquant: {
-        quality: [0.7, 0.8],
-        speed: 4,
-      },
-      webp: {
-        quality: 75,
-        method: 6,
-      },
-      svgo: {
-        multipass: true,
-        plugins: [
-          {
-            name: 'removeViewBox',
-            active: false,
-          },
-          {
-            name: 'minifyStyles',
-            active: true,
-          },
-          {
-            name: 'removeMetadata',
-            active: true,
-          },
-          {
-            name: 'removeUselessStrokeAndFill',
-            active: true,
-          },
-          {
-            name: 'reusePaths',
-            active: true,
-          },
-          {
-            name: 'removeEmptyAttrs',
-            active: true,
-          },
-        ],
-      },
-    }),
   ],
   build: {
     rollupOptions: {

@@ -72,32 +72,7 @@ function App() {
       once: true,
     });
     
-    // Hide preloader after the page is fully loaded
-    const hidePreloader = () => {
-      const preloader = document.getElementById('preloader');
-      if (preloader) {
-        preloader.classList.add('preloader-hide');
-        setTimeout(() => {
-          preloader.style.display = 'none';
-        }, 500);
-      }
-    };
-    
-    // If document is already loaded, hide the preloader immediately
-    if (document.readyState === 'complete') {
-      hidePreloader();
-    } else {
-      // Wait for everything to load
-      window.addEventListener('load', hidePreloader);
-    }
-    
-    // Fallback - hide preloader after 2.5 seconds if load event doesn't fire
-    const timeoutId = setTimeout(hidePreloader, 2500);
-    
-    return () => {
-      window.removeEventListener('load', hidePreloader);
-      clearTimeout(timeoutId);
-    };
+
   }, []);
   
   // Scroll to top when route changes
@@ -196,8 +171,8 @@ function App() {
               <Route path="/reviews" element={<GuestReviews />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsConditions />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} /> {/* New route for forgot password */}
-              <Route path="/verify-otp" element={<VerifyOTP />} /> {/* New route for OTP verification */}
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-otp" element={<VerifyOTP />} />
 
               {/* User protected routes */}
               <Route path="/my-bookings" element={
@@ -280,13 +255,6 @@ function App() {
   </ProtectedRoute>
 } />
 
-<Route path="/amenities" element={
-  <ProtectedRoute>
-    <Layout>
-      <AmenitiesManagement />
-    </Layout>
-  </ProtectedRoute>
-} />
 <Route path="/newsletter" element={
   <ProtectedRoute>
     <Layout>
@@ -325,10 +293,10 @@ function App() {
     </Layout>
   </ProtectedRoute>
 } />
-              {/* If you still want to support /Dashboard directly */}
+              {/* Redirect uppercase /Dashboard → /dashboard */}
               <Route path="/Dashboard" element={
                 <ProtectedRoute>
-                  <Navigate to="/owner/dashboard" replace />
+                  <Navigate to="/dashboard" replace />
                 </ProtectedRoute>
               } />
 

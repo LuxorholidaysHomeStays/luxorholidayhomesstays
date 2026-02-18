@@ -39,7 +39,6 @@ const SignIn = () => {
   const [userEmail, setUserEmail] = useState('');
   const [userName, setUserName] = useState('');
   const [isEmailVerified, setIsEmailVerified] = useState(false);
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
   
   const { setAuthToken, setUserData, handleGoogleSignIn } = useAuth();
   const navigate = useNavigate();
@@ -225,7 +224,12 @@ const SignIn = () => {
         throw new Error(data.error || 'Authentication failed');
       }
       
-      // Update auth context with user data only (no token needed)
+      // Save token and user data to localStorage and auth context
+      if (data.token) {
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userData', JSON.stringify(data.user));
+        setAuthToken(data.token);
+      }
       setUserData(data.user);
       
       setSuccess(isLogin ? "Login successful!" : "Account created successfully!");

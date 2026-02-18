@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { assets } from '../assets/assets'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { API_BASE_URL } from '../config/api'
 
 
 const useCalendarModalDetection = () => {
@@ -97,7 +98,7 @@ const Footer = () => {
     }
   };
   
-  const handleSubscribe = (e) => {
+  const handleSubscribe = async (e) => {
     e.preventDefault();
     
     if (!email || !email.includes('@')) {
@@ -106,18 +107,25 @@ const Footer = () => {
     }
     
     setIsSubmitting(true);
-    
-    // Simulate submission - replace with actual API call in production
-    setTimeout(() => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/newsletter/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setSubscribeMessage({ type: 'success', text: data.message || 'Thank you for subscribing!' });
+        setEmail('');
+        setTimeout(() => setSubscribeMessage(null), 3000);
+      } else {
+        setSubscribeMessage({ type: 'error', text: data.error || 'Subscription failed. Please try again.' });
+      }
+    } catch (err) {
+      setSubscribeMessage({ type: 'error', text: 'Network error. Please try again.' });
+    } finally {
       setIsSubmitting(false);
-      setSubscribeMessage({ type: 'success', text: 'Thank you for subscribing!' });
-      setEmail('');
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSubscribeMessage(null);
-      }, 3000);
-    }, 1000);
+    }
   };
 
   const toggleAccordion = (section) => {
