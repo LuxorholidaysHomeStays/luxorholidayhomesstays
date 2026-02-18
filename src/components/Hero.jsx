@@ -947,7 +947,7 @@ const Hero = () => {
 
   return (
     <div
-      className="hero-container relative w-full h-100vh"
+      className="hero-container relative w-full h-auto"
       style={{
         minHeight: `calc(100vh - ${navbarHeight}px)`,  /* Reduced from 100vh to 90vh */
         marginTop: 0,
@@ -991,7 +991,7 @@ const Hero = () => {
       <div className="relative z-10 flex items-center h-full w-full">
         <div className="w-full px-4 md:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 lg:py-12 pt-20 sm:pt-24 lg:pt-12">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-8 lg:gap-16">
-          
+
             <motion.div
               className="lg:w-1/2 text-white w-full max-w-2xl order-1 lg:order-1"
               initial={{ opacity: 0, x: -50 }}
