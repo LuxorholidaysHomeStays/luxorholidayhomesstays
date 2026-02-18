@@ -40,7 +40,7 @@ const BookingFormSection = ({
 }) => {
   return (
     <motion.div
-      className={`${isDesktop ? "lg:w-full" : ""} mt-6 lg:mt-0 w-full max-w-md mx-auto lg:max-w-2xl hero-tilt-card`}
+      className={`${isDesktop ? "lg:w-full" : ""} mt-6 lg:mt-0 w-full max-w-md mx-auto lg:ml-auto lg:mr-0 lg:max-w-3xl hero-tilt-card`}
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, delay: 0.4 }}
@@ -50,7 +50,7 @@ const BookingFormSection = ({
           const rect = formRef.current.getBoundingClientRect();
           const x = (e.clientX - rect.left) / rect.width - 0.5;
           const y = (e.clientY - rect.top) / rect.height - 0.5;
-          
+
           formRef.current.style.transform = `perspective(1000px) rotateY(${x * 5}deg) rotateX(${-y * 5}deg)`;
         }
       } : undefined}
@@ -61,9 +61,9 @@ const BookingFormSection = ({
       } : undefined}
     >
       <div className="backdrop-blur-lg bg-white/10 p-6 sm:p-10 rounded-3xl shadow-2xl border border-[#D4AF37]/30 relative overflow-hidden"
-           style={{
-             boxShadow: "0 10px 40px -10px rgba(0, 0, 0, 0.5), 0 0 30px -15px rgba(212, 175, 55, 0.35)"
-           }}
+        style={{
+          boxShadow: "0 10px 40px -10px rgba(0, 0, 0, 0.5), 0 0 30px -15px rgba(212, 175, 55, 0.35)"
+        }}
       >
         {/* Decorative elements for unique look */}
         <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-[#D4AF37]/20 to-transparent rounded-full blur-2xl"></div>
@@ -78,7 +78,7 @@ const BookingFormSection = ({
             <FaCalendarAlt className="text-[#D4AF37] h-5 w-5" />
           </div>
         </div>
-        
+
         {/* Price Display */}
         <div className="bg-gradient-to-r from-black/40 to-black/60 rounded-2xl p-4 mb-5 border border-[#D4AF37]/20">
           <div className="text-center">
@@ -286,11 +286,10 @@ const BookingFormSection = ({
                             key={location}
                             type="button"
                             onClick={() => handleLocationSelect(location)}
-                            className={`w-full px-3 py-2 rounded-lg text-left transition-colors ${
-                              searchParams.destination === location 
-                                ? 'bg-gradient-to-r from-[#D4AF37]/30 to-[#D4AF37]/10 text-[#D4AF37] font-bold' 
-                                : 'text-[#D4AF37]/90 hover:bg-[#D4AF37]/20 active:bg-[#D4AF37]/30'
-                            }`}
+                            className={`w-full px-3 py-2 rounded-lg text-left transition-colors ${searchParams.destination === location
+                              ? 'bg-gradient-to-r from-[#D4AF37]/30 to-[#D4AF37]/10 text-[#D4AF37] font-bold'
+                              : 'text-[#D4AF37]/90 hover:bg-[#D4AF37]/20 active:bg-[#D4AF37]/30'
+                              }`}
                           >
                             <div className="flex items-center">
                               <FaMapMarkerAlt className="mr-2.5 text-[#D4AF37] h-4 w-4" />
@@ -303,12 +302,12 @@ const BookingFormSection = ({
                   </>
                 )}
               </Popover>
-              
+
               {/* Hidden input for form validation */}
-              <input 
-                type="hidden" 
-                id="destination" 
-                value={searchParams.destination} 
+              <input
+                type="hidden"
+                id="destination"
+                value={searchParams.destination}
                 required
               />
             </div>
@@ -383,7 +382,7 @@ const BookingFormSection = ({
               )}
             </span>
           </button>
-          
+
           {/* Booking security note */}
           <div className="text-center text-xs text-gray-400">
             <span className="flex items-center justify-center gap-1">
@@ -431,7 +430,7 @@ const Hero = () => {
   // Text animation
   const [displayText, setDisplayText] = useState("")
   const fullText = "Comfort"
-  
+
   // For 3D effect
   const [tiltX, setTiltX] = useState(0)
   const [tiltY, setTiltY] = useState(0)
@@ -459,7 +458,7 @@ const Hero = () => {
   // DatePicker z-index management
   const [datePickerOpen, setDatePickerOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
-  
+
   // Ensure body scroll is enabled when Hero component mounts
   useEffect(() => {
     // Reset body styles to allow scrolling
@@ -470,7 +469,7 @@ const Hero = () => {
     document.body.classList.remove('premium-modal-open');
     document.body.classList.remove('premium-modal-open-mobile');
     document.body.classList.remove('calendar-modal-open');
-    
+
     return () => {
       // Cleanup when component unmounts
       document.body.style.overflow = '';
@@ -479,13 +478,13 @@ const Hero = () => {
       document.body.style.width = '';
     };
   }, []);
-  
+
   // Check for mobile screen size
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768)
     }
-    
+
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
@@ -496,11 +495,11 @@ const Hero = () => {
       const timeoutId = setTimeout(() => {
         setDisplayText(fullText.slice(0, displayText.length + 1))
       }, 150)
-      
+
       return () => clearTimeout(timeoutId)
     }
   }, [displayText])
-  
+
   // No longer need the custom location dropdown handling as we're using Popover
 
   // Sync guest state with searchParams
@@ -535,12 +534,12 @@ const Hero = () => {
       ...prev,
       destination: location
     }))
-    
+
     // Add haptic feedback for mobile devices if available
     if (window.navigator && window.navigator.vibrate) {
       window.navigator.vibrate(50) // Short vibration for feedback
     }
-    
+
     // Dismiss keyboard on mobile
     if (document.activeElement) {
       document.activeElement.blur()
@@ -597,7 +596,7 @@ const Hero = () => {
   // Handle mobile devices and call preloader hide
   useEffect(() => {
     const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-    
+
     // Set a timeout to hide loading if video takes too long
     const loadingTimer = setTimeout(() => {
       setLoadingTimeout(true)
@@ -607,7 +606,7 @@ const Hero = () => {
         window.hideAppPreloader()
       }
     }, 2000) // 2 second timeout
-    
+
     if (videoRef.current) {
       if (isMobile) {
         // Mobile optimizations
@@ -649,7 +648,7 @@ const Hero = () => {
     searchParams.checkIn && searchParams.checkOut
       ? Math.ceil((new Date(searchParams.checkOut).getTime() - new Date(searchParams.checkIn).getTime()) / (1000 * 3600 * 24))
       : 0
-      
+
   // Custom date picker styles to fix z-index issues
   const datePickerWrapperStyles = {
     position: "relative",
@@ -658,7 +657,7 @@ const Hero = () => {
       position: "static", // This helps with positioning the calendar above on mobile
     })
   }
-  
+
   // Custom styles for Hero component only - SCOPED to avoid navbar conflicts
   const heroStyles = `
     /* Typewriter effect */
@@ -950,8 +949,8 @@ const Hero = () => {
     <div
       className="hero-container relative w-full h-100vh"
       style={{
-        minHeight: `calc(110vh - ${navbarHeight}px)`,  /* Reduced from 100vh to 90vh */
-        marginTop: 0, 
+        minHeight: `calc(100vh - ${navbarHeight}px)`,  /* Reduced from 100vh to 90vh */
+        marginTop: 0,
         paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
         paddingLeft: "env(safe-area-inset-left)",
@@ -960,10 +959,10 @@ const Hero = () => {
     >
       {/* Add scoped styles that won't affect the navbar */}
       <style>{heroStyles}</style>
-      
+
       {/* Video Background */}
-      <motion.div 
-        className="absolute inset-0 z-0"
+      <motion.div
+        className="absolute inset-0 z-0 "
         initial={{ scale: 1.1, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 1.2, ease: "easeOut" }}
@@ -990,11 +989,11 @@ const Hero = () => {
 
       {/* Hero Content */}
       <div className="relative z-10 flex items-center h-full w-full">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 pt-20 sm:pt-24 lg:pt-12">
+        <div className="w-full px-4 md:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 lg:py-12 pt-20 sm:pt-24 lg:pt-12">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-8 lg:gap-16">
-            {/* Left side - Text Content */}
+          
             <motion.div
-              className="lg:w-5/12 text-white w-full max-w-xl order-1 lg:order-1"
+              className="lg:w-1/2 text-white w-full max-w-2xl order-1 lg:order-1"
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
@@ -1014,7 +1013,7 @@ const Hero = () => {
                 transition={{ duration: 0.8, delay: 0.3 }}
               >
                 Your Kingdom of{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#BF953F] via-[#D4AF37] to-[#F0E6CA] hero-typewriter-cursor" style={{textShadow: "0 0 5px rgba(212, 175, 55, 0.3)"}}>{displayText}</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#BF953F] via-[#D4AF37] to-[#F0E6CA] hero-typewriter-cursor" style={{ textShadow: "0 0 5px rgba(212, 175, 55, 0.3)" }}>{displayText}</span>
               </motion.h1>
               <motion.p
                 className="text-sm sm:text-base md:text-lg mb-6 sm:mb-8 text-gray-200 max-w-md leading-relaxed"
@@ -1025,10 +1024,10 @@ const Hero = () => {
                 Experience unparalleled luxury in our exclusive villas, where every detail is crafted for your ultimate
                 relaxation and pleasure.
               </motion.p>
-              
+
               {/* Mobile booking form will appear here on small screens */}
               <div className="block lg:hidden w-full mb-10">
-                <BookingFormSection 
+                <BookingFormSection
                   formRef={formRef}
                   searchParams={searchParams}
                   datePickerOpen={datePickerOpen}
@@ -1054,7 +1053,7 @@ const Hero = () => {
                   isMobile={isMobile}
                 />
               </div>
-              
+
               {/* Enhanced Feature Highlights */}
               <motion.div
                 className="mt-8 mb-6 space-y-5"
@@ -1063,15 +1062,15 @@ const Hero = () => {
                 transition={{ duration: 0.8, delay: 0.5 }}
               >
                 <h3 className="text-lg font-medium text-[#D4AF37]">Villa Highlights</h3>
-                
+
                 {/* Feature Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Feature 1: Virtual Tour */}
                   <motion.div
                     className="bg-black/30 backdrop-blur-sm border border-[#D4AF37]/20 rounded-2xl p-4 hover:border-[#D4AF37]/40 transition-all group cursor-pointer"
-                    whileHover={{ 
-                      scale: 1.02, 
-                      boxShadow: "0 0 15px rgba(212, 175, 55, 0.15)" 
+                    whileHover={{
+                      scale: 1.02,
+                      boxShadow: "0 0 15px rgba(212, 175, 55, 0.15)"
                     }}
                     onClick={() => {
                       // Virtual tour functionality can be added here
@@ -1095,13 +1094,13 @@ const Hero = () => {
                       </span>
                     </div>
                   </motion.div>
-                  
+
                   {/* Feature 2: Premium Locations */}
                   <motion.div
                     className="bg-black/30 backdrop-blur-sm border border-[#D4AF37]/20 rounded-2xl p-4 hover:border-[#D4AF37]/40 transition-all group cursor-pointer premium-location-button"
-                    whileHover={{ 
-                      scale: 1.02, 
-                      boxShadow: "0 0 15px rgba(212, 175, 55, 0.15)" 
+                    whileHover={{
+                      scale: 1.02,
+                      boxShadow: "0 0 15px rgba(212, 175, 55, 0.15)"
                     }}
                     onClick={(e) => {
                       // Store click position for mobile animation
@@ -1131,14 +1130,14 @@ const Hero = () => {
                     </div>
                   </motion.div>
                 </div>
-                
+
                 {/* Mobile Amenities removed as requested */}
               </motion.div>
             </motion.div>
 
             {/* Right side - Booking Form - Only visible on desktop */}
-            <div className="hidden lg:block lg:w-7/12 order-2 lg:order-2">
-              <BookingFormSection 
+            <div className="hidden lg:block lg:w-1/2 order-2 lg:order-2">
+              <BookingFormSection
                 formRef={formRef}
                 searchParams={searchParams}
                 datePickerOpen={datePickerOpen}
@@ -1168,18 +1167,18 @@ const Hero = () => {
           </div>
         </div>
       </div>
-      
-      <motion.div 
+
+      <motion.div
         className="absolute bottom-5 right-5 z-30 opacity-0 hover:opacity-100"
         initial={{ opacity: 0 }}
         animate={{ opacity: 0 }}
         whileHover={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
       >
-        <motion.button 
+        <motion.button
           className="bg-black/50 backdrop-blur-sm text-white p-3 rounded-full border border-[#D4AF37]/20"
-          whileHover={{ 
-            scale: 1.1, 
+          whileHover={{
+            scale: 1.1,
             backgroundColor: "rgba(0, 0, 0, 0.7)",
             boxShadow: "0 0 10px rgba(212, 175, 55, 0.3)"
           }}
@@ -1207,8 +1206,8 @@ const Hero = () => {
       {createPortal(
         <AnimatePresence>
           {premiumLocationsOpen && (
-            <PremiumLocationsModal 
-              isOpen={premiumLocationsOpen} 
+            <PremiumLocationsModal
+              isOpen={premiumLocationsOpen}
               onClose={() => setPremiumLocationsOpen(false)}
               navigate={navigate}
               clickPosition={modalClickPosition}
