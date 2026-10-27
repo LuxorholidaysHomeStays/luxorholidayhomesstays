@@ -44,8 +44,9 @@ const VillaSwiper = () => {
 
         // Map backend data to carousel property format
         const processedProperties = villaList.map((villa, idx) => {
+          const localImages = getBestMatchingVillaImages(villa.name || "")
           const backendImages = Array.isArray(villa.images) ? villa.images.filter(Boolean) : []
-          const images = backendImages.length > 0 ? backendImages : getBestMatchingVillaImages(villa.name || "")
+          const images = (localImages && localImages.length > 0) ? localImages : (backendImages.length > 0 ? backendImages : [])
 
           // Get accurate pricing using our helper function
           const accuratePricing = getAccurateVillaPrice(villa);
@@ -667,15 +668,15 @@ const VillaSwiper = () => {
                     {/* Villa Image */}
                     <div className="relative">
                       <img
-                        src={Math.abs(index - currentIndex) <= 1 ? (villa.images[0] || "/placeholder.svg") : undefined}
+                        src={villa.images[0] || "/placeholder.svg"}
                         alt={villa.roomType}
                         className="w-full h-36 sm:h-40 md:h-44 object-cover"
-                        loading={index === currentIndex ? "eager" : "lazy"}
+                        loading={Math.abs(index - currentIndex) <= 1 ? "eager" : "lazy"}
                         decoding="async"
                         width="640"
                         height="360"
                         onError={(e) => {
-                          e.currentTarget.style.visibility = "hidden"
+                          e.currentTarget.src = "/placeholder.svg"
                         }}
                       />
                       <div className="absolute top-2.5 right-2.5 bg-white/95 backdrop-blur-sm rounded-full px-2.5 py-0.5 flex items-center gap-1 border border-gray-100">

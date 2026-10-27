@@ -225,14 +225,14 @@ const villaImageCollections = {
 };
 
 const getVillaImages = (villa) => {
-  const backendImages = Array.isArray(villa.images) ? villa.images.filter(Boolean) : [];
-  if (backendImages.length > 0) return backendImages;
-
   const villaName = String(villa.name || '').trim().toLowerCase();
   const matchedKey = Object.keys(villaImageCollections).find(
     (key) => key.toLowerCase() === villaName,
   );
   if (matchedKey) return villaImageCollections[matchedKey];
+
+  const backendImages = Array.isArray(villa.images) ? villa.images.filter(Boolean) : [];
+  if (backendImages.length > 0) return backendImages;
 
   return villa.mainImage ? [villa.mainImage] : [];
 }
