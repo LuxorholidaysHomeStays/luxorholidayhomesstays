@@ -96,7 +96,7 @@ const Navbar = () => {
 
     const handleLogout = () => {
         logout();
-        navigate('/');
+        navigate('/home');
     };
 
     // Phone pulse animation classes - updated to golden colors

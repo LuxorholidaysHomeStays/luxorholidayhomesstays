@@ -372,14 +372,14 @@ const decodedVillaName = decodeURIComponent(villaname || "")
 useEffect(() => {
   if (isModal) {
     // For modal usage, set source route from backTo prop or default to rooms
-    setSourceRoute(backTo || "/rooms")
+    setSourceRoute(backTo || "/")
   } else {
     // For URL-based usage, extract the referring path from location state if available
     if (location.state?.from) {
       setSourceRoute(location.state.from)
     } else {
       // Default to allrooms route with the villa name as parameter if no specific source
-      setSourceRoute(`/rooms/${villaname}`)
+      setSourceRoute(`/`)
     }
   }
 }, [location.state, villaname, isModal, backTo])

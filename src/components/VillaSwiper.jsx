@@ -820,7 +820,7 @@ const VillaSwiper = () => {
               {/* Action Button */}
               <div className="w-full sm:w-auto">
                 <button
-                  onClick={() => navigate("/rooms")}
+                  onClick={() => navigate("/")}
                   className="w-full sm:w-auto px-5 py-2 bg-white text-gray-800 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 border border-gray-300 hover:border-[#D4AF37] hover:text-[#D4AF37] hover:bg-amber-50/30"
                 >
                   View All Villas
@@ -835,4 +835,3 @@ const VillaSwiper = () => {
 }
 
 export default VillaSwiper
-

@@ -190,7 +190,7 @@ export default function BookingReview() {
       createLock()
     } else {
       toast.error("No active booking found. Please select a villa to book.")
-      navigate("/rooms")
+      navigate("/")
     }
 
     // Compute or retrieve hold expiry timestamp for seamless page refreshes

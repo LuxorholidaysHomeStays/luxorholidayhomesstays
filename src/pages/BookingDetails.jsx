@@ -843,7 +843,7 @@ const BookingDetails = () => {
                 View My Bookings
               </button>
               <button
-                onClick={() => navigate("/rooms")}
+                onClick={() => navigate("/")}
                 className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg text-sm sm:text-base border border-gray-200 hover:bg-gray-200 transition-colors"
               >
                 Browse Villas
@@ -1242,7 +1242,7 @@ const BookingDetails = () => {
               Print / Download PDF
             </button>
             <button
-              onClick={() => navigate("/rooms")}
+            onClick={() => navigate("/")}
               className="flex-1 bg-gray-100 text-gray-700 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm border border-gray-200"
             >
               <Home className="h-4 w-4 sm:h-5 sm:w-5" />

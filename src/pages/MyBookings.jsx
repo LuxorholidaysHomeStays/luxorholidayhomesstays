@@ -351,7 +351,7 @@ const MyBookings = () => {
             <h2 className="text-2xl font-medium mb-4 text-gray-800">No bookings found</h2>
             <p className="text-gray-600 mb-6">You haven't made any bookings yet.</p>
             <button 
-              onClick={() => navigate('/rooms')} 
+              onClick={() => navigate('/')} 
               className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg transition duration-300"
             >
               Browse Villas

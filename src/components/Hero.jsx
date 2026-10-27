@@ -583,7 +583,7 @@ const Hero = () => {
       setError(null)
 
       if (dest === "All Locations" || dest === "All") {
-        navigate(`/rooms?checkIn=${checkIn}&checkOut=${checkOut}&guests=${searchParams.adults + searchParams.children}`)
+        navigate(`/?checkIn=${checkIn}&checkOut=${checkOut}&guests=${searchParams.adults + searchParams.children}`)
       } else {
         const formattedDestination =
           dest.charAt(0).toUpperCase() +

@@ -732,7 +732,7 @@ export default function VillaDetails() {
           <p className="text-gray-500 mb-6">We encountered a problem while fetching villa data.</p>
           <div className="flex gap-4 justify-center">
             <button
-              onClick={() => navigate("/rooms")}
+              onClick={() => navigate("/")}
               className="bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-white px-6 py-3 rounded-2xl hover:from-[#BFA181] hover:to-[#D4AF37] transition-all font-medium"
             >
               Back to Villas
@@ -759,7 +759,7 @@ export default function VillaDetails() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <button
-                onClick={() => navigate("/rooms")}
+              onClick={() => navigate("/")}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-[#D4AF37] transition-all duration-200 group text-sm"
               >
                 <ArrowLeft className="h-4 w-4 text-[#D4AF37] group-hover:-translate-x-1 transition-transform" />
@@ -772,7 +772,7 @@ export default function VillaDetails() {
                   Home
                 </button>
                 <ChevronRight className="h-3.5 w-3.5 text-gray-500" />
-                <button onClick={() => navigate("/rooms")} className="hover:text-[#D4AF37] transition-colors">
+                <button onClick={() => navigate("/")} className="hover:text-[#D4AF37] transition-colors">
                   Villas
                 </button>
                 <ChevronRight className="h-3.5 w-3.5 text-gray-500" />

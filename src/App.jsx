@@ -100,7 +100,7 @@ function App() {
     };
 
     // Route-specific SEO settings
-    if (pathname === '/' || pathname === '/rooms') {
+    if (pathname === '/') {
       seoProps.title = 'Luxury Villas in Chennai & Pondicherry | Luxor Holiday Home Stays';
       seoProps.description = 'Discover Luxor Holiday Home Stays - browse handpicked luxury villas with private pools and premium amenities in Chennai and Pondicherry.';
       seoProps.keywords = 'luxor, luxor holiday, luxorstay, luxor holiday homestays, luxury villas, chennai villas, pondicherry villas';
@@ -153,7 +153,6 @@ function App() {
                   <Routes>
                     {/* Public routes */}
                     <Route path='/' element={<AllRooms />} />
-                    <Route path='/rooms' element={<AllRooms />} />
                     <Route path='/home' element={<Home />} />
                     <Route path='/villa/:id' element={<VillaDetails />} />
                     <Route path='/villas/:id' element={<VillaDetails />} /> {/* Support both URL patterns */}

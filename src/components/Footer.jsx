@@ -323,16 +323,16 @@ const Footer = () => {
                 ) : (
                   <>
                     <motion.li initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, delay: 0.2 }}>
-                      <Link to="/rooms" className="hover:text-[#D4AF37] transition-colors inline-block py-1">Amrith Palace</Link>
+                        <Link to="/" className="hover:text-[#D4AF37] transition-colors inline-block py-1">Amrith Palace</Link>
                     </motion.li>
                     <motion.li initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, delay: 0.3 }}>
-                      <Link to="/rooms" className="hover:text-[#D4AF37] transition-colors inline-block py-1">Ram Water Villa</Link>
+                      <Link to="/" className="hover:text-[#D4AF37] transition-colors inline-block py-1">Ram Water Villa</Link>
                     </motion.li>
                     <motion.li initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, delay: 0.4 }}>
-                      <Link to="/rooms" className="hover:text-[#D4AF37] transition-colors inline-block py-1">East Coast Villa</Link>
+                      <Link to="/" className="hover:text-[#D4AF37] transition-colors inline-block py-1">East Coast Villa</Link>
                     </motion.li>
                     <motion.li initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, delay: 0.5 }}>
-                      <Link to="/rooms" className="hover:text-[#D4AF37] transition-colors inline-block py-1">Empire Anand Villa</Link>
+                      <Link to="/" className="hover:text-[#D4AF37] transition-colors inline-block py-1">Empire Anand Villa</Link>
                     </motion.li>
                   </>
                 )}
@@ -341,7 +341,7 @@ const Footer = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2, delay: 0.5 }}
                 >
-                  <Link to="/rooms" className="hover:text-[#D4AF37] transition-colors inline-block py-1 font-medium text-gray-300 hover:text-[#D4AF37]">View All Properties</Link>
+                  <Link to="/" className="hover:text-[#D4AF37] transition-colors inline-block py-1 font-medium text-gray-300 hover:text-[#D4AF37]">View All Properties</Link>
                 </motion.li>
               </motion.ul>
             )}
