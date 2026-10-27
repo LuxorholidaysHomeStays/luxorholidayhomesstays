@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, X, Save, Trash2, AlertCircle, Check, Clock, Search, Filter } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { API_BASE_URL } from '../../config/api';
 
 const BlockedDatesManagement = () => {
   const [blockedDates, setBlockedDates] = useState([]);
@@ -20,8 +21,6 @@ const BlockedDatesManagement = () => {
     description: ''
   });
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://luxorstay-backend.vercel.app';
-
   useEffect(() => {
     fetchVillas();
     fetchBlockedDates();
@@ -39,7 +38,8 @@ const BlockedDatesManagement = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setVillas(data);
+        const villaList = Array.isArray(data) ? data : (data.villas || data.data || []);
+        setVillas(villaList);
       } else {
         console.error('Failed to fetch villas');
       }
@@ -154,7 +154,7 @@ const BlockedDatesManagement = () => {
             title: 'Cannot Block Dates',
             html: `
               <div style="text-align: left;">
-                <p>${errorData.message}</p>
+                <p>${errorData.error || errorData.message}</p>
                 <br>
                 <strong>Conflicting Bookings:</strong>
                 <pre style="background: #f5f5f5; padding: 10px; border-radius: 5px; font-size: 12px;">${bookingsList}</pre>
@@ -168,7 +168,7 @@ const BlockedDatesManagement = () => {
           Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: errorData.message || 'Failed to add blocked date. Please try again.',
+            text: errorData.error || errorData.message || 'Failed to add blocked date. Please try again.',
           });
         }
       }
@@ -229,7 +229,7 @@ const BlockedDatesManagement = () => {
   };
 
   const handleVillaChange = (villaId) => {
-    const villa = villas.find(v => v._id === villaId);
+    const villa = villas.find(v => (v._id === villaId || v.id === villaId));
     setNewBlockedDate({
       ...newBlockedDate,
       villaId: villaId,
@@ -258,7 +258,9 @@ const BlockedDatesManagement = () => {
                          blockedDate.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          blockedDate.description?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesVilla = selectedVilla === 'all' || blockedDate.villaId === selectedVilla;
+    const matchesVilla = selectedVilla === 'all' || 
+                         blockedDate.villaId === selectedVilla || 
+                         blockedDate.villa_id === selectedVilla;
     
     return matchesSearch && matchesVilla;
   });
@@ -331,7 +333,7 @@ const BlockedDatesManagement = () => {
               >
                 <option value="">Select a villa</option>
                 {villas.map((villa) => (
-                  <option key={villa._id} value={villa._id}>
+                  <option key={villa.id || villa._id} value={villa.id || villa._id}>
                     {villa.name}
                   </option>
                 ))}
@@ -401,7 +403,7 @@ const BlockedDatesManagement = () => {
           <button
             onClick={handleAddBlockedDate}
             disabled={saving}
-            className="bg-yellow-600 text-white px-6 py-2 rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 disabled:opacity-50 flex items-center"
+            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 flex items-center transition-colors"
           >
             {saving ? (
               <>
@@ -442,7 +444,7 @@ const BlockedDatesManagement = () => {
                 >
                   <option value="all">All Villas</option>
                   {villas.map((villa) => (
-                    <option key={villa._id} value={villa._id}>
+                    <option key={villa.id || villa._id} value={villa.id || villa._id}>
                       {villa.name}
                     </option>
                   ))}
@@ -498,7 +500,7 @@ const BlockedDatesManagement = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredBlockedDates.map((blockedDate) => (
-                    <tr key={blockedDate._id} className="hover:bg-gray-50">
+                    <tr key={blockedDate.id || blockedDate._id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
                           {blockedDate.villaName}
@@ -530,8 +532,8 @@ const BlockedDatesManagement = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
-                          onClick={() => handleDeleteBlockedDate(blockedDate._id)}
-                          className="text-red-600 hover:text-red-900 flex items-center"
+                          onClick={() => handleDeleteBlockedDate(blockedDate.id || blockedDate._id)}
+                          className="p-2 rounded-md text-red-600 hover:bg-red-50 flex items-center transition-colors"
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
                           Remove

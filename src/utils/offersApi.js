@@ -1,6 +1,6 @@
 // Utility functions for offers API calls
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://luxorstay-backend.vercel.app";
+import { API_BASE_URL } from '../config/api'
 
 /**
  * Fetch offer for a specific villa and date
@@ -10,10 +10,10 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://luxorstay-bac
  */
 export const fetchVillaOfferForDate = async (villaName, date) => {
   try {
-    console.log(`[OFFERS API] Fetching offer for villa: ${villaName}, date: ${date}`);
+
     
     const encodedVillaName = encodeURIComponent(villaName);
-    const response = await fetch(`${API_BASE_URL}/api/offers/villa/${encodedVillaName}/date/${date}`, {
+    const response = await fetch(`${API_BASE_URL}/api/offers/villa/${encodedVillaName}/date?date=${date}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -22,16 +22,20 @@ export const fetchVillaOfferForDate = async (villaName, date) => {
 
     if (!response.ok) {
       if (response.status === 404) {
-        console.log(`[OFFERS API] No offer found for villa: ${villaName} on ${date}`);
+    
         return { success: true, hasOffer: false };
       }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log(`[OFFERS API] Offer response for ${villaName}:`, data);
+
     
-    return data;
+    return {
+      success: true,
+      hasOffer: !!data.offer,
+      offer: data.offer || null,
+    };
   } catch (error) {
     console.error(`[OFFERS API] Error fetching offer for ${villaName}:`, error);
     return { 
@@ -51,10 +55,10 @@ export const fetchVillaOfferForDate = async (villaName, date) => {
  */
 export const fetchVillaOffersForDateRange = async (villaName, startDate, endDate) => {
   try {
-    console.log(`[OFFERS API] Fetching offers for villa: ${villaName}, range: ${startDate} to ${endDate}`);
+
     
     const encodedVillaName = encodeURIComponent(villaName);
-    const response = await fetch(`${API_BASE_URL}/api/offers/villa/${encodedVillaName}/range?startDate=${startDate}&endDate=${endDate}`, {
+    const response = await fetch(`${API_BASE_URL}/api/offers/villa/${encodedVillaName}/date-range?startDate=${startDate}&endDate=${endDate}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -66,9 +70,14 @@ export const fetchVillaOffersForDateRange = async (villaName, startDate, endDate
     }
 
     const data = await response.json();
-    console.log(`[OFFERS API] Found ${data.count || 0} offers for ${villaName} in date range`);
+    const offers = data.offers || [];
+
     
-    return data;
+    return {
+      success: true,
+      count: offers.length,
+      offers: offers,
+    };
   } catch (error) {
     console.error(`[OFFERS API] Error fetching offers for ${villaName} date range:`, error);
     return { 
@@ -86,7 +95,7 @@ export const fetchVillaOffersForDateRange = async (villaName, startDate, endDate
  */
 export const fetchAllActiveOffers = async () => {
   try {
-    console.log('[OFFERS API] Fetching all active offers');
+
     
     const response = await fetch(`${API_BASE_URL}/api/offers/active`, {
       method: 'GET',
@@ -100,9 +109,14 @@ export const fetchAllActiveOffers = async () => {
     }
 
     const data = await response.json();
-    console.log('[OFFERS API] Successfully fetched active offers:', data.count || 0, 'offers');
+    const offers = data.offers || [];
+
     
-    return data;
+    return {
+      success: true,
+      count: offers.length,
+      offers: offers,
+    };
   } catch (error) {
     console.error('[OFFERS API] Error fetching all active offers:', error);
     return { 
@@ -124,11 +138,11 @@ export const fetchAllActiveOffers = async () => {
  */
 export const calculatePricingWithOffers = async (villaName, checkInDate, checkOutDate, originalPrice) => {
   try {
-    console.log(`[OFFERS API] Calculating pricing with offers for ${villaName}`);
+
     
     const offers = await fetchVillaOffersForDateRange(villaName, checkInDate, checkOutDate);
     
-    if (!offers.success || offers.count === 0) {
+    if (!offers.success || offers.count === 0 || !offers.offers.length) {
       return {
         hasOffer: false,
         originalPrice: originalPrice,
@@ -140,7 +154,7 @@ export const calculatePricingWithOffers = async (villaName, checkInDate, checkOu
 
     // Find the best offer (lowest price) for the date range
     const bestOffer = offers.offers.reduce((best, current) => 
-      current.offerAmount < best.offerAmount ? current : best
+      (current.offerAmount > 0 && current.offerAmount < best.offerAmount) ? current : best
     );
 
     const savings = Math.max(0, originalPrice - bestOffer.offerAmount);

@@ -98,12 +98,12 @@ const TermsConditions = () => {
         <h2 className="text-2xl font-playfair text-gray-800 mb-4">Cancellation and Modification Policy</h2>
         <h3 className="text-xl font-semibold text-gray-700 mb-2">Cancellation by Guest</h3>
         <p className="text-gray-600 mb-4">
-          All cancellations must be made in writing to the Company. The following cancellation charges apply:
+          All cancellations must be made in writing to the Company. The following refund policy applies:
         </p>
         <ul className="list-disc ml-6 mb-4 text-gray-600 space-y-1">
-          <li>More than 30 days before check-in: 25% of the total booking amount</li>
-          <li>15-30 days before check-in: 50% of the total booking amount</li>
-          <li>Less than 15 days before check-in: 100% of the total booking amount</li>
+          <li>More than 48 hours before check-in: 100% refund of the total booking amount</li>
+          <li>24-48 hours before check-in: 50% refund of the total booking amount</li>
+          <li>Less than 24 hours before check-in: No refund</li>
         </ul>
         
         <h3 className="text-xl font-semibold text-gray-700 mb-2 mt-6">Modification of Booking</h3>

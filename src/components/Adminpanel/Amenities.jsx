@@ -150,11 +150,14 @@ const Amenities = () => {
     };
 
     try {
-      const url = editingAmenity 
-        ? `${API_BASE_URL}/api/admin/amenities/${editingAmenity._id}`
+      // Only read an id when editing: doing it unconditionally threw on create,
+      // and the catch below swallowed the reason.
+      const amenityId = editingAmenity ? (editingAmenity.id || editingAmenity._id) : null;
+      const url = amenityId
+        ? `${API_BASE_URL}/api/admin/amenities/${amenityId}`
         : `${API_BASE_URL}/api/admin/amenities`;
-      
-      const method = editingAmenity ? 'PUT' : 'POST';
+
+      const method = amenityId ? 'PUT' : 'POST';
       
       const response = await fetch(url, {
         method,
@@ -246,7 +249,7 @@ const Amenities = () => {
               openForm();
             }
           }}
-          className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded-md flex items-center"
+          className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md flex items-center transition-colors"
         >
           {showForm && !editingAmenity ? (
             <>
@@ -318,7 +321,7 @@ const Amenities = () => {
                   <button
                     type="button"
                     onClick={addAmenityField}
-                    className="text-yellow-600 hover:text-yellow-700 text-xs flex items-center"
+                    className="text-blue-600 hover:text-blue-700 text-xs flex items-center transition-colors"
                   >
                     <PlusIcon className="h-4 w-4 mr-1" />
                     Add More
@@ -351,13 +354,13 @@ const Amenities = () => {
                 <button
                   type="button"
                   onClick={closeForm}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md flex items-center"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center transition-colors"
                 >
                   <CheckIcon className="h-5 w-5 mr-1" />
                   {editingAmenity ? 'Update' : 'Save'}
@@ -406,7 +409,7 @@ const Amenities = () => {
           <p className="text-red-500">{error}</p>
           <button
             onClick={fetchAmenities}
-            className="mt-4 bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded-md"
+            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition-colors"
           >
             Try Again
           </button>
@@ -425,7 +428,7 @@ const Amenities = () => {
           {!searchTerm && !locationFilter && !showForm && (
             <button
               onClick={() => openForm()}
-              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600"
+              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
             >
               <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
               Add Amenity
@@ -453,7 +456,7 @@ const Amenities = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredAmenities.map((amenity) => (
-                <tr key={amenity._id} className="hover:bg-gray-50">
+                <tr key={amenity.id || amenity._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <BuildingOfficeIcon className="h-5 w-5 text-yellow-500 mr-3" />
@@ -478,13 +481,13 @@ const Amenities = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
                       onClick={() => openForm(amenity)}
-                      className="text-indigo-600 hover:text-indigo-900 mr-4"
+                      className="p-2 rounded-md text-indigo-600 hover:bg-indigo-50 transition-colors mr-2"
                     >
                       <PencilIcon className="h-5 w-5" />
                     </button>
                     <button
-                      onClick={() => handleDelete(amenity._id)}
-                      className="text-red-600 hover:text-red-900"
+                      onClick={() => handleDelete(amenity.id || amenity._id)}
+                      className="p-2 rounded-md text-red-600 hover:bg-red-50 transition-colors"
                     >
                       <TrashIcon className="h-5 w-5" />
                     </button>

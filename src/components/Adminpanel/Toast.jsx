@@ -10,21 +10,31 @@ import {
 
 const ToastItem = ({ toast, onRemove }) => {
   const [progress, setProgress] = useState(0);
-  
-  // Handle progress bar animation
+
+  // Handle progress bar animation. The maths must not depend on a toast actually
+  // carrying a valid startTime (a missing one produced NaN -> `width: NaN%` and a
+  // completion check that never fired, so admin toasts accumulated forever).
   useEffect(() => {
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - toast.startTime;
-      const newProgress = Math.min((elapsed / 3000) * 100, 100);
+    const duration = toast.duration && toast.duration > 0 ? toast.duration : 4000;
+    const start = typeof toast.startTime === 'number' ? toast.startTime : Date.now();
+    const toastId = toast.id;
+    let interval;
+
+    interval = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const newProgress = Number.isFinite(elapsed)
+        ? Math.min((elapsed / duration) * 100, 100)
+        : 0;
       setProgress(newProgress);
-      
+
       if (newProgress >= 100) {
         clearInterval(interval);
+        onRemove(toastId);
       }
-    }, 30); 
-    
+    }, 30);
+
     return () => clearInterval(interval);
-  }, [toast.startTime]);
+  }, [toast.id, toast.startTime, toast.duration, onRemove]);
   
   const getIcon = (type) => {
     switch (type) {

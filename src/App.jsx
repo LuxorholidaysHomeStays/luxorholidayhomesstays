@@ -8,7 +8,7 @@ import "./App.css";
 import { ToastProvider } from './context/ToastContext';
 import Toast from './components/Toast';
 import { LanguageProvider } from './context/LanguageContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 
 // Always loaded components
 import Navbar from './components/Navbar'
@@ -17,13 +17,13 @@ import Footer from './components/Footer'
 import AuthGuard from './components/AuthGuard';
 import Layout from './components/Adminpanel/Layout';
 import ProtectedRoute from './components/Adminpanel/Protected';
-import LanguageSelector from './components/LanguageSelector'
+import LanguageSelector from './components/LanguageSelector';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy loaded components - main pages
 const Home = lazy(() => import('./pages/Home'))
 const AllRooms = lazy(() => import('./pages/AllRooms'))
 const VillaDetails = lazy(() => import('./pages/VillaDetails'))
-const RoomDetails = lazy(() => import('./pages/RoomDetails'))
 const MyBookings = lazy(() => import('./pages/MyBookings'))
 const BookingDetails = lazy(() => import('./pages/BookingDetails'));
 const Contact = lazy(() => import('./pages/Contact'))
@@ -34,7 +34,6 @@ const OTPVerification = lazy(() => import('./pages/OTPVerification'));
 const PhotoGallery = lazy(() => import('./pages/PhotoGallery'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const VerifyOTP = lazy(() => import('./pages/VerifyOTP'));
-const Profile = lazy(() => import('./pages/Profile'));
 const CompleteProfile = lazy(() => import('./pages/Completeprofile'));
 const BookingReview = lazy(() => import('./pages/BookingReview'));
 
@@ -101,7 +100,11 @@ function App() {
     };
 
     // Route-specific SEO settings
-    if (pathname === '/') {
+    if (pathname === '/' || pathname === '/rooms') {
+      seoProps.title = 'Luxury Villas in Chennai & Pondicherry | Luxor Holiday Home Stays';
+      seoProps.description = 'Discover Luxor Holiday Home Stays - browse handpicked luxury villas with private pools and premium amenities in Chennai and Pondicherry.';
+      seoProps.keywords = 'luxor, luxor holiday, luxorstay, luxor holiday homestays, luxury villas, chennai villas, pondicherry villas';
+    } else if (pathname === '/home') {
       seoProps.title = 'Luxor Holiday Home Stays | Premium Luxury Villas in South India';
       seoProps.description = 'Discover Luxor Holiday Home Stays - the ultimate luxury villa experience in Chennai and Pondicherry. Book your perfect getaway today.';
     } else if (pathname.includes('chennai-villas')) {
@@ -145,167 +148,168 @@ function App() {
           <div className="w-full max-w-[100vw] overflow-x-hidden">
             {!hideNavbar && <Navbar />}
             <div className={`min-h-[90vh] ${hideNavbar ? '' : 'pt-[3rem] md:pt-[4rem]'}`}>
-              <Suspense fallback={<LoadingFallback />}>
-                <Routes>
-                  {/* Public routes */}
-                  <Route path='/' element={<Home />} />
-                  <Route path='/rooms' element={<AllRooms />} />
-                  <Route path='/rooms/:id' element={<RoomDetails />} />
-                  <Route path='/villa/:id' element={<VillaDetails />} />
-                  <Route path='/villas/:id' element={<VillaDetails />} /> {/* Support both URL patterns */}
-                  <Route path='/search-results' element={<SearchResults />} />
-                  <Route path='/contact' element={<Contact />} />
-                  <Route path='/partners' element={<Partners />} />
-                  <Route path='/h' element={<HelpCenter />} />
-                  <Route path='/si' element={<Safety />} />
-                  <Route path='/profile' element={<Profile />} />
-                  <Route path="/complete-profile" element={
-                    <AuthGuard redirectOnAuthenticated={false} redirectPath="/">
-                      <CompleteProfile />
-                    </AuthGuard>
-                  } />
-                  <Route path='/g' element={<NavbarGallery />} />
-                  <Route path='/gallery' element={<AboutGallery />} />
-                  <Route path='/about' element={<About />} />
-                  <Route path="/sign-in" element={<SignIn />} />
-                  <Route path="/verify-otp" element={<OTPVerification />} />
-                  <Route path="/photogallery/:villaname" element={<PhotoGallery />} />
-                  <Route path="/reviews" element={<GuestReviews />} />
-                  <Route path="/privacy" element={<PrivacyPolicy />} />
-                  <Route path="/terms" element={<TermsConditions />} />
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-                  <Route path="/reset-otp" element={<VerifyOTP />} />
+              <ErrorBoundary>
+                <Suspense fallback={<LoadingFallback />}>
+                  <Routes>
+                    {/* Public routes */}
+                    <Route path='/' element={<AllRooms />} />
+                    <Route path='/rooms' element={<AllRooms />} />
+                    <Route path='/home' element={<Home />} />
+                    <Route path='/villa/:id' element={<VillaDetails />} />
+                    <Route path='/villas/:id' element={<VillaDetails />} /> {/* Support both URL patterns */}
+                    <Route path='/search-results' element={<SearchResults />} />
+                    <Route path='/contact' element={<Contact />} />
+                    <Route path='/partners' element={<Partners />} />
+                    <Route path='/h' element={<HelpCenter />} />
+                    <Route path='/si' element={<Safety />} />
+                                      <Route path="/complete-profile" element={
+                      <AuthGuard redirectOnAuthenticated={false} redirectPath="/">
+                        <CompleteProfile />
+                      </AuthGuard>
+                    } />
+                    <Route path='/g' element={<NavbarGallery />} />
+                    <Route path='/gallery' element={<AboutGallery />} />
+                    <Route path='/about' element={<About />} />
+                    <Route path="/sign-in" element={<SignIn />} />
+                    <Route path="/verify-otp" element={<OTPVerification />} />
+                    <Route path="/photogallery/:villaname" element={<PhotoGallery />} />
+                    <Route path="/reviews" element={<GuestReviews />} />
+                    <Route path="/privacy" element={<PrivacyPolicy />} />
+                    <Route path="/terms" element={<TermsConditions />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-otp" element={<VerifyOTP />} />
 
-                  {/* User protected routes */}
-                  <Route path="/my-bookings" element={
-                    <AuthGuard>
-                      <MyBookings />
-                    </AuthGuard>
-                  } />
-                  <Route path="/booking/:id" element={
-                    <AuthGuard>
-                      <BookingDetails />
-                    </AuthGuard>
-                  } />
-                  <Route path="/booking-review" element={
-                    <AuthGuard>
-                      <BookingReview />
-                    </AuthGuard>
-                  } />
+                    {/* User protected routes */}
+                    <Route path="/my-bookings" element={
+                      <AuthGuard>
+                        <MyBookings />
+                      </AuthGuard>
+                    } />
+                    <Route path="/booking/:id" element={
+                      <AuthGuard>
+                        <BookingDetails />
+                      </AuthGuard>
+                    } />
+                    <Route path="/booking-review" element={
+                      <AuthGuard>
+                        <BookingReview />
+                      </AuthGuard>
+                    } />
 
-                  {/* Admin protected routes */}
-                  <Route path="/dashboard" element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <AdminDashboard />
-                      </Layout>
-                    </ProtectedRoute>
-                  } />
+                    {/* Admin protected routes */}
+                    <Route path="/dashboard" element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <AdminDashboard />
+                        </Layout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/cancel-requests" element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <CancelRequestsManagementPage />
-                      </Layout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/amenities" element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <AmenitiesManagement />
-                      </Layout>
-                    </ProtectedRoute>
-                  } />
+                    <Route path="/cancel-requests" element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <CancelRequestsManagementPage />
+                        </Layout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/amenities" element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <AmenitiesManagement />
+                        </Layout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/bookings" element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <BookingManagement />
-                      </Layout>
-                    </ProtectedRoute>
-                  } />
+                    <Route path="/bookings" element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <BookingManagement />
+                        </Layout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/villas" element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <VillaManagement />
-                      </Layout>
-                    </ProtectedRoute>
-                  } />
+                    <Route path="/villas" element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <VillaManagement />
+                        </Layout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/users" element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <UserManagement />
-                      </Layout>
-                    </ProtectedRoute>
-                  } />
+                    <Route path="/users" element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <UserManagement />
+                        </Layout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/phone-users" element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <PhoneUserManagement />
-                      </Layout>
-                    </ProtectedRoute>
-                  } />
+                    <Route path="/phone-users" element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <PhoneUserManagement />
+                        </Layout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/villa-info" element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <VillaInfoManagementPage />
-                      </Layout>
-                    </ProtectedRoute>
-                  } />
+                    <Route path="/villa-info" element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <VillaInfoManagementPage />
+                        </Layout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/newsletter" element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <NewsletterManagement />
-                      </Layout>
-                    </ProtectedRoute>
-                  } />
+                    <Route path="/newsletter" element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <NewsletterManagement />
+                        </Layout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/user-profiles" element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <UserProfilesManagement />
-                      </Layout>
-                    </ProtectedRoute>
-                  } />
+                    <Route path="/user-profiles" element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <UserProfilesManagement />
+                        </Layout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/manual-booking" element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <ManualBookingManagement />
-                      </Layout>
-                    </ProtectedRoute>
-                  } />
+                    <Route path="/manual-booking" element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <ManualBookingManagement />
+                        </Layout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/offers" element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <OffersManagement />
-                      </Layout>
-                    </ProtectedRoute>
-                  } />
+                    <Route path="/offers" element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <OffersManagement />
+                        </Layout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/blocked-dates" element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <BlockedDatesManagement />
-                      </Layout>
-                    </ProtectedRoute>
-                  } />
+                    <Route path="/blocked-dates" element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <BlockedDatesManagement />
+                        </Layout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/Dashboard" element={
-                    <ProtectedRoute>
-                      <Navigate to="/dashboard" replace />
-                    </ProtectedRoute>
-                  } />
+                    <Route path="/Dashboard" element={
+                      <ProtectedRoute>
+                        <Navigate to="/dashboard" replace />
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </Suspense>
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Suspense>
+              </ErrorBoundary>
             </div>
             {!isOwnerPath && <Footer />}
             {createPortal(

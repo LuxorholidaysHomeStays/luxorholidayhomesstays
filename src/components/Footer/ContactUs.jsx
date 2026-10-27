@@ -1,12 +1,28 @@
-"use client"
-
 import React, { useState } from "react"
 import { Phone, Mail, MapPin, Send, CheckCircle, Sparkles, ExternalLink, Navigation } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
+import { API_BASE_URL } from "../../config/api"
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ""
+const countryCodes = [
+  { code: "+91", name: "India", flag: "🇮🇳" },
+  { code: "+1", name: "United States / Canada", flag: "🇺🇸" },
+  { code: "+44", name: "United Kingdom", flag: "🇬🇧" },
+  { code: "+971", name: "UAE", flag: "🇦🇪" },
+  { code: "+65", name: "Singapore", flag: "🇸🇬" },
+  { code: "+60", name: "Malaysia", flag: "🇲🇾" },
+  { code: "+61", name: "Australia", flag: "🇦🇺" },
+  { code: "+49", name: "Germany", flag: "🇩🇪" },
+  { code: "+33", name: "France", flag: "🇫🇷" },
+  { code: "+966", name: "Saudi Arabia", flag: "🇸🇦" },
+  { code: "+974", name: "Qatar", flag: "🇶🇦" },
+  { code: "+965", name: "Kuwait", flag: "🇰🇼" },
+  { code: "+968", name: "Oman", flag: "🇴🇲" },
+  { code: "+973", name: "Bahrain", flag: "🇧🇭" },
+  { code: "+94", name: "Sri Lanka", flag: "🇱🇰" },
+]
 
 export default function Contact() {
+  const [countryCode, setCountryCode] = useState("+91")
   const [formState, setFormState] = useState({
     name: "",
     email: "",
@@ -24,7 +40,7 @@ export default function Contact() {
 
     if (name === "phone") {
       const numericValue = value.replace(/[^0-9]/g, "")
-      const limitedValue = numericValue.slice(0, 10)
+      const limitedValue = numericValue.slice(0, 15)
       setFormState((prev) => ({
         ...prev,
         [name]: limitedValue,
@@ -52,8 +68,8 @@ export default function Contact() {
     if (!formState.email.trim()) errors.email = "Email is required"
     else if (!/\S+@\S+\.\S+/.test(formState.email)) errors.email = "Email is invalid"
     if (!formState.phone.trim()) errors.phone = "Phone number is required"
-    else if (!/^\d{10}$/.test(formState.phone.replace(/\s+/g, "")))
-      errors.phone = "Please enter a valid 10-digit phone number"
+    else if (formState.phone.trim().length < 6)
+      errors.phone = "Please enter a valid phone number"
     if (!formState.message.trim()) errors.message = "Message is required"
 
     if (Object.keys(errors).length > 0) {
@@ -64,12 +80,16 @@ export default function Contact() {
     setIsSubmitting(true)
 
     try {
+      const payload = {
+        ...formState,
+        phone: `${countryCode} ${formState.phone}`.trim(),
+      }
       const response = await fetch(`${API_BASE_URL}/api/contact`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formState),
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) {
@@ -213,20 +233,33 @@ export default function Contact() {
                       htmlFor="phone"
                       className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
                     >
-                      Phone
+                      Phone Number
                     </label>
-                    <input
-                      type="tel"
-                      id="phone"
-                      name="phone"
-                      value={formState.phone}
-                      onChange={handleChange}
-                      placeholder="10-digit mobile number"
-                      required
-                      className={`w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-gray-50/70 hover:bg-gray-50 focus:bg-white border ${
-                        formErrors.phone ? "border-red-400" : "border-gray-200"
-                      } rounded-xl focus:outline-none focus:border-black transition-colors text-gray-900 placeholder:text-gray-400`}
-                    />
+                    <div className="flex gap-2">
+                      <select
+                        value={countryCode}
+                        onChange={(e) => setCountryCode(e.target.value)}
+                        className="bg-gray-50/70 hover:bg-gray-50 focus:bg-white border border-gray-200 rounded-xl px-2.5 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-gray-800 focus:outline-none focus:border-black transition-colors shrink-0"
+                      >
+                        {countryCodes.map((c) => (
+                          <option key={`${c.code}-${c.name}`} value={c.code}>
+                            {c.flag} {c.code} ({c.name})
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        value={formState.phone}
+                        onChange={handleChange}
+                        placeholder="Mobile number"
+                        required
+                        className={`w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-gray-50/70 hover:bg-gray-50 focus:bg-white border ${
+                          formErrors.phone ? "border-red-400" : "border-gray-200"
+                        } rounded-xl focus:outline-none focus:border-black transition-colors text-gray-900 placeholder:text-gray-400`}
+                      />
+                    </div>
                     {formErrors.phone && (
                       <p className="mt-1 text-xs sm:text-sm text-red-500">{formErrors.phone}</p>
                     )}

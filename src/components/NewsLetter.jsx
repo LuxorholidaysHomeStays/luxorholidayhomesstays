@@ -1,6 +1,5 @@
 // Frontend component (React)
 import React, { useState } from 'react';
-import { assets } from '../assets/assets';
 import Title from './Title';
 import { API_BASE_URL } from "../config/api";
 

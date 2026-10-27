@@ -64,11 +64,13 @@ const GuestReviews = () => {
           Authorization: `Bearer ${authToken}`
         },
         body: JSON.stringify({
+          // Field names must match the Go ReviewInput: the backend rejected
+          // `reviewText`/`daysStayed` and stored nothing.
           villaName: formData.villaName,
-          daysStayed: parseInt(formData.daysStayed),
           rating: parseInt(formData.rating),
-          reviewText: formData.reviewText,
-          userId: userData?._id || ''
+          comment: formData.reviewText,
+          location: formData.location || '',
+          author: userData?.name || '',
         })
       });
 
@@ -87,7 +89,7 @@ const GuestReviews = () => {
         }, 3000);
       } else {
         const errorData = await response.json();
-        setSubmissionError(errorData.message || 'Failed to submit review. Please try again.');
+        setSubmissionError(errorData.error || errorData.message || 'Failed to submit review. Please try again.');
       }
     } catch (error) {
       console.error('Error submitting review:', error);
@@ -97,69 +99,7 @@ const GuestReviews = () => {
     }
   };
 
-  // Static review data as fallback
-  const staticReviews = [
-    {
-      id: 1,
-      name: "Aarav Sharma",
-      location: "New Delhi",
-      date: "June 15, 2025",
-      rating: 5,
-      property: "Amrith Palace",
-      review: "We had an incredible stay at Amrith Palace. The 9 AC rooms were perfect for our extended family gathering. The private swimming pool was a big hit with the kids, and the beach access just 800m away was very convenient. The staff was attentive and helped us arrange a small family celebration. Will definitely recommend to friends and family!",
-      image: "/public/AmrithPalace/AP1.jpg"
-    },
-    {
-      id: 2,
-      name: "Priya Patel",
-      location: "Mumbai",
-      date: "May 23, 2025",
-      rating: 5,
-      property: "Empire Anand Villa Samudra",
-      review: "The Empire Anand Villa exceeded all our expectations. The spacious modern interiors and high-end amenities made our stay truly luxurious. We loved the private beach access and spent most evenings enjoying the stunning sea views. Perfect for a family getaway. The caretaker was extremely helpful throughout our stay.",
-      image: "/public/empireanandvillasamudra/anandvilla1.jpg"
-    },
-    {
-      id: 3,
-      name: "Rajesh Kumar",
-      location: "Bangalore",
-      date: "April 10, 2025",
-      rating: 4,
-      property: "East Coast Villa",
-      review: "East Coast Villa was perfect for our weekend getaway. The private swimming pool and JBL party speaker made our evenings enjoyable. We also made good use of the BBQ setup and compact party lawn. The 3 AC rooms were comfortable and well-maintained. The only minor issue was that the WiFi was a bit slow at times.",
-      image: "/public/eastcoastvilla/EC1.jpg"
-    },
-    {
-      id: 4,
-      name: "Ananya Reddy",
-      location: "Hyderabad",
-      date: "July 1, 2025",
-      rating: 5,
-      property: "Ram Water Villa",
-      review: "Ram Water Villa was an excellent choice for our family vacation. The 5 AC rooms were spacious and comfortable. We loved the private beach access and spent most of our time between the beach and the private swimming pool. The caretaker was very attentive and made sure we had everything we needed.",
-      image: "/public/ramwatervilla/villa1.jpg"
-    },
-    {
-      id: 5,
-      name: "Vikram Mehta",
-      location: "Chennai",
-      date: "June 7, 2025",
-      rating: 4,
-      property: "Amrith Palace",
-      review: "We booked Amrith Palace for a corporate retreat and it was a fantastic experience. The 9 AC rooms accommodated our entire team comfortably. The outdoor games kept everyone engaged during free time. The caretaker helped us arrange all our meals and was very responsive to our requests. Highly recommended for large groups!",
-      image: "/public/AmrithPalace/AP2.jpg"
-    },
-    {
-      id: 6,
-      name: "Divya Singh",
-      location: "Kolkata",
-      date: "May 18, 2025",
-      rating: 5,
-      property: "East Coast Villa",
-      review: "East Coast Villa was perfect for our small family gathering. The kids loved the swimming pool and the adults enjoyed the BBQ setup. The power backup was helpful as there was a brief power outage in the area during our stay. Overall a very comfortable and enjoyable experience.",
-      image: "/public/eastcoastvilla/EC2.jpg"
-    }
-  ];
+  const reviews = newReviews;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -219,7 +159,7 @@ const GuestReviews = () => {
         <div className="text-center md:text-left mb-6 md:mb-0">
           <h2 className="text-3xl font-playfair font-bold text-gray-800">4.9<span className="text-lg text-gray-500 font-normal">/5</span></h2>
           <div className="text-xl text-[#D4AF37] my-2">★★★★★</div>
-          <p className="text-gray-600">Based on 120+ reviews</p>
+          <p className="text-gray-600">Based on published guest reviews</p>
         </div>
         
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 md:gap-12">
@@ -247,7 +187,7 @@ const GuestReviews = () => {
         className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16"
       >
         {/* Combine API reviews with static reviews */}
-        {[...newReviews, ...staticReviews].map((review) => (
+        {reviews.map((review) => (
           <motion.div 
             key={review.id} 
             variants={itemVariants}

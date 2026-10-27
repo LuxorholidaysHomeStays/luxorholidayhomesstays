@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { API_BASE_URL } from '../../config/api';
 
 const HelpCenter = () => {
   // Define state to track open FAQ sections
@@ -11,17 +10,15 @@ const HelpCenter = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [showChatbot, setShowChatbot] = useState(false);
   const [messages, setMessages] = useState([
-    { 
-      id: 1, 
-      text: "Hello! I'm Luxor Assistant. How can I help you today?", 
+    {
+      id: 1,
+      text: "Hello! I'm Luxor Assistant. How can I help you today?",
       sender: "bot",
       timestamp: new Date()
     }
   ]);
   const [userInput, setUserInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [villaData, setVillaData] = useState([]);
-  const [isApiConnected, setIsApiConnected] = useState(false);
   const chatbotRef = useRef(null);
   const messageEndRef = useRef(null);
 
@@ -29,7 +26,7 @@ const HelpCenter = () => {
   const toggleSection = (index) => {
     setOpenSection(openSection === index ? null : index);
   };
-  
+
   // Close chatbot if clicked outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -37,13 +34,13 @@ const HelpCenter = () => {
         setShowChatbot(false);
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-  
+
   // Scroll to bottom of chat whenever messages update
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -53,17 +50,17 @@ const HelpCenter = () => {
   const handleSearch = (e) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
-    
+
     if (query.trim() === '') {
       setSearchResults([]);
       return;
     }
-    
+
     // Search through all FAQ questions and answers
     const results = [];
     faqCategories.forEach(category => {
       category.questions.forEach(faq => {
-        if (faq.question.toLowerCase().includes(query) || 
+        if (faq.question.toLowerCase().includes(query) ||
             faq.answer.toLowerCase().includes(query)) {
           results.push({
             category: category.title,
@@ -72,17 +69,17 @@ const HelpCenter = () => {
         }
       });
     });
-    
+
     setSearchResults(results);
   };
 
-  // Chatbot functionality with API integration
+  // Chatbot functionality
   const handleSendMessage = async () => {
     if (userInput.trim() === '') return;
-    
+
     // Store the current input before clearing it
     const currentInput = userInput;
-    
+
     // Add user message
     const newUserMessage = {
       id: messages.length + 1,
@@ -90,15 +87,15 @@ const HelpCenter = () => {
       sender: "user",
       timestamp: new Date()
     };
-    
+
     setMessages(prev => [...prev, newUserMessage]);
     setUserInput('');
     setIsTyping(true);
-    
+
     try {
-      // Fetch response from AI API
+      // Build the reply from the rule-based / FAQ answer path
       const response = await fetchChatbotResponse(currentInput);
-      
+
       // Add bot response message
       setMessages(prev => [...prev, {
         id: prev.length + 1,
@@ -107,12 +104,12 @@ const HelpCenter = () => {
         timestamp: new Date()
       }]);
     } catch (error) {
-      console.error("Error fetching chatbot response:", error);
-      
-      // Add error message if API call fails
+      console.error("Error generating chatbot response:", error);
+
+      // Add fallback message if something goes wrong
       setMessages(prev => [...prev, {
         id: prev.length + 1,
-        text: "Sorry, I'm having trouble connecting right now. Please try again later or contact our support team directly.",
+        text: "Sorry, I'm having trouble right now. Please try again later or contact our support team directly.",
         sender: "bot",
         timestamp: new Date()
       }]);
@@ -120,196 +117,35 @@ const HelpCenter = () => {
       setIsTyping(false);
     }
   };
-  
-  // Function to fetch response from API
-  const fetchChatbotResponse = async (query) => {
-    try {
-      // First try to get response from the API
-      const apiResponse = await callChatAPI(query);
-      return apiResponse;
-    } catch (error) {
-      // If API fails, fall back to local response generator
-      console.log("API call failed, using fallback response generator", error);
-      return generateBotResponse(query);
-    }
-  };
-  
-  // Call to external API for chatbot response
-  const callChatAPI = async (query) => {
-    // API endpoint for the chatbot service
-    const API_ENDPOINT = 'https://api.luxorholidayhomestays.com/chat';
-    // Or use a third-party AI service
-    
-    const chatHistory = messages.map(msg => ({
-      role: msg.sender === 'user' ? 'user' : 'assistant',
-      content: msg.text
-    }));
-    
-    // Add the current query
-    chatHistory.push({
-      role: 'user',
-      content: query
-    });
-    
-    try {
-      // Using fetch API to call the chatbot service
-      const response = await fetch(API_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + process.env.REACT_APP_CHAT_API_KEY || 'api-key-placeholder'
-        },
-        body: JSON.stringify({
-          messages: chatHistory,
-          villa_data: isApiConnected ? villaData : getVillaData(),
-          max_tokens: 300,
-          temperature: 0.7
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API response error: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      // Return the response from the API
-      return data.message || data.response || data.choices[0].message.content;
-    } catch (error) {
-      console.error("Error calling chat API:", error);
-      throw error; // Rethrow to be handled by the caller
-    }
-  };
-  
-  // Helper function to get structured villa data for API consumption
-  const getVillaData = () => {
-    if (villaData.length > 0 && isApiConnected) {
-      return villaData; // Return the API-fetched data if available
-    }
-    
-    // Fallback data structure if API data isn't available
-    return {
-      "amrith palace": {
-        id: "ap1",
-        name: "Amrith Palace",
-        location: "Pattipulam ECR, Tamil Nadu",
-        bedrooms: 9,
-        bathrooms: 9,
-        maxOccupancy: 35,
-        amenities: [
-          "Private swimming pool", 
-          "9 AC rooms with 1 AC Hall",
-          "Beach access (800m away)", 
-          "Parking", 
-          "WiFi", 
-          "Basic kitchen facilities", 
-          "Fridge", 
-          "TV", 
-          "Caretaker service", 
-          "Security cameras", 
-          "Outdoor games"
-        ],
-        priceRange: "₹45,000 - ₹65,000 per night",
-        weekdayPrice: 45000,
-        weekendPrice: 65000,
-        events: "Suitable for family gatherings, bachelor parties, marriage events, corporate events, shootings and birthday celebrations",
-        minStay: "1 night"
-      },
-      "ram water villa": {
-        id: "rwv1",
-        name: "Ram Water Villa",
-        location: "Perur ECR, Tamil Nadu",
-        bedrooms: 5,
-        bathrooms: 5,
-        maxOccupancy: 20,
-        amenities: [
-          "Private swimming pool", 
-          "5 AC rooms with Hall AC", 
-          "TV", 
-          "Party speaker", 
-          "Fridge", 
-          "Basic kitchen facilities", 
-          "WiFi", 
-          "Caretaker service", 
-          "Private beach access"
-        ],
-        luxuryCategory: true,
-        minStay: "1 night"
-      },
-      "east coast villa": {
-        id: "ecv1",
-        name: "East Coast Villa",
-        location: "Perur ECR, Tamil Nadu",
-        bedrooms: 3,
-        bathrooms: 3,
-        maxOccupancy: 15,
-        amenities: [
-          "Private swimming pool", 
-          "3 AC rooms with Hall AC", 
-          "Basic kitchen facilities", 
-          "Fridge", 
-          "TV", 
-          "WiFi", 
-          "Power backup DG", 
-          "Caretaker service", 
-          "JBL party speaker", 
-          "BBQ setup", 
-          "Compact party lawn"
-        ],
-        priceRange: "₹15,000 - ₹25,000 per night",
-        weekdayPrice: 15000,
-        weekendPrice: 25000,
-        events: "Event pricing varies depending on requirements",
-        minStay: "1 night"
-      },
-      "empire anand villa samudra": {
-        id: "eavs1",
-        name: "Empire Anand Villa Samudra",
-        location: "Kovalam ECR, Tamil Nadu",
-        bedrooms: 6,
-        bathrooms: 6,
-        maxOccupancy: 20,
-        amenities: [
-          "Private swimming pool", 
-          "Spacious modern interiors", 
-          "High-end amenities", 
-          "En-suite facilities in each bedroom", 
-          "Fully equipped kitchen", 
-          "Dining area", 
-          "Expansive living areas", 
-          "Sea views", 
-          "Private beach access"
-        ],
-        priceRange: "₹40,000 - ₹60,000 per night",
-        weekdayPrice: 40000,
-        weekendPrice: 60000,
-        securityDeposit: 15000,
-        minStay: "1 night",
-        mapLink: "https://maps.app.goo.gl/D1iCT5tYpnmbuHQr7"
-      }
-    };
-  };
-  
+
+  // Chatbot replies come from the local rule-based / FAQ answer generator.
+  // The previous implementation POSTed to a hardcoded chat host that the Go
+  // backend has no route for and that the CSP connect-src does not allow, so
+  // every request failed; that dead network call and its villa-data plumbing
+  // were removed.
+
   // Process user input when pressing enter
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       handleSendMessage();
     }
   };
-  
+
   // Format timestamp for chat messages
   const formatTime = (date) => {
-    return new Intl.DateTimeFormat('en-US', { 
-      hour: 'numeric', 
+    return new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
       minute: 'numeric',
-      hour12: true 
+      hour12: true
     }).format(date);
   };
+
+  const fetchChatbotResponse = (userQuery) => generateBotResponse(userQuery);
 
   // AI-powered response generator based on predefined data
   const generateBotResponse = (userQuery) => {
     const query = userQuery.toLowerCase();
-    
+
     // Villa information
     const villaData = {
       "lavish villa 1": {
@@ -342,16 +178,16 @@ const HelpCenter = () => {
         bathrooms: 9,
         maxOccupancy: 35,
         amenities: [
-          "Private swimming pool", 
+          "Private swimming pool",
           "9 AC rooms with 1 AC Hall",
-          "Beach access (800m away)", 
-          "Parking", 
-          "WiFi", 
-          "Basic kitchen facilities", 
-          "Fridge", 
-          "TV", 
-          "Caretaker service", 
-          "Security cameras", 
+          "Beach access (800m away)",
+          "Parking",
+          "WiFi",
+          "Basic kitchen facilities",
+          "Fridge",
+          "TV",
+          "Caretaker service",
+          "Security cameras",
           "Outdoor games available"
         ],
         priceRange: "₹45,000 - ₹65,000 per night",
@@ -367,14 +203,14 @@ const HelpCenter = () => {
         bedrooms: 5,
         bathrooms: 5,
         amenities: [
-          "Private swimming pool", 
-          "5 AC rooms with Hall AC", 
-          "TV", 
-          "Party speaker", 
-          "Fridge", 
-          "Basic kitchen facilities", 
-          "WiFi", 
-          "Caretaker service", 
+          "Private swimming pool",
+          "5 AC rooms with Hall AC",
+          "TV",
+          "Party speaker",
+          "Fridge",
+          "Basic kitchen facilities",
+          "WiFi",
+          "Caretaker service",
           "Private beach access"
         ],
         category: "Luxury",
@@ -387,16 +223,16 @@ const HelpCenter = () => {
         bathrooms: 3,
         maxOccupancy: 15,
         amenities: [
-          "Private swimming pool", 
-          "3 AC rooms with Hall AC", 
-          "Basic kitchen facilities", 
-          "Fridge", 
-          "TV", 
-          "WiFi", 
-          "Power backup DG", 
-          "Caretaker service", 
-          "JBL party speaker", 
-          "BBQ setup", 
+          "Private swimming pool",
+          "3 AC rooms with Hall AC",
+          "Basic kitchen facilities",
+          "Fridge",
+          "TV",
+          "WiFi",
+          "Power backup DG",
+          "Caretaker service",
+          "JBL party speaker",
+          "BBQ setup",
           "Compact party lawn"
         ],
         priceRange: "₹15,000 - ₹25,000 per night",
@@ -412,14 +248,14 @@ const HelpCenter = () => {
         bathrooms: 6,
         maxOccupancy: "15-20",
         amenities: [
-          "Private swimming pool", 
-          "Spacious modern interiors", 
-          "High-end amenities", 
-          "En-suite facilities in each bedroom", 
-          "Fully equipped kitchen", 
-          "Dining area", 
-          "Expansive living areas", 
-          "Sea views", 
+          "Private swimming pool",
+          "Spacious modern interiors",
+          "High-end amenities",
+          "En-suite facilities in each bedroom",
+          "Fully equipped kitchen",
+          "Dining area",
+          "Expansive living areas",
+          "Sea views",
           "Private beach access"
         ],
         priceRange: "₹40,000 - ₹60,000 per night",
@@ -431,128 +267,107 @@ const HelpCenter = () => {
         description: "Empire Anand Villa Samudra is a luxurious 6BHK private villa located in Kovalam (ECR). It offers private beach access, making it perfect for a serene coastal getaway. The villa features spacious, modern interiors equipped with high-end amenities and can accommodate 15-20 people."
       }
     };
-    
+
     // Booking related keywords
     if (query.includes("book") || query.includes("reservation") || query.includes("stay") || query.includes("availability")) {
       return "You can book any of our luxury villas through our website by selecting your desired dates and completing the booking process. Alternatively, you can contact our customer service team at +91 8015924647 for personalized assistance. Would you like information about a specific villa?";
     }
-    
+
     // Price related keywords
     if (query.includes("price") || query.includes("cost") || query.includes("rate") || query.includes("fee")) {
       return "Our villa rates vary depending on the property, season, and length of stay. Prices typically range from ₹7,500 to ₹25,000 per night. For the most accurate pricing, please select specific dates on our booking page or mention which villa you're interested in.";
     }
-    
+
     // Check for specific villa inquiries
     for (const villa in villaData) {
       if (query.includes(villa)) {
         const data = villaData[villa];
         let response = `${villa.charAt(0).toUpperCase() + villa.slice(1)} is located in ${data.location}. `;
-        
+
         if (data.description) {
           response += `${data.description} `;
         }
-        
+
         response += `It features ${data.bedrooms} bedrooms, ${data.bathrooms} bathrooms, and amenities including ${data.amenities.slice(0, 5).join(", ")}`;
-        
+
         if (data.amenities.length > 5) {
           response += ` and more`;
         }
-        
+
         response += `. `;
-        
+
         if (data.weekdayPrice && data.weekendPrice) {
           response += `Pricing: Weekdays at ₹${data.weekdayPrice.replace(/[₹,]/g, '')}, Weekends at ₹${data.weekendPrice.replace(/[₹,]/g, '')}. `;
         } else if (data.priceRange) {
           response += `Price range: ${data.priceRange}. `;
         }
-        
+
         if (data.maxOccupancy) {
           response += `Maximum occupancy: ${data.maxOccupancy} guests. `;
         }
-        
+
         if (data.events) {
           response += `${data.events}. `;
         }
-        
+
         response += `Minimum stay: ${data.minStay}.`;
-        
+
         if (data.mapLink) {
           response += ` View location: ${data.mapLink}`;
         }
-        
+
         return response;
       }
     }
-    
+
     // Cancellation policy
     if (query.includes("cancel") || query.includes("refund")) {
-      return "Our standard cancellation policy allows for a full refund if cancelled 7 days before check-in. Cancellations made less than 7 days before check-in may be subject to charges. Please refer to your specific booking terms for detailed information.";
+      return "For self-service cancellations through your account: 100% refund if you cancel more than 48 hours before check-in, 50% refund if you cancel between 24-48 hours before check-in, and no refund for cancellations less than 24 hours before check-in. For cancellation requests requiring admin approval, different terms may apply. Please refer to your specific booking terms for detailed information.";
     }
-    
+
     // Amenities
     if (query.includes("amenities") || query.includes("facilities") || query.includes("features")) {
       return "Our luxury villas offer premium amenities including private swimming pools, fully equipped kitchens, air conditioning, Wi-Fi, premium toiletries, and daily housekeeping. Some villas also feature outdoor dining areas, BBQ facilities, home theaters, and more. Each villa page has a complete list of amenities.";
     }
-    
+
     // Location or directions
     if (query.includes("location") || query.includes("address") || query.includes("direction") || query.includes("map")) {
       return "Our villas are located in various scenic destinations across Tamil Nadu including Ooty, Kodaikanal, Yercaud, Yelagiri, Coonoor and Chennai's East Coast Road. Detailed directions and location information will be provided after booking confirmation. Would you like information about a specific property?";
     }
-    
+
     // Check-in/check-out
     if (query.includes("check-in") || query.includes("check-out") || query.includes("checkout") || query.includes("checkin")) {
       return "Our standard check-in time is 2:00 PM and check-out time is 11:00 AM. Early check-in or late check-out may be available upon request, subject to availability. Please contact us prior to your stay if you need flexibility with these times.";
     }
-    
+
     // Payment methods
     if (query.includes("payment") || query.includes("pay") || query.includes("card")) {
       return "We accept all major credit cards, debit cards, and online banking transfers. For certain properties, we also accept payment through popular digital wallets. A security deposit is typically required and will be refunded within 7 days after checkout, provided no damages are found.";
     }
-    
+
     // Contact support
     if (query.includes("contact") || query.includes("support") || query.includes("help") || query.includes("assistance")) {
       return "Our customer support team is available 24/7 to assist with any inquiries or issues. You can reach us via phone at +91 8015924647, WhatsApp, or by email at support@luxorholidayhomestays.com. Would you like us to contact you?";
     }
-    
+
     // Special services
     if (query.includes("service") || query.includes("chef") || query.includes("airport") || query.includes("transfer") || query.includes("pickup")) {
       return "We offer additional services including airport transfers, private chefs, grocery delivery, guided local tours, and special event arrangements. These can be requested during booking or by contacting our concierge team. Charges may apply depending on the service requested.";
     }
-    
+
     // Greetings
     if (query.includes("hi") || query.includes("hello") || query.includes("hey")) {
       return "Hello! I'm the Luxor Villa Assistant. How can I help you today? Feel free to ask about our villas, bookings, amenities, or any other questions you might have!";
     }
-    
+
     // Thank you responses
     if (query.includes("thank") || query.includes("thanks")) {
       return "You're welcome! Is there anything else I can help you with regarding our luxury villas?";
     }
-    
+
     // Default response
     return "I'm not sure I understand your question. Could you please rephrase it? You can ask about our villas, booking process, amenities, cancellation policies, or contact information. Or would you like to speak with a human representative?";
   };
-
-  // Fetch villa data from API
-  useEffect(() => {
-    const fetchVillaData = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/villas/`);
-        if (response.ok) {
-          const data = await response.json();
-          setVillaData(data);
-          setIsApiConnected(true);
-          console.log("Villa data fetched successfully:", data);
-        } else {
-          console.error("Failed to fetch villa data:", response.status);
-        }
-      } catch (error) {
-        console.error("Error fetching villa data:", error);
-      }
-    };
-
-    fetchVillaData();
-  }, []);
 
   // FAQ categories with questions
   const faqCategories = [
@@ -565,7 +380,7 @@ const HelpCenter = () => {
         },
         {
           question: "What is the cancellation policy?",
-          answer: "Our standard cancellation policy allows for a full refund if cancelled 7 days before check-in. Cancellations made less than 7 days before check-in may be subject to charges. Please refer to your specific booking terms for detailed information."
+          answer: "For self-service cancellations through your account: 100% refund if you cancel more than 48 hours before check-in, 50% refund if you cancel between 24-48 hours before check-in, and no refund for cancellations less than 24 hours before check-in. For cancellation requests requiring admin approval, different terms may apply. Please refer to your specific booking terms for detailed information."
         },
         {
           question: "How can I modify my reservation?",
@@ -633,7 +448,7 @@ const HelpCenter = () => {
       </div>
 
       {/* Search Bar */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -649,25 +464,25 @@ const HelpCenter = () => {
             onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
             className="w-full px-5 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent transition-all duration-300"
           />
-          <motion.button 
+          <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#D4AF37] text-white px-4 py-1.5 rounded-full hover:bg-[#BFA181] transition-colors duration-300"
           >
             Search
           </motion.button>
-          
+
           {/* Search Results Dropdown */}
           <AnimatePresence>
             {isSearchFocused && searchResults.length > 0 && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
                 className="absolute z-10 w-full bg-white mt-1 rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto"
               >
                 {searchResults.map((result, index) => (
-                  <div 
+                  <div
                     key={index}
                     className="p-3 border-b border-gray-100 hover:bg-[#F6F9FC] cursor-pointer"
                     onClick={() => {
@@ -678,10 +493,10 @@ const HelpCenter = () => {
                             setOpenSection(`${catIndex}-${qIndex}`);
                             setSearchQuery('');
                             setSearchResults([]);
-                            
+
                             // Scroll to the result
                             setTimeout(() => {
-                              document.getElementById(`faq-${catIndex}-${qIndex}`)?.scrollIntoView({ 
+                              document.getElementById(`faq-${catIndex}-${qIndex}`)?.scrollIntoView({
                                 behavior: 'smooth',
                                 block: 'center'
                               });
@@ -705,42 +520,42 @@ const HelpCenter = () => {
       {/* Quick Links */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
         {[
-          { 
-            title: 'Ask AI Assistant', 
+          {
+            title: 'Ask AI Assistant',
             description: 'Chat with our AI assistant for instant help',
             icon: '🤖',
             action: () => setShowChatbot(true)
           },
-          { 
-            title: 'Villa Information', 
+          {
+            title: 'Villa Information',
             description: 'Quick access to villa information resources',
             icon: '🏠'
           },
-          { 
-            title: 'Payment & Security', 
+          {
+            title: 'Payment & Security',
             description: 'Quick access to payment & security resources',
             icon: '🔒'
           },
-          { 
-            title: 'Contact Support', 
+          {
+            title: 'Contact Support',
             description: 'Quick access to contact support resources',
             icon: '💬'
           }
         ].map((item, index) => (
-          <motion.div 
+          <motion.div
             key={index}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.1 }}
-            whileHover={{ 
+            whileHover={{
               scale: 1.03,
               boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-              borderColor: "#D4AF37" 
+              borderColor: "#D4AF37"
             }}
             className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all duration-300 cursor-pointer flex flex-col items-center text-center"
             onClick={item.action}
           >
-            <motion.div 
+            <motion.div
               className="h-14 w-14 rounded-full bg-[#F6F9FC] flex items-center justify-center mb-4"
               whileHover={{ rotate: [0, -10, 10, -10, 0] }}
               transition={{ duration: 0.5 }}
@@ -754,17 +569,17 @@ const HelpCenter = () => {
       </div>
 
       {/* FAQ Accordion */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6, delay: 0.3 }}
         className="max-w-3xl mx-auto mb-16"
       >
         <h2 className="text-2xl font-playfair font-bold text-gray-800 mb-8 text-center">Frequently Asked Questions</h2>
-        
+
         {faqCategories.map((category, catIndex) => (
-          <motion.div 
-            key={catIndex} 
+          <motion.div
+            key={catIndex}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: catIndex * 0.1 }}
@@ -773,7 +588,7 @@ const HelpCenter = () => {
             <h3 className="text-xl font-playfair text-[#1A1A1A] mb-4">{category.title}</h3>
             <div className="space-y-4">
               {category.questions.map((faq, faqIndex) => (
-                <motion.div 
+                <motion.div
                   id={`faq-${catIndex}-${faqIndex}`}
                   key={`${catIndex}-${faqIndex}`}
                   initial={{ opacity: 0, y: 10 }}
@@ -800,7 +615,7 @@ const HelpCenter = () => {
                   </motion.button>
                   <AnimatePresence>
                     {openSection === `${catIndex}-${faqIndex}` && (
-                      <motion.div 
+                      <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
@@ -809,7 +624,7 @@ const HelpCenter = () => {
                       >
                         <div className="px-6 py-4 bg-[#F6F9FC] border-t border-gray-200">
                           <p className="text-gray-600">{faq.answer}</p>
-                          
+
                           {/* Special actions for booking questions */}
                           {category.title === "Booking Questions" && faqIndex === 0 && (
                             <motion.button
@@ -838,7 +653,7 @@ const HelpCenter = () => {
       </motion.div>
 
       {/* Contact Section */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.5 }}
@@ -853,7 +668,7 @@ const HelpCenter = () => {
             </Link>
           </motion.div>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <a 
+            <a
               href="https://wa.me/918015924647?text=Hi, I would like to know more about Luxor Holiday Home Stays"
               target="_blank"
               rel="noopener noreferrer"
@@ -869,7 +684,7 @@ const HelpCenter = () => {
       <AnimatePresence>
         {showChatbot && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <motion.div 
+            <motion.div
               ref={chatbotRef}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -888,7 +703,7 @@ const HelpCenter = () => {
                     <div className="text-xs opacity-80">Online | Responds instantly</div>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={() => setShowChatbot(false)}
                   className="text-white hover:text-gray-200"
                 >
@@ -897,7 +712,7 @@ const HelpCenter = () => {
                   </svg>
                 </button>
               </div>
-              
+
               {/* Chat Messages */}
               <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
                 {messages.map((message) => (
@@ -908,10 +723,10 @@ const HelpCenter = () => {
                     transition={{ duration: 0.3 }}
                     className={`mb-4 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    <div 
+                    <div
                       className={`max-w-xs sm:max-w-sm rounded-lg px-4 py-2 ${
-                        message.sender === 'user' 
-                          ? 'bg-[#D4AF37] text-white rounded-tr-none' 
+                        message.sender === 'user'
+                          ? 'bg-[#D4AF37] text-white rounded-tr-none'
                           : 'bg-white shadow rounded-tl-none'
                       }`}
                     >
@@ -926,17 +741,17 @@ const HelpCenter = () => {
                   <div className="flex mb-4">
                     <div className="bg-white shadow rounded-lg px-4 py-2 rounded-tl-none">
                       <div className="flex gap-1">
-                        <motion.div 
+                        <motion.div
                           animate={{ y: [0, -5, 0] }}
                           transition={{ repeat: Infinity, duration: 1 }}
                           className="h-2 w-2 bg-gray-400 rounded-full"
                         />
-                        <motion.div 
+                        <motion.div
                           animate={{ y: [0, -5, 0] }}
                           transition={{ repeat: Infinity, duration: 1, delay: 0.2 }}
                           className="h-2 w-2 bg-gray-400 rounded-full"
                         />
-                        <motion.div 
+                        <motion.div
                           animate={{ y: [0, -5, 0] }}
                           transition={{ repeat: Infinity, duration: 1, delay: 0.4 }}
                           className="h-2 w-2 bg-gray-400 rounded-full"
@@ -947,7 +762,7 @@ const HelpCenter = () => {
                 )}
                 <div ref={messageEndRef} />
               </div>
-              
+
               {/* Quick Suggestions */}
               <div className="px-4 py-2 bg-white border-t border-gray-100">
                 <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
@@ -973,7 +788,7 @@ const HelpCenter = () => {
                   ))}
                 </div>
               </div>
-              
+
               {/* Message Input */}
               <div className="p-3 bg-white border-t border-gray-200">
                 <div className="flex gap-2">

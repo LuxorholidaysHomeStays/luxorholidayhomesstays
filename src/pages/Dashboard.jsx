@@ -1,6 +1,4 @@
-"use client"
-
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { API_BASE_URL } from "../config/api"
 import { useAuth } from "../context/AuthContext"
 import { useToast } from "../context/ToastContext"
@@ -35,6 +33,7 @@ import {
   Filler
 } from 'chart.js';
 import { Pie, Bar, Doughnut, Line, Radar, PolarArea } from 'react-chartjs-2';
+import ErrorBoundary from "../components/ErrorBoundary";
 
 // Register ChartJS components
 ChartJS.register(
@@ -79,37 +78,28 @@ const Dashboard = () => {
   const { authToken, user } = useAuth();
   const { addToast } = useToast();
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       const headers = {
         Authorization: `Bearer ${authToken}`,
         "Content-Type": "application/json",
       };
 
-      // Fetch villas
-      const villasResponse = await fetch(`${API_BASE_URL}/api/villas`, { headers });
-      const villasData = await villasResponse.json();
-
-      // Fetch bookings
-      const bookingsResponse = await fetch(
-        `${API_BASE_URL}/api/bookings/search?checkIn=2020-01-01&checkOut=2030-12-31`,
-        { headers },
-      );
-      const bookingsData = await bookingsResponse.json();
-
-      // Fetch users (if endpoint is available)
-      let usersCount = 0;
-      try {
-        const usersResponse = await fetch(`${API_BASE_URL}/api/users`, { headers });
-        const usersData = await usersResponse.json();
-        usersCount = Array.isArray(usersData) ? usersData.length : 0;
-      } catch (error) {
-        console.error("Error fetching users:", error);
+      const [villasResponse, bookingsResponse, usersResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/villas`, { headers }),
+        fetch(`${API_BASE_URL}/api/admin/bookings`, { headers }),
+        fetch(`${API_BASE_URL}/api/admin/users`, { headers }),
+      ]);
+      for (const response of [villasResponse, bookingsResponse, usersResponse]) {
+        if (!response.ok) throw new Error(`Dashboard request failed (${response.status})`);
       }
+      const [villasData, bookingsData, usersData] = await Promise.all([
+        villasResponse.json(), bookingsResponse.json(), usersResponse.json()
+      ]);
+      const villasList = Array.isArray(villasData) ? villasData : (villasData.villas || villasData.data || []);
+      const bookingsList = Array.isArray(bookingsData) ? bookingsData : (bookingsData.bookings || bookingsData.data || []);
+      const usersList = Array.isArray(usersData) ? usersData : (usersData.users || usersData.data || []);
+      const usersCount = usersList.length;
 
       // Calculate date ranges
       const now = new Date();
@@ -153,8 +143,8 @@ const Dashboard = () => {
       // Initialize villa booking counts
       const villaBookingCounts = {};
 
-      if (Array.isArray(bookingsData)) {
-        bookingsData.forEach(booking => {
+      if (Array.isArray(bookingsList)) {
+        bookingsList.forEach(booking => {
           const bookingDate = new Date(booking.bookingDate || booking.createdAt);
           const amount = booking.totalAmount || 0;
           
@@ -256,11 +246,11 @@ const Dashboard = () => {
 
       setStats({
         totalVillas: Array.isArray(villasData) ? villasData.length : 0,
-        totalBookings: Array.isArray(bookingsData) ? bookingsData.length : 0,
+        totalBookings: Array.isArray(bookingsList) ? bookingsList.length : 0,
         totalUsers: usersCount,
         totalRevenue,
-        recentBookings: Array.isArray(bookingsData) 
-          ? bookingsData
+        recentBookings: Array.isArray(bookingsList) 
+          ? bookingsList
               .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
               .slice(0, 5) 
           : [],
@@ -271,7 +261,11 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [authToken, addToast, user]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -486,7 +480,7 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="mt-4">
-              <Link to="/admin/villa-management" className="text-blue-600 text-sm font-medium hover:underline">
+              <Link to="/villas" className="text-blue-600 text-sm font-medium hover:underline">
                 View all villas
               </Link>
             </div>
@@ -503,7 +497,7 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="mt-4">
-              <Link to="/admin/booking-management" className="text-green-600 text-sm font-medium hover:underline">
+              <Link to="/bookings" className="text-green-600 text-sm font-medium hover:underline">
                 Manage bookings
               </Link>
             </div>
@@ -520,7 +514,7 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="mt-4">
-              <Link to="/admin/user-management" className="text-purple-600 text-sm font-medium hover:underline">
+              <Link to="/users" className="text-purple-600 text-sm font-medium hover:underline">
                 View all users
               </Link>
             </div>
@@ -564,58 +558,56 @@ const Dashboard = () => {
               <h2 className="text-lg font-semibold text-gray-800">Villa Booking Distribution</h2>
             </div>
             <div className="p-4 h-80">
-              <Pie 
-                data={{
-                  labels: Object.keys(bookingsByVilla),
-                  datasets: [
-                    {
-                      data: Object.values(bookingsByVilla),
-                      backgroundColor: [
-                        'rgba(59, 130, 246, 0.7)',   // Blue
-                        'rgba(16, 185, 129, 0.7)',   // Green
-                        'rgba(245, 158, 11, 0.7)',   // Amber
-                        'rgba(99, 102, 241, 0.7)',   // Indigo
-                        'rgba(236, 72, 153, 0.7)',   // Pink
-                        'rgba(139, 92, 246, 0.7)',   // Purple
-                        'rgba(220, 38, 38, 0.7)',    // Red
-                      ],
-                      borderColor: [
-                        'rgba(59, 130, 246, 1)',     // Blue
-                        'rgba(16, 185, 129, 1)',     // Green
-                        'rgba(245, 158, 11, 1)',     // Amber
-                        'rgba(99, 102, 241, 1)',     // Indigo
-                        'rgba(236, 72, 153, 1)',     // Pink
-                        'rgba(139, 92, 246, 1)',     // Purple
-                        'rgba(220, 38, 38, 1)',      // Red
-                      ],
-                      borderWidth: 1,
-                    },
-                  ],
-                }}
-                options={{
-                  ...chartOptions,
-                  plugins: {
-                    ...chartOptions.plugins,
-                    tooltip: {
-                      callbacks: {
-                        label: function(context) {
-                          const label = context.label || '';
-                          const value = context.raw || 0;
-                          const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                          const percentage = Math.round((value / total) * 100);
-                          return `${label}: ${value} bookings (${percentage}%)`;
+              <ErrorBoundary title="Villa Booking Distribution Chart">
+                <Pie 
+                  data={{
+                    labels: Object.keys(bookingsByVilla),
+                    datasets: [
+                      {
+                        data: Object.values(bookingsByVilla),
+                        backgroundColor: [
+                          'rgba(59, 130, 246, 0.7)',   // Blue
+                          'rgba(16, 185, 129, 0.7)',   // Green
+                          'rgba(245, 158, 11, 0.7)',   // Amber
+                          'rgba(99, 102, 241, 0.7)',   // Indigo
+                          'rgba(236, 72, 153, 0.7)',   // Pink
+                          'rgba(139, 92, 246, 0.7)',   // Purple
+                          'rgba(220, 38, 38, 0.7)',    // Red
+                        ],
+                        borderColor: [
+                          'rgba(59, 130, 246, 1)',     // Blue
+                          'rgba(16, 185, 129, 1)',     // Green
+                          'rgba(245, 158, 11, 1)',     // Amber
+                          'rgba(99, 102, 241, 1)',     // Indigo
+                          'rgba(236, 72, 153, 1)',     // Pink
+                          'rgba(139, 92, 246, 1)',     // Purple
+                          'rgba(220, 38, 38, 1)',      // Red
+                        ],
+                        borderWidth: 1,
+                      },
+                    ],
+                  }}
+                  options={{
+                    ...chartOptions,
+                    plugins: {
+                      ...chartOptions.plugins,
+                      tooltip: {
+                        callbacks: {
+                          label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                            return `${label}: ${value} bookings (${percentage}%)`;
+                          }
                         }
                       }
                     }
-                  }
-                }}
-              />
-
+                  }}
+                />
+              </ErrorBoundary>
             </div>
-
           </div>
-       
-
 
           {/* Top Villas by Revenue */}
           <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
@@ -623,30 +615,32 @@ const Dashboard = () => {
               <h2 className="text-lg font-semibold text-gray-800">Top Villas by Revenue</h2>
             </div>
             <div className="p-4 h-80">
-              <Bar 
-                data={villaRevenueData} 
-                options={{
-                  ...chartOptions,
-                  plugins: {
-                    ...chartOptions.plugins,
-                    title: {
-                      display: true,
-                      text: 'Revenue by Villa (Top 5)',
-                      font: { size: 14 }
-                    }
-                  },
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                      ticks: {
-                        callback: function(value) {
-                          return '₹' + value.toLocaleString();
+              <ErrorBoundary title="Top Villas Revenue Chart">
+                <Bar 
+                  data={villaRevenueData} 
+                  options={{
+                    ...chartOptions,
+                    plugins: {
+                      ...chartOptions.plugins,
+                      title: {
+                        display: true,
+                        text: 'Revenue by Villa (Top 5)',
+                        font: { size: 14 }
+                      }
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        ticks: {
+                          callback: function(value) {
+                            return '₹' + value.toLocaleString();
+                          }
                         }
                       }
                     }
-                  }
-                }} 
-              />
+                  }} 
+                />
+              </ErrorBoundary>
             </div>
           </div>
         </div>
@@ -659,20 +653,22 @@ const Dashboard = () => {
               <h2 className="text-lg font-semibold text-gray-800">Monthly Booking Trends</h2>
             </div>
             <div className="p-4 h-80">
-              <Line 
-                data={bookingTrendData}
-                options={{
-                  ...chartOptions,
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                      ticks: {
-                        precision: 0
+              <ErrorBoundary title="Monthly Booking Trends Chart">
+                <Line 
+                  data={bookingTrendData}
+                  options={{
+                    ...chartOptions,
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        ticks: {
+                          precision: 0
+                        }
                       }
                     }
-                  }
-                }}
-              />
+                  }}
+                />
+              </ErrorBoundary>
             </div>
           </div>
         </div>
@@ -706,7 +702,7 @@ const Dashboard = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {stats.recentBookings.map((booking) => (
-                    <tr key={booking._id} className="hover:bg-gray-50">
+                    <tr key={booking.id ?? booking._id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-16 w-16">
@@ -753,7 +749,7 @@ const Dashboard = () => {
               </table>
             </div>
             <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
-              <Link to="/admin/booking-management" className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+              <Link to="/bookings" className="text-blue-600 hover:text-blue-800 text-sm font-medium">
                 View all bookings
               </Link>
             </div>

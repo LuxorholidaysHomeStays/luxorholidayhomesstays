@@ -106,6 +106,11 @@ const ManualBooking = () => {
   };
 
   const fetchVillaDetails = async (villaId) => {
+    if (!villaId) return;
+    const localVilla = villas.find(v => (v.id || v._id) === villaId || v.name === villaId);
+    if (localVilla) {
+      setSelectedVillaDetails(localVilla);
+    }
     try {
       const response = await fetch(`${API_BASE_URL}/api/villas/${villaId}`, {
         headers: {
@@ -114,18 +119,14 @@ const ManualBooking = () => {
         }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch villa details');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.villa) {
+          setSelectedVillaDetails(data.villa);
+        }
       }
-
-      const data = await response.json();
-      setSelectedVillaDetails(data.villa || data);
     } catch (error) {
       console.error('Error fetching villa details:', error);
-      addToast({
-        type: 'error',
-        message: 'Failed to load villa details.'
-      });
     }
   };
 
@@ -133,15 +134,13 @@ const ManualBooking = () => {
   const fetchBlockedDates = async (villaId) => {
     try {
       if (!villaId) {
-        console.warn('Invalid villa ID: Empty or undefined');
         setBlockedDates([]);
         return;
       }
 
       console.log(`Fetching blocked dates for villa ${villaId}`);
       
-      // Use the new endpoint specifically for manual bookings
-      const response = await fetch(`${API_BASE_URL}/api/admin/manual-bookings/blocked-dates?villaId=${villaId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/manual-booking/blocked-dates?villaId=${villaId}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
@@ -149,38 +148,41 @@ const ManualBooking = () => {
       });
 
       if (!response.ok) {
-        // Try to parse error message
-        let errorMessage = 'Failed to fetch blocked dates';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-          // If JSON parsing fails, just use status code
-          errorMessage = `Server returned status ${response.status}`;
+        // Fallback to public blocked dates endpoint
+        const fallbackRes = await fetch(`${API_BASE_URL}/api/blocked-dates/villa/${villaId}`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (fallbackRes.ok) {
+          const fallbackData = await fallbackRes.json();
+          const blockedList = fallbackData.blockedDates || [];
+          const blocked = [];
+          blockedList.forEach(range => {
+            try {
+              const start = new Date(range.startDate || range.checkIn);
+              const end = new Date(range.endDate || range.checkOut);
+              if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+                const dates = getDatesInRange(start, end);
+                blocked.push(...dates);
+              }
+            } catch (e) {
+              console.warn('Error processing fallback date range:', e);
+            }
+          });
+          setBlockedDates(blocked);
         }
-        
-        console.warn(errorMessage);
-        setBlockedDates([]);
-        addToast('Unable to load availability information', 'warning');
         return;
       }
 
       const data = await response.json();
-      console.log('Blocked dates data received:', data);
-      
-      if (!data.success || !data.blockedDates) {
-        console.warn('Invalid response format:', data);
-        setBlockedDates([]);
-        return;
-      }
-      
-      // Convert blocked date ranges to actual date objects
       const blocked = [];
       if (data.blockedDates && data.blockedDates.length > 0) {
         data.blockedDates.forEach(range => {
           try {
-            const start = new Date(range.checkIn);
-            const end = new Date(range.checkOut);
+            const start = new Date(range.startDate || range.checkIn);
+            const end = new Date(range.endDate || range.checkOut);
             if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
               const dates = getDatesInRange(start, end);
               blocked.push(...dates);
@@ -191,10 +193,8 @@ const ManualBooking = () => {
         });
       }
       
-      console.log(`Processed ${blocked.length} blocked dates for villa ${villaId}`);
       setBlockedDates(blocked);
       
-      // If villa name is provided in the response, update it
       if (data.villaName) {
         setFormData(prev => ({
           ...prev,
@@ -204,7 +204,6 @@ const ManualBooking = () => {
     } catch (error) {
       console.error('Error fetching blocked dates:', error);
       setBlockedDates([]);
-      addToast('Failed to load availability information', 'error');
     }
   };
 
@@ -307,15 +306,29 @@ const ManualBooking = () => {
     setAvailabilityChecked(false);
   };
 
+  const formatDateForAPI = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const handleVillaSelect = (e) => {
-    const villaId = e.target.value;
-    const selectedVilla = villas.find(villa => villa._id === villaId);
+    const selectedId = e.target.value;
+    const selectedVilla = villas.find(villa => (villa.id || villa._id) === selectedId || villa.name === selectedId);
     
+    const vId = selectedVilla ? (selectedVilla.id || selectedVilla._id) : selectedId;
     setFormData(prev => ({
       ...prev,
-      villaId,
+      villaId: vId,
       villaName: selectedVilla ? selectedVilla.name : ''
     }));
+    
+    if (selectedVilla) {
+      setSelectedVillaDetails(selectedVilla);
+    }
     
     setAvailabilityChecked(false);
   };
@@ -338,10 +351,10 @@ const ManualBooking = () => {
     try {
       setCheckingAvailability(true);
       
-      const checkInDate = formData.checkIn.toISOString();
-      const checkOutDate = formData.checkOut.toISOString();
+      const checkInDate = formatDateForAPI(formData.checkIn);
+      const checkOutDate = formatDateForAPI(formData.checkOut);
       
-      const response = await fetch(`${API_BASE_URL}/api/admin/manual-bookings/check-availability?villaId=${formData.villaId}&checkIn=${checkInDate}&checkOut=${checkOutDate}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/manual-booking/check-availability?villaId=${formData.villaId}&checkIn=${checkInDate}&checkOut=${checkOutDate}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
@@ -365,6 +378,92 @@ const ManualBooking = () => {
     } catch (error) {
       console.error('Error checking availability:', error);
       addToast(error.message || 'Failed to check availability. Please try again.', 'error');
+      <style>{`
+        /* React datepicker override styles */
+        .react-datepicker {
+          font-family: inherit !important;
+          border: 1px solid #D4AF37 !important;
+          background-color: #1a1a1a !important;
+          border-radius: 0.5rem !important;
+          overflow: hidden !important;
+          z-index: 1000 !important;
+          color: #D4AF37 !important;
+        }
+        /* Mobile date picker position fixes */
+        @media (max-width: 767px) {
+          .react-datepicker-popper[data-placement^="top"] {
+            margin-bottom: 10px !important;
+          }
+          .react-datepicker__triangle {
+            display: none !important; /* Hide the triangle on mobile */
+          }
+          /* Ensure the calendar is properly positioned above input */
+          .react-datepicker-popper {
+            transform: translate3d(0, 0, 0) !important;
+            position: fixed !important;
+            bottom: auto !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: 90% !important;
+            max-width: 320px !important;
+          }
+        }
+        .react-datepicker__header {
+          background-color: #111 !important;
+          border-bottom: 1px solid #D4AF37 !important;
+          padding-top: 10px !important;
+          padding-bottom: 8px !important;
+        }
+        /* Gold styling for day names in calendar header */
+        .react-datepicker__day-name {
+          color: #D4AF37 !important;
+          font-weight: 600 !important;
+        }
+        /* Gold styling for month and year in header */
+        .react-datepicker__current-month, 
+        .react-datepicker-year-header {
+          color: #D4AF37 !important;
+          font-weight: bold !important;
+        }
+        /* Regular days styling */
+        .react-datepicker__day {
+          color: #D4AF37 !important;
+          border-radius: 50% !important;
+        }
+        /* Outside month days styling */
+        .react-datepicker__day--outside-month {
+          color: #D4AF37 !important;
+          opacity: 0.5 !important;
+        }
+        /* Hover effects */
+        .react-datepicker__day:hover, 
+        .react-datepicker__month-text:hover, 
+        .react-datepicker__quarter-text:hover, 
+        .react-datepicker__year-text:hover {
+          background-color: rgba(212, 175, 55, 0.2) !important;
+          color: #D4AF37 !important;
+        }
+        /* Selected day styling */
+        .react-datepicker__day--selected, 
+        .react-datepicker__day--in-selecting-range, 
+        .react-datepicker__day--in-range {
+          background-color: #D4AF37 !important;
+          color: #000 !important;
+          font-weight: bold !important;
+        }
+        /* Today's date highlight */
+        .react-datepicker__day--today {
+          border: 1px solid #D4AF37 !important;
+          background-color: rgba(212, 175, 55, 0.1) !important;
+          font-weight: bold !important;
+        }
+        /* Blocked date styling */
+        .react-datepicker__day--blocked {
+          background-color: #ffcccc !important;
+          color: #cc0000 !important;
+          text-decoration: line-through;
+        }
+      `}</style>
       setAvailabilityChecked(false);
     } finally {
       setCheckingAvailability(false);
@@ -392,13 +491,13 @@ const ManualBooking = () => {
       // Calculate total days for sending to the API
       const checkInDate = new Date(formData.checkIn);
       const checkOutDate = new Date(formData.checkOut);
-      const totalDays = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+      const totalDays = Math.max(1, Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)));
       
       // Format dates for API
       const bookingData = {
         ...formData,
-        checkIn: formData.checkIn.toISOString(),
-        checkOut: formData.checkOut.toISOString(),
+        checkIn: formatDateForAPI(formData.checkIn),
+        checkOut: formatDateForAPI(formData.checkOut),
         totalDays: totalDays,
         guests: parseInt(formData.guests),
         infants: parseInt(formData.infants || 0),
@@ -407,7 +506,7 @@ const ManualBooking = () => {
       
       console.log('Sending booking data:', bookingData);
       
-      const response = await fetch(`${API_BASE_URL}/api/admin/manual-bookings`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/manual-booking`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -425,7 +524,7 @@ const ManualBooking = () => {
       console.log('Booking created:', data);
       
       // Show success message
-      setSuccessMessage(`Booking created successfully! A confirmation email ${data.emailSent ? 'has been sent' : 'could not be sent'} to ${formData.email}.`);
+      setSuccessMessage(`Booking created successfully! A confirmation email ${data.emailSent ? 'has been sent' : 'will be sent'} to ${formData.email}.`);
       
       // Reset form
       setFormData({
@@ -511,7 +610,7 @@ const ManualBooking = () => {
                 >
                   <option value="">-- Select a Villa --</option>
                   {villas.map((villa) => (
-                    <option key={villa._id} value={villa._id}>
+                    <option key={villa.id || villa._id} value={villa.id || villa._id}>
                       {villa.name}
                     </option>
                   ))}

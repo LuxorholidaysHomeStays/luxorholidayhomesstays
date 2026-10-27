@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { ChevronLeft, X, ArrowDown } from "lucide-react"
 import { useNavigate, useParams, useLocation } from "react-router-dom"
@@ -165,6 +163,30 @@ import lvthree16 from "/LavishVilla 3/lvthree16.jpg"
 import lvthree17 from "/LavishVilla 3/lvthree17.jpg"
 import lvthree18 from "/LavishVilla 3/lvthree18.jpg"
 
+// Opal Villa Images
+import opal1 from "/opal/opal1.jpg"
+import opal2 from "/opal/opal2.jpg"
+import opal3 from "/opal/opal3.jpg"
+import opal4 from "/opal/opal4.jpg"
+import opal5 from "/opal/opal5.jpg"
+import opal6 from "/opal/opal6.jpg"
+import opal7 from "/opal/opal7.jpg"
+import opal8 from "/opal/opal8.jpg"
+import opal9 from "/opal/opal9.jpg"
+import opal10 from "/opal/opal10.jpg"
+import opal11 from "/opal/opal11.jpg"
+import opal12 from "/opal/opal12.jpg"
+import opal13 from "/opal/opal13.jpg"
+import opal14 from "/opal/opal14.jpg"
+import opal15 from "/opal/opal15.jpg"
+import opal16 from "/opal/opal16.jpg"
+import opal17 from "/opal/opal17.jpg"
+import opal18 from "/opal/opal18.jpg"
+import opal19 from "/opal/opal19.jpg"
+import opal20 from "/opal/opal20.jpg"
+import opal21 from "/opal/opal21.jpg"
+import opal22 from "/opal/opal22.jpg"
+
 // Villa image collections
 const villaImageCollections = {
 "Amrith Palace": [
@@ -303,6 +325,30 @@ lvthree15,
 lvthree16,
 lvthree17,
 lvthree18,
+],
+"Opal Villa": [
+opal5,
+opal1,
+opal2,
+opal3,
+opal4,
+opal6,
+opal7,
+opal8,
+opal9,
+opal10,
+opal11,
+opal12,
+opal13,
+opal14,
+opal15,
+opal16,
+opal17,
+opal18,
+opal19,
+opal20,
+opal21,
+opal22,
 ],
 }
 
@@ -450,109 +496,115 @@ if (isModal && !isOpen) {
 const content = (
 <div className={`fixed top-[3rem] md:top-[4rem] left-0 right-0 bottom-0 bg-white z-50 flex flex-col ${viewMode === "split" ? "h-[50vh]" : ""}`}>
 {/* Header */}
-<div className="w-full bg-white border-b border-gray-200">
-<div className="max-w-4xl mx-auto flex items-center justify-between p-4">
-<div>
-<button
-onClick={handleBackClick}
-className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
->
-<ChevronLeft className="h-5 w-5" />
-<span className="font-medium">Back</span>
-</button>
-</div>
-<div className="text-center flex-1">
-<h2 className="font-semibold text-gray-900">{villaName} Photos</h2>
-</div>
-<div className="flex items-center gap-4">
-
-<button
-onClick={handleBackClick}
-className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
->
-<X className="h-5 w-5" />
-<span className="font-medium">Close</span>
-</button>
-</div>
-</div>
+<div className="w-full bg-white border-b border-gray-200 shadow-sm">
+  <div className="max-w-7xl mx-auto flex items-center justify-between p-4 md:px-8">
+    <div>
+      <button
+        onClick={handleBackClick}
+        className="flex items-center gap-2 text-gray-700 hover:text-[#D4AF37] font-medium transition-colors"
+      >
+        <ChevronLeft className="h-5 w-5" />
+        <span>Back</span>
+      </button>
+    </div>
+    <div className="text-center flex-1">
+      <h2 className="text-lg md:text-xl font-bold text-gray-900">{villaName} Photos</h2>
+    </div>
+    <div className="flex items-center gap-4">
+      <button
+        onClick={handleBackClick}
+        className="flex items-center gap-2 text-gray-700 hover:text-[#D4AF37] font-medium transition-colors"
+      >
+        <X className="h-5 w-5" />
+        <span>Close</span>
+      </button>
+    </div>
+  </div>
 </div>
 
 {/* Main Content Area */}
-<div className="max-h-[85vh] overflow-y-auto bg-gray-50">
-<div className="max-w-5xl mx-auto p-6">
-{isLoading ? (
-<div className="flex items-center justify-center h-[60vh]">
-<div className="text-center text-gray-900">
-<div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-gray-900 mx-auto mb-4"></div>
-<p className="text-lg font-medium">Loading photos...</p>
-</div>
-</div>
-) : (
-<div className="space-y-8">
-{/* Alternating Gallery Rows */}
-{galleryRows.map((row, rowIdx) => (
-<div key={rowIdx} className={`flex gap-6 ${row.length === 1 ? "" : "justify-between"}`}>
-{row.length === 1 ? (
-// Big image
-<div                className={`flex-1 relative cursor-pointer bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-200 group ${
-                selectedImageIndex === rowIdx * 4 ? "ring-4 ring-[#D4AF37]" : ""
+<div className="flex-1 overflow-y-auto bg-gray-50 pb-12">
+  <div className="max-w-7xl mx-auto p-4 sm:p-6 md:p-8">
+    {isLoading ? (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="text-center text-gray-900">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#D4AF37] mx-auto mb-4"></div>
+          <p className="text-lg font-medium">Loading photos...</p>
+        </div>
+      </div>
+    ) : (
+      <div className="space-y-8 md:space-y-12">
+        {/* Alternating Gallery Rows */}
+        {galleryRows.map((row, rowIdx) => (
+          <div key={rowIdx} className={`flex flex-col md:flex-row gap-6 ${row.length === 1 ? "" : "justify-between"}`}>
+            {row.length === 1 ? (
+              // Big Featured Image
+              <div
+                className={`w-full relative cursor-pointer bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group ${
+                  selectedImageIndex === rowIdx * 4 ? "ring-4 ring-[#D4AF37]" : ""
                 }`}
-style={{ minHeight: "420px", maxHeight: "500px" }}
-onClick={() => setSelectedImageIndex(rowIdx * 4)}
->
-<img
-src={row[0] || "/placeholder.svg"}
-alt={`${villaName} ${rowIdx * 4 + 1}`}                className="w-full h-[480px] object-cover group-hover:scale-105 transition-transform duration-200"
-                onError={(e) => {
-                const target = e.target
-                target.onerror = null
-                target.src = "/placeholder.svg"
-                }}
-/>                {selectedImageIndex === rowIdx * 4 && <div className="absolute inset-0 bg-[#D4AF37]/10"></div>}
-</div>
-) : (
-// Three small images
-row.map((img, idx) => {
-const imgIdx = rowIdx * 4 - 3 + idx
-return (
-<div
-key={imgIdx}                className={`flex-1 relative cursor-pointer bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-200 group ${
-                selectedImageIndex === imgIdx ? "ring-4 ring-[#D4AF37]" : ""
-                }`}
-style={{ minHeight: "180px", maxHeight: "220px" }}
-onClick={() => setSelectedImageIndex(imgIdx)}
->
-<img
-src={img || "/placeholder.svg"}
-alt={`${villaName} ${imgIdx + 1}`}
-className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-200"
-onError={(e) => {
-const target = e.target
-target.onerror = null
-target.src = "/placeholder.svg"
-}}
-/>                {selectedImageIndex === imgIdx && <div className="absolute inset-0 bg-[#D4AF37]/10"></div>}
-</div>
-)
-})
-)}
-</div>
-))}
+                style={{ minHeight: "480px", maxHeight: "720px" }}
+                onClick={() => setSelectedImageIndex(rowIdx * 4)}
+              >
+                <img
+                  src={row[0] || "/placeholder.svg"}
+                  alt={`${villaName} ${rowIdx * 4 + 1}`}
+                  loading="eager"
+                  className="w-full h-[480px] md:h-[680px] object-cover group-hover:scale-102 transition-transform duration-300"
+                  onError={(e) => {
+                    const target = e.target
+                    target.onerror = null
+                    target.src = "/placeholder.svg"
+                  }}
+                />
+                {selectedImageIndex === rowIdx * 4 && <div className="absolute inset-0 bg-[#D4AF37]/10"></div>}
+              </div>
+            ) : (
+              // Three Large Thumbnail Images
+              row.map((img, idx) => {
+                const imgIdx = rowIdx * 4 - 3 + idx
+                return (
+                  <div
+                    key={imgIdx}
+                    className={`flex-1 relative cursor-pointer bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group ${
+                      selectedImageIndex === imgIdx ? "ring-4 ring-[#D4AF37]" : ""
+                    }`}
+                    style={{ minHeight: "240px", maxHeight: "360px" }}
+                    onClick={() => setSelectedImageIndex(imgIdx)}
+                  >
+                    <img
+                      src={img || "/placeholder.svg"}
+                      alt={`${villaName} ${imgIdx + 1}`}
+                      loading="lazy"
+                      className="w-full h-64 md:h-80 object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        const target = e.target
+                        target.onerror = null
+                        target.src = "/placeholder.svg"
+                      }}
+                    />
+                    {selectedImageIndex === imgIdx && <div className="absolute inset-0 bg-[#D4AF37]/10"></div>}
+                  </div>
+                )
+              })
+            )}
+          </div>
+        ))}
 
-{/* Image counter */}
-<div className="text-center text-gray-500 text-sm">
-{selectedImageIndex + 1} of {images.length} photos
-</div>
+        {/* Image counter */}
+        <div className="text-center font-medium text-gray-600 text-sm py-4">
+          {selectedImageIndex + 1} of {images.length} photos
+        </div>
 
-{/* No images message */}
-{images.length <= 1 && images[0] === "/placeholder.svg" && (
-<div className="text-center py-10">
-<p className="text-gray-500">No photos available for this property.</p>
-</div>
-)}
-</div>
-)}
-</div>
+        {/* No images message */}
+        {images.length <= 1 && images[0] === "/placeholder.svg" && (
+          <div className="text-center py-10">
+            <p className="text-gray-500">No photos available for this property.</p>
+          </div>
+        )}
+      </div>
+    )}
+  </div>
 </div>
 
 {/* Bottom action bar */}

@@ -4,6 +4,84 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 import { FaTrophy, FaHome, FaSmileBeam, FaStar } from 'react-icons/fa';
 
+// Counter animation hook
+const useCounter = (end, start = 0, duration = 2000) => {
+  const [count, setCount] = useState(start);
+  const countRef = useRef(start);
+  const [inView, setInView] = useState(false);
+  const nodeRef = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentNode = nodeRef.current;
+    if (currentNode) {
+      observer.observe(currentNode);
+    }
+
+    return () => {
+      if (currentNode) {
+        observer.unobserve(currentNode);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!inView) return;
+
+    let startTime;
+    const animateCount = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      const progress = timestamp - startTime;
+      const percentage = Math.min(progress / duration, 1);
+      
+      const currentCount = Math.floor(start + percentage * (end - start));
+      
+      if (countRef.current !== currentCount) {
+        countRef.current = currentCount;
+        setCount(currentCount);
+      }
+
+      if (percentage < 1) {
+        requestAnimationFrame(animateCount);
+      }
+    };
+
+    requestAnimationFrame(animateCount);
+  }, [end, start, duration, inView]);
+
+  return { count, nodeRef };
+};
+
+const StatItem = ({ stat, index }) => {
+  const { count, nodeRef } = useCounter(stat.value);
+
+  return (
+    <div 
+      className="stat-item" 
+      ref={nodeRef}
+      data-aos="zoom-in" 
+      data-aos-delay={index * 100}
+    >
+      <div className="stat-icon">{stat.icon}</div>
+      <div className="stat-value">
+        <span className="number">{count}</span>
+        <span className="suffix">{stat.suffix}</span>
+      </div>
+      <h3 className="stat-title">{stat.title}</h3>
+      <p className="stat-description">{stat.description}</p>
+    </div>
+  );
+};
+
 const StatsCounter = () => {
   useEffect(() => {
     AOS.init({
@@ -44,62 +122,6 @@ const StatsCounter = () => {
     }
   ];
 
-  // Counter animation hook
-  const useCounter = (end, start = 0, duration = 2000) => {
-    const [count, setCount] = useState(start);
-    const countRef = useRef(start);
-    const [inView, setInView] = useState(false);
-    const nodeRef = useRef(null);
-
-    useEffect(() => {
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setInView(true);
-            observer.disconnect();
-          }
-        },
-        { threshold: 0.1 }
-      );
-
-      if (nodeRef.current) {
-        observer.observe(nodeRef.current);
-      }
-
-      return () => {
-        if (nodeRef.current) {
-          observer.disconnect();
-        }
-      };
-    }, []);
-
-    useEffect(() => {
-      if (!inView) return;
-
-      let startTime;
-      const animateCount = (timestamp) => {
-        if (!startTime) startTime = timestamp;
-        const progress = timestamp - startTime;
-        const percentage = Math.min(progress / duration, 1);
-        
-        const currentCount = Math.floor(start + percentage * (end - start));
-        
-        if (countRef.current !== currentCount) {
-          countRef.current = currentCount;
-          setCount(currentCount);
-        }
-
-        if (percentage < 1) {
-          requestAnimationFrame(animateCount);
-        }
-      };
-
-      requestAnimationFrame(animateCount);
-    }, [end, start, duration, inView]);
-
-    return { count, nodeRef };
-  };
-
   return (
     <StatsSection>
       <GoldOverlay />
@@ -110,27 +132,9 @@ const StatsCounter = () => {
         </div>
 
         <div className="stats-grid">
-          {stats.map((stat, index) => {
-            const { count, nodeRef } = useCounter(stat.value);
-            
-            return (
-              <div 
-                className="stat-item" 
-                key={index} 
-                ref={nodeRef}
-                data-aos="zoom-in" 
-                data-aos-delay={index * 100}
-              >
-                <div className="stat-icon">{stat.icon}</div>
-                <div className="stat-value">
-                  <span className="number">{count}</span>
-                  <span className="suffix">{stat.suffix}</span>
-                </div>
-                <h3 className="stat-title">{stat.title}</h3>
-                <p className="stat-description">{stat.description}</p>
-              </div>
-            );
-          })}
+          {stats.map((stat, index) => (
+            <StatItem key={index} stat={stat} index={index} />
+          ))}
         </div>
       </div>
       
@@ -142,7 +146,6 @@ const StatsCounter = () => {
 
 const StatsSection = styled.section`
   padding: 100px 0;
-  
   position: relative;
   overflow: hidden;
   color: #fff;

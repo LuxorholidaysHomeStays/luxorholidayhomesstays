@@ -25,7 +25,7 @@ const PhoneUserManagement = () => {
     phoneNumber: '',
     email: '',
     role: 'user',
-    isEmailVerified: false
+    isVerified: false
   });
   
   // Notification state
@@ -39,7 +39,7 @@ const PhoneUserManagement = () => {
   const fetchPhoneUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/admin/phone-users`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -48,17 +48,19 @@ const PhoneUserManagement = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch phone users');
+        throw new Error('Failed to fetch users');
       }
 
       const data = await response.json();
-      setPhoneUsers(data.users);
-      setFilteredUsers(data.users);
+      // Assume Go backend returns users array
+      const users = data.users || [];
+      setPhoneUsers(users);
+      setFilteredUsers(users);
       setLoading(false);
     } catch (err) {
       setError(err.message);
       setLoading(false);
-      console.error('Error fetching phone users:', err);
+      console.error('Error fetching users:', err);
     }
   };
 
@@ -97,7 +99,7 @@ const PhoneUserManagement = () => {
       phoneNumber: '',
       email: '',
       role: 'user',
-      isEmailVerified: false
+      isVerified: false
     });
     setShowForm(!showForm); // Toggle form visibility
   };
@@ -110,7 +112,7 @@ const PhoneUserManagement = () => {
       email: user.email || '',
       phoneNumber: user.phoneNumber || '',
       role: user.role || 'user',
-      isEmailVerified: user.isEmailVerified || false
+      isVerified: user.isVerified || false
     });
     setShowEditModal(true);
   };
@@ -127,7 +129,7 @@ const PhoneUserManagement = () => {
     try {
       setLoading(true);
       
-      const response = await fetch(`${API_BASE_URL}/api/admin/phone-users`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -143,54 +145,30 @@ const PhoneUserManagement = () => {
       }
       
       setShowForm(false);
-      showNotification('Phone user created successfully', 'success');
+      showNotification('User created successfully', 'success');
       fetchPhoneUsers();
     } catch (err) {
-      console.error('Error creating phone user:', err);
+      console.error('Error creating user:', err);
       showNotification(err.message || 'Failed to create user', 'error');
     } finally {
       setLoading(false);
     }
   };
   
-  // Update existing phone user
+  // Update existing user (Local Simulation/Info)
   const handleUpdateUser = async (e) => {
     e.preventDefault();
-    try {
-      setLoading(true);
-      
-      const response = await fetch(`${API_BASE_URL}/api/admin/phone-users/${selectedUser._id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to update user');
-      }
-      
-      setShowEditModal(false);
-      showNotification('User updated successfully', 'success');
-      fetchPhoneUsers();
-    } catch (err) {
-      console.error('Error updating phone user:', err);
-      showNotification(err.message || 'Failed to update user', 'error');
-    } finally {
-      setLoading(false);
-    }
+    setShowEditModal(false);
+    showNotification('User updates must be made by users on their Profile page.', 'info');
   };
   
-  // Delete phone user
+  // Delete user
   const handleDeleteUser = async () => {
     try {
       setLoading(true);
+      const userId = selectedUser.id || selectedUser._id;
       
-      const response = await fetch(`${API_BASE_URL}/api/admin/phone-users/${selectedUser._id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -304,7 +282,7 @@ const PhoneUserManagement = () => {
         <div className="flex items-center">
           <button 
             onClick={handleAddUserClick}
-            className="flex items-center bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 transition"
+            className="flex items-center bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 transition-colors"
           >
             {showForm ? (
               <>
@@ -371,7 +349,7 @@ const PhoneUserManagement = () => {
                 
                 <div>
                   <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-                    Email
+                    Email *
                   </label>
                   <input
                     type="email"
@@ -379,6 +357,7 @@ const PhoneUserManagement = () => {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
+                    required
                     className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                   />
                 </div>
@@ -400,13 +379,13 @@ const PhoneUserManagement = () => {
               <div className="flex items-center mt-4">
                 <input
                   type="checkbox"
-                  id="isEmailVerified"
-                  name="isEmailVerified"
-                  checked={formData.isEmailVerified}
+                  id="isVerified"
+                  name="isVerified"
+                  checked={formData.isVerified}
                   onChange={handleInputChange}
                   className="mr-2 h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
                 />
-                <label className="text-gray-700 text-sm font-bold" htmlFor="isEmailVerified">
+                <label className="text-gray-700 text-sm font-bold" htmlFor="isVerified">
                   Email Verified
                 </label>
               </div>
@@ -449,7 +428,7 @@ const PhoneUserManagement = () => {
           <tbody className="bg-white divide-y divide-gray-200">
             {currentUsers.length > 0 ? (
               currentUsers.map((user) => (
-                <tr key={user._id} className="hover:bg-gray-50">
+                <tr key={user.id || user._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10 bg-yellow-100 rounded-full flex items-center justify-center">
@@ -476,14 +455,14 @@ const PhoneUserManagement = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="mr-2">
-                        {user.isEmailVerified ? (
+                        {user.isVerified ? (
                           <FaCheck className="text-green-500" />
                         ) : (
                           <FaTimes className="text-red-500" />
                         )}
                       </div>
                       <span className="text-sm text-gray-900">
-                        {user.isEmailVerified ? 'Email Verified' : 'Not Verified'}
+                        {user.isVerified ? 'Email Verified' : 'Not Verified'}
                       </span>
                     </div>
                   </td>
@@ -503,13 +482,13 @@ const PhoneUserManagement = () => {
                     <div className="flex items-center space-x-3">
                       <button 
                         onClick={() => handleEditClick(user)}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="p-2 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
                       >
                         <FaEdit size={18} />
                       </button>
                       <button 
                         onClick={() => handleDeleteClick(user)}
-                        className="text-red-600 hover:text-red-900"
+                        className="p-2 rounded-md text-red-600 hover:bg-red-50 transition-colors"
                       >
                         <FaTrash size={18} />
                       </button>
@@ -571,7 +550,7 @@ const PhoneUserManagement = () => {
       
       {/* Keep Edit User Modal for now - it's for existing users */}
       {showEditModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-gray-900/75 flex items-center justify-center z-[100]">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-bold mb-4">Edit User: {selectedUser.name}</h2>
             <form onSubmit={handleUpdateUser}>
@@ -619,13 +598,13 @@ const PhoneUserManagement = () => {
               <div className="mb-4 flex items-center">
                 <input
                   type="checkbox"
-                  id="edit-isEmailVerified"
-                  name="isEmailVerified"
-                  checked={formData.isEmailVerified}
+                  id="edit-isVerified"
+                  name="isVerified"
+                  checked={formData.isVerified}
                   onChange={handleInputChange}
                   className="mr-2"
                 />
-                <label className="text-gray-700 text-sm font-bold" htmlFor="edit-isEmailVerified">
+                <label className="text-gray-700 text-sm font-bold" htmlFor="edit-isVerified">
                   Email Verified
                 </label>
               </div>
@@ -653,7 +632,7 @@ const PhoneUserManagement = () => {
       
       {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-gray-900/75 flex items-center justify-center z-[100]">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-bold mb-4">Delete User</h2>
             <p className="mb-6">

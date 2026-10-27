@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { FaPlus, FaEdit, FaTrash, FaEye, FaToggleOn, FaToggleOff, FaCalendarAlt, FaPercent, FaRupeeSign } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import { useAuth } from '../../context/AuthContext';
+import { API_BASE_URL } from '../../config/api';
+import { readError } from '../../utils/apiClient';
 
 const OffersManagement = () => {
   const [offers, setOffers] = useState([]);
@@ -25,7 +27,7 @@ const OffersManagement = () => {
   const fetchOffers = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/offers`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/offers`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
@@ -49,7 +51,7 @@ const OffersManagement = () => {
   // Fetch villas
   const fetchVillas = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/villas`, {
+      const response = await fetch(`${API_BASE_URL}/api/villas`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
@@ -78,9 +80,10 @@ const OffersManagement = () => {
     setLoading(true);
 
     try {
+      const offerId = editingOffer ? (editingOffer.id || editingOffer._id) : '';
       const url = editingOffer 
-        ? `${import.meta.env.VITE_API_BASE_URL}/api/admin/offers/${editingOffer._id}`
-        : `${import.meta.env.VITE_API_BASE_URL}/api/admin/offers`;
+        ? `${API_BASE_URL}/api/admin/offers/${offerId}`
+        : `${API_BASE_URL}/api/admin/offers`;
       
       const method = editingOffer ? 'PUT' : 'POST';
 
@@ -101,7 +104,9 @@ const OffersManagement = () => {
         fetchOffers();
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save offer');
+        // The Go backend reports validation failures as { "error": "..." }; surfacing
+        // that beats the generic "Failed to save offer".
+        throw new Error(readError(errorData, 'Failed to save offer'));
       }
     } catch (error) {
       console.error('Error saving offer:', error);
@@ -125,7 +130,7 @@ const OffersManagement = () => {
 
     if (result.isConfirmed) {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/offers/${offerId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/admin/offers/${offerId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${authToken}`,
@@ -149,7 +154,7 @@ const OffersManagement = () => {
   // Handle toggle status
   const handleToggleStatus = async (offerId, currentStatus) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/offers/${offerId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/offers/${offerId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -280,7 +285,7 @@ const OffersManagement = () => {
                   const weekendOfferPrice = calculateOfferPrice(pricing.weekendPrice, offer);
 
                   return (
-                    <tr key={offer._id} className="hover:bg-gray-50">
+                    <tr key={offer.id || offer._id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{villaName}</div>
                         <div className="text-sm text-gray-500">{offer.description}</div>
@@ -318,7 +323,7 @@ const OffersManagement = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
-                          onClick={() => handleToggleStatus(offer._id, offer.isActive)}
+                          onClick={() => handleToggleStatus(offer.id || offer._id, offer.isActive)}
                           className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                             offer.isActive
                               ? 'bg-green-100 text-green-800 hover:bg-green-200'
@@ -339,7 +344,7 @@ const OffersManagement = () => {
                             <FaEdit />
                           </button>
                           <button
-                            onClick={() => handleDelete(offer._id)}
+                            onClick={() => handleDelete(offer.id || offer._id)}
                             className="text-red-600 hover:text-red-900 transition-colors"
                             title="Delete Offer"
                           >
@@ -358,7 +363,7 @@ const OffersManagement = () => {
 
       {/* Modal for Add/Edit Offer */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-gray-900/75 flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <h2 className="text-xl font-bold text-gray-800 mb-6">

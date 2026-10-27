@@ -25,26 +25,38 @@ const requiredEnvVars = [
 ];
 
 const missingVars = requiredEnvVars.filter(varName => !import.meta.env[varName]);
-if (missingVars.length > 0) {
-  console.error('Missing Firebase environment variables:', missingVars);
-  throw new Error(`Missing required Firebase environment variables: ${missingVars.join(', ')}`);
-}
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig, 'luxor-main');
+// Firebase must never throw at import time: this module is reached transitively
+// from main.jsx, so a single unset env var would white-screen the whole public
+// site. Instead we warn once and keep the Firebase features degraded/disabled.
+let app = null;
 let analytics = null;
+let auth = null;
+let googleProvider = null;
 
-// Only initialize analytics in the browser environment
-if (typeof window !== 'undefined' && import.meta.env.VITE_FIREBASE_MEASUREMENT_ID) {
-  analytics = getAnalytics(app);
+if (missingVars.length > 0) {
+  console.warn(
+    `[firebase] Google sign-in disabled: missing environment variables: ${missingVars.join(', ')}`
+  );
+} else {
+  // Initialize Firebase
+  app = initializeApp(firebaseConfig, 'luxor-main');
+
+  // Only initialize analytics in the browser environment
+  if (typeof window !== 'undefined' && import.meta.env.VITE_FIREBASE_MEASUREMENT_ID) {
+    analytics = getAnalytics(app);
+  }
+
+  // Initialize Firebase Auth
+  auth = getAuth(app);
+  googleProvider = new GoogleAuthProvider();
 }
-
-// Initialize Firebase Auth
-const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider();
 
 // Google Sign-In method
 export const signInWithGoogle = async () => {
+  if (!auth || !googleProvider) {
+    throw new Error('Google sign-in is not available right now. Please use another sign-in method.');
+  }
   try {
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
@@ -66,7 +78,7 @@ export const signInWithGoogle = async () => {
 
 // Get current authenticated user
 export const getCurrentUser = () => {
-  return auth.currentUser;
+  return auth ? auth.currentUser : null;
 };
 
 export { app, auth, analytics };

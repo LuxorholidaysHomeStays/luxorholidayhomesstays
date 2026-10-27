@@ -24,22 +24,17 @@ body,
   overflow: hidden;
 }
 
-/* Custom scrollbar */
+/* Completely invisible smooth scrollbar */
+html, body {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  display: none; /* Chrome, Safari, Opera */
+  width: 0px;
+  height: 0px;
+  background: transparent;
 }
 
 /* Loading animation */

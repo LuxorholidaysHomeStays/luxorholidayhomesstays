@@ -23,37 +23,26 @@ const requiredOtpEnvVars = [
 ];
 
 const missingOtpVars = requiredOtpEnvVars.filter(varName => !import.meta.env[varName]);
-if (missingOtpVars.length > 0) {
-  console.error('Missing OTP Firebase environment variables:', missingOtpVars);
-  throw new Error(`Missing required OTP Firebase environment variables: ${missingOtpVars.join(', ')}`);
-}
-
-// Initialize Firebase OTP app (singleton pattern to prevent duplicate apps)
-let otpApp;
+let otpApp = null;
+let auth = null;
 const OTP_APP_NAME = 'luxor-otp';
 
-try {
-  // Check if the OTP app is already initialized
-  const existingApps = getApps();
-  const existingOtpApp = existingApps.find(app => app.name === OTP_APP_NAME);
-  
-  if (existingOtpApp) {
-    otpApp = existingOtpApp;
-  } else {
-    otpApp = initializeApp(otpFirebaseConfig, OTP_APP_NAME);
-  }
-} catch (error) {
-  console.error('Firebase OTP app initialization error:', error);
-  // Try to get the existing app as fallback
+if (missingOtpVars.length === 0) {
   try {
-    otpApp = getApp(OTP_APP_NAME);
-  } catch (getAppError) {
-    console.error('Failed to get existing OTP app:', getAppError);
-    throw new Error('Failed to initialize Firebase OTP app');
+    const existingApps = getApps();
+    const existingOtpApp = existingApps.find(app => app.name === OTP_APP_NAME);
+    if (existingOtpApp) {
+      otpApp = existingOtpApp;
+    } else {
+      otpApp = initializeApp(otpFirebaseConfig, OTP_APP_NAME);
+    }
+    auth = getAuth(otpApp);
+  } catch (error) {
+    console.warn('Firebase OTP app initialization warning:', error);
   }
+} else {
+  console.log('Firebase OTP variables not provided, using Go backend authentication.');
 }
-
-const auth = getAuth(otpApp);
 
 // Phone authentication functions
 export const setupRecaptcha = (elementId, options = {}) => {

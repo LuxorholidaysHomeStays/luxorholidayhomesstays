@@ -35,8 +35,10 @@ const AuthGuard = ({ children, redirectOnAuthenticated = true, redirectPath = "/
         // If redirectOnAuthenticated is false and we're on the complete-profile route,
         // check if the user is already verified and should be redirected
         else if (redirectOnAuthenticated === false && location.pathname === '/complete-profile') {
-          // Check if user has already completed their profile (has verified email)
-          if (userData && userData.email && !userData.email.includes('@phone.luxor.com') && userData.isEmailVerified) {
+          // The Go profile response exposes `isVerified`; `isEmailVerified` was a
+          // Clerk-era name that nothing ever set, so this redirect never fired.
+          const syntheticPhoneEmail = userData?.email?.endsWith('@phone.luxor.com');
+          if (userData?.email && !syntheticPhoneEmail && userData.isVerified) {
             navigate(redirectPath, { replace: true });
           }
         }

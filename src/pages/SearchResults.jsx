@@ -1,57 +1,11 @@
-"use client"
-
 import { useState, useEffect, useRef } from "react"
-import { useLocation, Link, useNavigate } from "react-router-dom"
+import { useLocation, Link } from "react-router-dom"
 import { motion } from "framer-motion"
 import { FaMapMarkerAlt, FaRegCalendar, FaSwimmingPool, FaWifi, FaStar, FaUsers, FaBed, FaBath } from "react-icons/fa"
 import { MdOutlineBeachAccess, MdHotTub } from "react-icons/md"
 import { LuChefHat } from "react-icons/lu"
-
-import anandvilla1 from "../assets/empireanandvilla/anandvilla1.jpg"
-import anandvilla2 from "../assets/empireanandvilla/anandvilla2.jpg"
-import anandvilla3 from "../assets/empireanandvilla/anandvilla3.jpg"
-import anandvilla4 from "../assets/empireanandvilla/anandvilla4.jpg"
-import anandvilla5 from "../assets/empireanandvilla/anandvilla5.jpg"
-import anandvilla6 from "../assets/empireanandvilla/anandvilla6.jpg"
-import anandvilla7 from "../assets/empireanandvilla/anandvilla7.jpg"
-import anandvilla8 from "../assets/empireanandvilla/anandvilla8.jpg"
-import anandvilla9 from "../assets/empireanandvilla/anandvilla9.jpg"
-import anandvilla10 from "../assets/empireanandvilla/anandvilla10.jpg"
-import anandvilla11 from "../assets/empireanandvilla/anandvilla11.jpg"
-import anandvilla12 from "../assets/empireanandvilla/anandvilla12.jpg"
-import anandvilla13 from "../assets/empireanandvilla/anandvilla13.jpg"
-import anandvilla14 from "../assets/empireanandvilla/anandvilla14.jpg"
-import anandvilla15 from "../assets/empireanandvilla/anandvilla15.jpg"
-import anandvilla16 from "../assets/empireanandvilla/anandvilla16.jpg"
-
-// Placeholder for API_BASE_URL. In a real application, this would be imported
-// from a configuration file or set as an environment variable.
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-// Images for luxury villas
-const defaultImages = [
-  anandvilla1,
-  anandvilla2,
-  anandvilla3,
-  anandvilla4,
-  anandvilla5,
-  anandvilla6,
-  anandvilla7,
-  anandvilla8,
-  anandvilla9,
-  anandvilla10,
-  anandvilla11,
-  anandvilla12,
-  anandvilla13,
-  anandvilla14,
-  anandvilla15,
-  anandvilla16,
-]
-
-// Helper to get a random image from the defaultImages array
-function getRandomImage() {
-  return defaultImages[Math.floor(Math.random() * defaultImages.length)]
-}
+import { API_BASE_URL } from "../config/api"
+import { getVillaImage } from "../utils/villaImages"
 
 // Animation variants for framer-motion
 const containerVariants = {
@@ -77,24 +31,15 @@ const itemVariants = {
   }
 }
 
-// Random amenities for each villa to enhance UI
-const amenities = [
-  { icon: <FaSwimmingPool className="text-blue-500" />, label: "Private Pool" },
-  { icon: <FaWifi className="text-yellow-600" />, label: "Free WiFi" },
-  { icon: <MdOutlineBeachAccess className="text-yellow-600" />, label: "Beach Access" },
-  { icon: <MdHotTub className="text-cyan-500" />, label: "Hot Tub" },
-  { icon: <LuChefHat className="text-yellow-700" />, label: "Chef Service" },
-]
-
-const getRandomAmenities = () => {
-  const shuffled = [...amenities].sort(() => 0.5 - Math.random())
-  return shuffled.slice(0, Math.floor(Math.random() * 3) + 2) // Return 2-4 random amenities
+const getVillaAmenities = (villa) => {
+  if (Array.isArray(villa.amenities)) return villa.amenities;
+  if (Array.isArray(villa.facilities)) return villa.facilities.map((item) => item.name || item).filter(Boolean);
+  return [];
 }
 
 const SearchResults = () => {
   const location = useLocation()
   const resultsRef = useRef(null)
-  const navigate = useNavigate()
 
   // Extract search parameters from the URL
   const searchParams = new URLSearchParams(location.search)
@@ -112,79 +57,84 @@ const SearchResults = () => {
   const [currentImage, setCurrentImage] = useState({})
 
   useEffect(() => {
+    const controller = new AbortController()
     const fetchVillas = async () => {
       setLoading(true)
       setError(null)
       try {
-        // Fetch villas filtered by location
-        const villaRes = await fetch(
-          `${API_BASE_URL}/api/villas/search?location=${encodeURIComponent(destination || "")}`,
-        )
-        let villaList = await villaRes.json()
+        // Fetch all villas from Go backend
+        const villaRes = await fetch(`${API_BASE_URL}/api/villas`, { signal: controller.signal });
+        if (!villaRes.ok) {
+          throw new Error(`Failed to fetch villas (${villaRes.status})`);
+        }
+        const villaData = await villaRes.json();
+        const rawList = Array.isArray(villaData) ? villaData : (villaData.villas || villaData.data || []);
+        
+        let filteredList = rawList;
+        if (destination && destination.trim()) {
+          const term = destination.toLowerCase().trim();
+          filteredList = rawList.filter(v => 
+            (v.location || '').toLowerCase().includes(term) || 
+            (v.name || '').toLowerCase().includes(term)
+          );
+        }
 
-        // Modify the villa mapping to ensure IDs are consistent with your mock data
-        villaList = villaList.map((villa, index) => {
+        let villaList = filteredList.map((villa) => {
+          const villaId = villa.id || villa._id;
+          if (!villaId) return null;
+
           let images = []
-          
-          // Process images as you were doing before
           if (Array.isArray(villa.images) && villa.images.length > 0) {
-            // If the backend image is a placeholder string, use a random image
-            if (
-              villa.images.length === 1 &&
-              (villa.images[0] === "empireAnandVillaImages" || villa.images[0] === "" || villa.images[0] === null)
-            ) {
-              // Use 3-4 random images for each villa
-              const imageCount = Math.floor(Math.random() * 2) + 3
-              images = Array(imageCount).fill().map(() => getRandomImage())
-            } else {
-              // Ensure that if an image URL from the backend is invalid or a placeholder, it's replaced
-              images = villa.images.map((img) => (img === "empireAnandVillaImages" || !img ? getRandomImage() : img))
-            }
+            images = villa.images.map((img) => (!img ? getVillaImage(villa.name) : img))
           } else {
-            const imageCount = Math.floor(Math.random() * 2) + 3
-            images = Array(imageCount).fill().map(() => getRandomImage())
+            images = [getVillaImage(villa.name)]
           }
-          
-          // Ensure villa has a consistent _id that works with your mock data
-          // If the villa has no _id or it's not valid, generate a consistent mock ID
-          const mockId = `mock-villa-${index + 1}`
           
           return { 
             ...villa, 
-            _id: villa._id || mockId, // Use existing ID or generate mock ID
+            id: villaId,
+            _id: villaId,
             images,
-            rating: (Math.random() * 1 + 4).toFixed(1), // Random rating between 4.0-5.0
-            reviews: Math.floor(Math.random() * 100) + 10, // Random number of reviews
-            amenities: getRandomAmenities(),
-            bedrooms: villa.bedrooms || Math.floor(Math.random() * 4) + 2,
-            bathrooms: villa.bathrooms || Math.floor(Math.random() * 3) + 2,
+            // Use the villa's real rating and occupancy. Random values here made
+            // every villa look better-rated than it is.
+            rating: Number(villa.rating) || 0,
+            amenities: getVillaAmenities(villa),
+            bedrooms: villa.bedrooms || 0,
+            bathrooms: villa.bathrooms || 0,
           }
-        })
+        }).filter(Boolean)
 
         // Fetch all bookings for the selected date range
         let bookedVillaIds = new Set()
         if (checkIn && checkOut) {
-          const bookingRes = await fetch(`${API_BASE_URL}/api/bookings/search?checkIn=${checkIn}&checkOut=${checkOut}`)
-          const bookings = await bookingRes.json()
-          bookedVillaIds = new Set(bookings.map((b) => String(b.villaId)))
+          const bookingRes = await fetch(`${API_BASE_URL}/api/bookings/search?checkIn=${checkIn}&checkOut=${checkOut}`, { signal: controller.signal })
+          if (bookingRes.ok) {
+            const bookingData = await bookingRes.json()
+            if (bookingData.unavailableVillaIds) {
+              bookedVillaIds = new Set(bookingData.unavailableVillaIds.map(id => String(id)))
+            } else if (bookingData.bookings) {
+              bookedVillaIds = new Set(bookingData.bookings.map((b) => String(b.villaId)))
+            }
+          }
         }
 
         // Mark each villa as available or not
         const results = villaList.map((villa) => ({
           ...villa,
-          isBooked: bookedVillaIds.has(String(villa._id)),
+          isBooked: bookedVillaIds.has(String(villa._id)) || bookedVillaIds.has(String(villa.id)),
         }))
 
         setVillas(results)
       } catch (err) {
+        if (err.name === "AbortError") return
         setError("Failed to fetch villa search results.")
-        console.error("Fetch error:", err) // Log the actual error for debugging
+        console.error("Fetch error:", err)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchVillas()
+    return () => controller.abort()
   }, [destination, checkIn, checkOut])
 
   // Calculate nights of stay
@@ -246,47 +196,6 @@ const SearchResults = () => {
     return currentImage[villaId] || 0
   }
 
-  // Fix the navigateToVillaDetail function to handle images properly
-  const navigateToVillaDetail = (e, villa) => {
-    e.stopPropagation(); // Prevent parent click from triggering
-    const villaId = villa._id || villa.id;
-    
-    // Ensure villa has proper image collection based on name
-    let processedVilla = {...villa};
-    
-    // Check if villa has no images or has insufficient images
-    if (!processedVilla.images || !Array.isArray(processedVilla.images) || processedVilla.images.length < 5) {
-      // Match villa name with image collections
-      const villaName = processedVilla.name?.toLowerCase() || '';
-      
-      if (villaName.includes('amrith') || villaName.includes('palace')) {
-        console.log("Mapping Amrith Palace images to villa");
-        processedVilla.images = villaImageCollections["Amrith Palace"];
-      } else if (villaName.includes('east') || villaName.includes('coast')) {
-        console.log("Mapping East Coast Villa images to villa");
-        processedVilla.images = villaImageCollections["East Coast Villa"];
-      } else if (villaName.includes('ram') || villaName.includes('water')) {
-        console.log("Mapping Ram Water Villa images to villa");
-        processedVilla.images = villaImageCollections["Ram Water Villa"];
-      } else if (villaName.includes('empire') || villaName.includes('anand') || villaName.includes('samudra')) {
-        console.log("Mapping Empire Anand Villa Samudra images to villa");
-        processedVilla.images = villaImageCollections["Empire Anand Villa Samudra"];
-      } else {
-        // Default to Empire Anand if no match
-        console.log("Using default Empire Anand Villa Samudra images");
-        processedVilla.images = empireAnandVillaSamudraImages;
-      }
-    }
-    
-    // Now navigate with the processed villa data containing proper images
-    navigate(`/rooms/${villaId}`, { 
-      state: { 
-        villa: processedVilla,
-        fromSearch: true // Mark that we came from search results
-      } 
-    });
-  }
-
   return (
     <div className="pt-16 sm:pt-20 min-h-screen bg-white">
       {/* Hero Banner */}
@@ -299,7 +208,8 @@ const SearchResults = () => {
           >
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-light mb-4 sm:mb-6 text-gray-900">
               Luxury Villas in <span className="font-semibold text-yellow-600">{destination || "All Locations"}</span>
-            </h1>              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-gray-600">
+            </h1>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-gray-600">
               <div className="flex items-center text-sm sm:text-base">
                 <FaRegCalendar className="mr-2 text-yellow-600" />
                 <span>
@@ -439,7 +349,7 @@ const SearchResults = () => {
                   {/* Image Container */}
                   <div 
                     className={`relative overflow-hidden ${viewType === 'list' ? 'w-full sm:w-2/5' : 'w-full'}`}
-                    style={{ height: viewType === 'list' ? '280px' : '200px sm:220px md:240px' }}
+                    style={{ height: viewType === 'list' ? '280px' : '220px' }}
                   >
                     <img
                       src={villa.images[getCurrentImageIndex(villa._id)]}
@@ -526,12 +436,20 @@ const SearchResults = () => {
                     
                     {/* Amenities */}
                     <div className="flex flex-wrap gap-2 sm:gap-3 mb-3 sm:mb-4">
-                      {villa.amenities.map((amenity, index) => (
-                        <div key={index} className="flex items-center text-xs sm:text-sm text-gray-600">
-                          <span className="text-yellow-600">{amenity.icon}</span>
-                          <span className="ml-1">{amenity.label}</span>
-                        </div>
-                      ))}
+                      {villa.amenities.map((amenity, index) => {
+                        const label = typeof amenity === "string"
+                          ? amenity
+                          : amenity?.label || amenity?.name || ""
+                        if (!label) return null
+                        return (
+                          <div key={`${label}-${index}`} className="flex items-center text-xs sm:text-sm text-gray-600">
+                            {typeof amenity === "object" && amenity.icon && (
+                              <span className="text-yellow-600">{amenity.icon}</span>
+                            )}
+                            <span className="ml-1">{label}</span>
+                          </div>
+                        )
+                      })}
                     </div>
                     
                     <div className="mt-auto flex items-center justify-between">

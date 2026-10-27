@@ -28,8 +28,8 @@ const Navbar = () => {
     const { t } = useLanguage();
 
     const navLinks = [
-        { name: t('home'), path: '/' },
-        { name: t('villas'), path: '/rooms' },
+        { name: t('home'), path: '/home' },
+        { name: t('villas'), path: '/' },
         { name: t('contact'), path: '/contact' },
         { name: t('about'), path: '/about' },
     ];
@@ -69,7 +69,7 @@ const Navbar = () => {
     }
 
     useEffect(() => {
-        if (location.pathname !== '/') {
+        if (location.pathname !== '/home') {
             setIsScrolled(true);
             return;
         } else {
@@ -265,18 +265,7 @@ const Navbar = () => {
                                         <span>Dashboard</span>
                                     </div>
                                 )}
-                                <div
-                                    className="px-4 py-2 text-white hover:text-[#BF953F] cursor-pointer flex items-center gap-2 transition-colors"
-                                    onClick={() => {
-                                        setUserMenuOpen(false);
-                                        handleNavigation('/profile');
-                                    }}
-                                >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
-                                    <span>{t('my_profile')}</span>
-                                </div>
+
                                 <hr className="my-1 border-[#BF953F]/20" />
                                 <div
                                     className="px-4 py-2 text-red-400 hover:text-red-300 cursor-pointer flex items-center gap-2 transition-colors"
@@ -445,18 +434,7 @@ const Navbar = () => {
                             <span>{t('dashboard')}</span>
                         </div>
                     )}
-                    <div
-                        className="px-4 py-2 text-white hover:text-[#BF953F] cursor-pointer flex items-center gap-2 transition-colors"
-                        onClick={() => {
-                            setUserMenuOpen(false);
-                            handleNavigation('/profile');
-                        }}
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        <span>My Profile</span>
-                    </div>
+
                     <hr className="my-1 border-[#BF953F]/20" />
                     <div
                         className="px-4 py-2 text-red-400 hover:text-red-300 cursor-pointer flex items-center gap-2 transition-colors"

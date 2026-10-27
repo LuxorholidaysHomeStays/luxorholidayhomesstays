@@ -43,7 +43,8 @@ const villaFallbackPricing = {
   "Lavish Villa I": { weekday: 18000, weekend: 25000 },
   "Lavish Villa II": { weekday: 18000, weekend: 25000 },
   "Lavish Villa III": { weekday: 16000, weekend: 23000 },
-  "Empire Anand Villa Samudra": { weekday: 40000, weekend: 60000 }
+  "Empire Anand Villa Samudra": { weekday: 40000, weekend: 60000 },
+  "Opal Villa": { weekday: 25000, weekend: 35000 }
 };
 
 export const getPriceForDate = async (date, villa) => {

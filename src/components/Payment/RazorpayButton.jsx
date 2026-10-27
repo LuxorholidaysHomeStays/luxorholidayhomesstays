@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Swal from 'sweetalert2';
+import { toast } from '../../utils/toast';
 import { useAuth } from '../../context/AuthContext';
+import { API_BASE_URL, requireApiBaseUrl } from '../../config/api';
 
 const RazorpayButton = ({ amount, bookingData, onSuccess, onError }) => {
   const [loading, setLoading] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
-  const { user } = useAuth();
+  const { user, authToken } = useAuth();
   const navigate = useNavigate();
 
   // Load Razorpay script
@@ -38,136 +39,125 @@ const RazorpayButton = ({ amount, bookingData, onSuccess, onError }) => {
 
   const handlePayment = async () => {
     if (!razorpayLoaded) {
-      Swal.fire('Error', 'Payment gateway is still loading. Please try again in a moment.', 'error');
+      toast.error('Payment gateway is still loading. Please try again in a moment.');
       return;
     }
 
     setLoading(true);
-    const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://luxorstay-backend.vercel.app';
+    const token = authToken || localStorage.getItem('authToken');
 
     try {
-      // 1. Create a booking first
-      const bookingResponse = await fetch(`${API_URL}/api/bookings`, {
+      requireApiBaseUrl();
+
+      // 1. Create a booking first if not already created
+      let bookingId = bookingData?.bookingId || bookingData?._id || bookingData?.id;
+      let bookingObj = bookingData;
+
+      if (!bookingId) {
+        const bookingResponse = await fetch(`${API_BASE_URL}/api/bookings`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            ...bookingData,
+            status: 'pending',
+            paymentStatus: 'pending'
+          })
+        });
+
+        if (!bookingResponse.ok) {
+          const error = await bookingResponse.json().catch(() => ({}));
+          console.error('Booking creation failed:', error);
+          throw new Error(error.error || error.message || 'Failed to create booking');
+        }
+
+        const bookingResult = await bookingResponse.json();
+        bookingObj = bookingResult.booking || bookingResult.data || bookingResult;
+        bookingId = bookingObj?.bookingId || bookingObj?._id || bookingObj?.id;
+      }
+
+      // 2. Create Razorpay order. The backend is the pricing authority: it ignores
+      // any client-supplied amount and calculates the total from the booking or
+      // from villa + dates, ensuring the displayed price matches what is charged.
+      const orderResponse = await fetch(`${API_BASE_URL}/api/payments/create-order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          ...bookingData,
-          status: 'pending_payment',
-          paymentStatus: 'pending'
+          bookingId: String(bookingId),
+          notes: {
+            villaName: bookingObj?.villaName || '',
+            guestName: bookingObj?.guestName || user?.name || ''
+          }
         })
-      });
-
-      if (!bookingResponse.ok) {
-        const error = await bookingResponse.json().catch(() => ({}));
-        console.error('Booking creation failed:', error);
-        throw new Error(error.message || 'Failed to create booking');
-      }
-
-      const booking = await bookingResponse.json().catch(error => {
-        console.error('Failed to parse booking response:', error);
-        throw new Error('Invalid booking response from server');
-      });
-
-      if (!booking || !booking._id) {
-        console.error('Invalid booking data:', booking);
-        throw new Error('Invalid booking data received from server');
-      }
-
-      console.log('Created booking:', booking._id);
-
-      // 2. Create Razorpay order
-      const orderData = {
-        amount: Math.round(1 * 100), // Fixed 1 rupee for testing
-        currency: 'INR',
-        receipt: `test_${Date.now()}`,
-        notes: {
-          bookingId: booking._id,
-          villaId: booking.villa?._id || booking.villaId,
-          isTestPayment: true
-        }
-      };
-
-      console.log('Creating order with data:', orderData);
-
-      const orderResponse = await fetch(`${API_URL}/api/payments/create-order`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        },
-        body: JSON.stringify(orderData)
       });
 
       if (!orderResponse.ok) {
         const error = await orderResponse.json().catch(() => ({}));
-        console.error('Order creation failed:', error);
-        throw new Error(error.error || 'Failed to create payment order');
+        throw new Error(error.error || error.message || 'Failed to initialize payment gateway');
       }
 
-      const order = await orderResponse.json();
+      const orderData = await orderResponse.json();
+      const order = orderData.order || orderData;
 
-      // 3. Initialize Razorpay payment
+      // 3. Configure Razorpay checkout
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY || 'rzp_live_quNHH9YfEhaAru',
+        key: orderData.keyId || orderData.key || import.meta.env.VITE_RAZORPAY_KEY,
         amount: order.amount,
-        currency: order.currency,
-        name: 'Luxor Villas',
-        description: `Booking for ${booking.villa?.name || 'your villa'}`,
+        currency: order.currency || 'INR',
+        name: 'LuxorStay Holiday Homes',
+        description: `Booking payment for ${bookingObj?.villaName || 'Villa'}`,
         order_id: order.id,
         handler: async function(response) {
           try {
-            // Verify payment on the server
-            const verifyResponse = await fetch(`${API_URL}/api/payments/verify`, {
+            // 4. Verify payment
+            const verifyResponse = await fetch(`${API_BASE_URL}/api/payments/verify`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                'Authorization': `Bearer ${token}`
               },
               body: JSON.stringify({
-                razorpay_payment_id: response.razorpay_payment_id,
+                bookingId: String(bookingId),
                 razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature,
-                bookingId: booking._id
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
               })
             });
 
+            if (!verifyResponse.ok) {
+              const error = await verifyResponse.json().catch(() => ({}));
+              throw new Error(error.error || error.message || 'Payment verification failed');
+            }
+
             const result = await verifyResponse.json();
 
-            if (result.success) {
+            if (result.success === true) {
               onSuccess?.(result);
-              Swal.fire({
-                title: 'Success!',
-                text: 'Payment successful! Your booking is confirmed.',
-                icon: 'success',
-                confirmButtonText: 'View My Bookings'
-              }).then(() => {
-                navigate('/my-bookings');
-              });
+              toast.success('Payment successful! Your booking is confirmed.');
+              navigate('/my-bookings');
             } else {
-              throw new Error(result.message || 'Payment verification failed');
+              throw new Error(result.error || result.message || 'Payment verification failed');
             }
           } catch (error) {
             console.error('Payment verification error:', error);
             onError?.(error);
-            Swal.fire({
-              title: 'Error',
-              text: error.message || 'Payment verification failed. Please contact support.',
-              icon: 'error'
-            });
+            toast.error(error.message || 'Payment verification failed. Please contact support.');
           } finally {
             setLoading(false);
           }
         },
         prefill: {
-          name: booking.guestName || user?.name || '',
-          email: booking.email || user?.email || '',
-          contact: booking.phone || user?.phone || ''
+          name: bookingObj?.guestName || user?.name || '',
+          email: bookingObj?.email || user?.email || '',
+          contact: bookingObj?.phone || user?.phoneNumber || ''
         },
         theme: {
-          color: '#D4AF37' // Gold color to match Luxor theme
+          color: '#D4AF37'
         },
         modal: {
           ondismiss: () => {
@@ -181,22 +171,14 @@ const RazorpayButton = ({ amount, bookingData, onSuccess, onError }) => {
       
       rzp.on('payment.failed', function(response) {
         onError?.(response.error);
-        Swal.fire({
-          title: 'Payment Failed',
-          text: response.error.description || 'Payment was not completed successfully',
-          icon: 'error'
-        });
+        toast.error(response.error.description || 'Payment was not completed successfully');
         setLoading(false);
       });
 
     } catch (error) {
       console.error('Payment error:', error);
       onError?.(error);
-      Swal.fire({
-        title: 'Error',
-        text: error.message || 'Something went wrong with the payment',
-        icon: 'error'
-      });
+      toast.error(error.message || 'Something went wrong with the payment');
       setLoading(false);
     }
   };
@@ -205,18 +187,18 @@ const RazorpayButton = ({ amount, bookingData, onSuccess, onError }) => {
     <button
       onClick={handlePayment}
       disabled={loading || !razorpayLoaded}
-      className={`w-full bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-600 hover:to-gold-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-opacity-50 ${loading ? 'opacity-75 cursor-not-allowed' : ''}`}
+      className={`w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50 ${loading ? 'opacity-75 cursor-not-allowed' : ''}`}
     >
       {loading ? (
         <span className="flex items-center justify-center">
-          <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          Processing...
+          Processing Payment...
         </span>
       ) : (
-        `Pay Now ₹${(1).toLocaleString()}`
+        `Pay Now ₹${amount?.toLocaleString()}`
       )}
     </button>
   );

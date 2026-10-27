@@ -1,4 +1,3 @@
-"use client"
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
@@ -9,9 +8,9 @@ import Kitchen from "../assets/Facilities/KITCHEN.png"
 import Parking from "../assets/Facilities/PARK.png"
 import Pool from "../assets/Facilities/p.png"
 import Wifi from "../assets/Facilities/WIFI.png"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom"
 import { API_BASE_URL } from "../config/api"
-import Swal from "sweetalert2"
+import { toast } from "../utils/toast"
 
 // Custom CSS animations
 const styles = `
@@ -272,16 +271,30 @@ const villaImageCollections = {
     "/LavishVilla 3/lvthree11.jpg",
     "/LavishVilla 3/lvthree18.jpg",
   ],
-}
-
-// Utility to shuffle images for each villa
-function getRandomImages(imagesArr) {
-  const arr = [...imagesArr]
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[arr[i], arr[j]] = [arr[j], arr[i]]
-  }
-  return arr
+  "Opal Villa": [
+    "/opal/opal5.jpg",
+    "/opal/opal1.jpg",
+    "/opal/opal2.jpg",
+    "/opal/opal3.jpg",
+    "/opal/opal4.jpg",
+    "/opal/opal6.jpg",
+    "/opal/opal7.jpg",
+    "/opal/opal8.jpg",
+    "/opal/opal9.jpg",
+    "/opal/opal10.jpg",
+    "/opal/opal11.jpg",
+    "/opal/opal12.jpg",
+    "/opal/opal13.jpg",
+    "/opal/opal14.jpg",
+    "/opal/opal15.jpg",
+    "/opal/opal16.jpg",
+    "/opal/opal17.jpg",
+    "/opal/opal18.jpg",
+    "/opal/opal19.jpg",
+    "/opal/opal20.jpg",
+    "/opal/opal21.jpg",
+    "/opal/opal22.jpg",
+  ],
 }
 
 const facilityIconMap = {
@@ -307,9 +320,12 @@ const AllRooms = () => {
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState("")
   const navigate = useNavigate()
+  const location = useLocation()
+  const [searchParams] = useSearchParams()
+  const guests = searchParams.get("guests")
 
   // Filter states
-  const [priceRange, setPriceRange] = useState([0, 50000])
+  const [priceRange, setPriceRange] = useState([0, 100000])
   const [selectedTypes, setSelectedTypes] = useState([])
   const [selectedBedrooms, setSelectedBedrooms] = useState("Any")
   const [selectedBeds, setSelectedBeds] = useState("Any")
@@ -335,17 +351,25 @@ const AllRooms = () => {
     // Re-enable body scrolling
     document.body.style.overflow = "unset"
     document.body.classList.remove("modal-open")
-    // Ensure we stay on rooms page
-    navigate('/rooms', { replace: true })
+    // Ensure we stay on current page
+    navigate(location.pathname || '/', { replace: true })
   }
 
   useEffect(() => {
+    // Read URL search params from Hero component
+    const checkIn = searchParams.get('checkIn')
+    const checkOut = searchParams.get('checkOut')
+    if (guests) setSelectedBedrooms(guests === 'Any' ? 'Any' : guests)
+
     const fetchVillas = async () => {
       try {
         setLoading(true)
-        console.log("Fetching villas from:", `${API_BASE_URL}/api/villas/`)
+        console.log("Fetching villas from:", `${API_BASE_URL}/api/villas`)
 
-        const response = await fetch(`${API_BASE_URL}/api/villas/`)
+        const response = await fetch(`${API_BASE_URL}/api/villas`)
+        const availabilityResponse = checkIn && checkOut
+          ? await fetch(`${API_BASE_URL}/api/bookings/search?checkIn=${encodeURIComponent(checkIn)}&checkOut=${encodeURIComponent(checkOut)}`)
+          : null
         if (!response.ok) {
           console.error("API Error:", response.status, response.statusText)
           throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`)
@@ -354,7 +378,11 @@ const AllRooms = () => {
         const data = await response.json()
         console.log("API Response data:", data)
 
-        if (!data || data.length === 0) {
+        const villaList = Array.isArray(data) ? data : (data.villas || data.data || [])
+        const availabilityData = availabilityResponse?.ok ? await availabilityResponse.json() : null
+        const unavailableIds = new Set(availabilityData?.unavailableVillaIds || [])
+
+        if (villaList.length === 0) {
           console.warn("API returned empty data")
           setVillas([])
           setFilteredVillas([])
@@ -363,7 +391,7 @@ const AllRooms = () => {
         }
 
         // Process villa data and handle images properly
-        const transformedData = data.map((villa, index) => {
+        const transformedData = villaList.filter((villa) => !unavailableIds.has(String(villa.id || villa._id))).map((villa, index) => {
           // Check if this villa has a local image collection
           let images
 
@@ -391,6 +419,7 @@ const AllRooms = () => {
 
             // Check for specific keywords in names
             const nameKeywords = {
+              opal: "Opal Villa",
               amrith: "Amrith Palace",
               palace: "Amrith Palace",
               "east coast": "East Coast Villa",
@@ -416,36 +445,27 @@ const AllRooms = () => {
           const villaName = villa.name || ""
           images = getBestMatchingVillaImages(villaName)
 
-          // If no match found, use backend images or fallback
+          // If no match found, use backend images or show placeholder
           if (!images) {
             if (Array.isArray(villa.images) && villa.images.length > 0) {
-              if (villa.images[0] === "empireAnandVillaImages") {
-                // Use empire Anand Villa fallback for this specific case
-                images = getRandomImages(villaImageCollections["Empire Anand Villa Samudra"])
-              } else {
-                // Use the images provided by the backend
-                images = villa.images
-              }
-            } else if (villaName.toLowerCase().includes("anand") || villaName.toLowerCase().includes("empire")) {
-              // Use empire Anand Villa fallback
-              images = getRandomImages(villaImageCollections["Empire Anand Villa Samudra"])
+              images = villa.images
             } else {
-              // Default fallback - use a random image collection
-              const collections = Object.values(villaImageCollections)
-              const randomCollection = collections[Math.floor(Math.random() * collections.length)]
-              images = getRandomImages(randomCollection)
+              // No images available - will show placeholder in UI
+              images = []
             }
           }
 
-          // Generate a unique ID based on villa name and index
-          const generatedId = villa._id || `villa-${(villa.name || "").toLowerCase().replace(/\s+/g, "-")}-${index}`
+          // Generate a unique ID based on backend id or name
+          const generatedId = villa.id || villa._id || `villa-${(villa.name || "").toLowerCase().replace(/\s+/g, "-")}-${index}`
 
-          // Ensure we have a valid price
-          const price = Number(villa.price) || Math.floor(Math.random() * 30000) + 5000
+          // Use backend price directly - no fallback pricing since backend is the authority
+          let price = Number(villa.price) || 0
 
-          // Extract amenities from facilities if available
+          // Extract amenities from backend if available
           let amenities = []
-          if (villa.facilities && Array.isArray(villa.facilities)) {
+          if (Array.isArray(villa.amenities)) {
+            amenities = villa.amenities
+          } else if (villa.facilities && Array.isArray(villa.facilities)) {
             amenities = villa.facilities.map((facility) => facility.name || facility)
           }
 
@@ -453,15 +473,17 @@ const AllRooms = () => {
             id: generatedId,
             _id: villa._id,
             name: villa.name || `Villa ${index + 1}`,
-            location: villa.location || "Goa, India",
+            // No invented location, occupancy or rating: an unknown value renders
+            // as unknown instead of random data the guest would rely on.
+            location: villa.location || "",
             price: price,
-            description: villa.description || "A beautiful villa with stunning views and modern amenities.",
+            description: villa.description || "",
             images: images,
-            guests: villa.guests || Math.floor(Math.random() * 10) + 2,
-            bedrooms: villa.bedrooms || Math.floor(Math.random() * 5) + 1,
-            bathrooms: villa.bathrooms || villa.bedrooms || Math.floor(Math.random() * 5) + 1,
-            rating: villa.rating || (Math.random() * 1 + 4).toFixed(1),
-            amenities: amenities.length > 0 ? amenities : ["WiFi", "AC", "Kitchen", "Free Parking"],
+            guests: villa.guests || 0,
+            bedrooms: villa.bedrooms || 0,
+            bathrooms: villa.bathrooms || villa.bedrooms || 0,
+            rating: Number(villa.rating) || 0,
+            amenities: amenities.length > 0 ? amenities : [],
             type: villa.type || "VILLA",
           }
         })
@@ -499,15 +521,18 @@ const AllRooms = () => {
           id: `fallback-villa-${index}`,
           _id: `fallback-${index}`,
           name: name,
-          location: index % 2 === 0 ? "Goa, India" : "Pondicherry, India",
-          price: Math.floor(Math.random() * 30000) + 5000,
-          description: "A beautiful villa with stunning views and modern amenities.",
+          // This list only appears when the API is unreachable. It shows names and
+          // photographs we hold locally, and leaves price, location and occupancy
+          // blank rather than presenting invented figures as real.
+          location: "",
+          price: 0,
+          description: "",
           images: images,
-          guests: Math.floor(Math.random() * 10) + 2,
-          bedrooms: Math.floor(Math.random() * 5) + 1,
-          bathrooms: Math.floor(Math.random() * 5) + 1,
-          rating: (Math.random() * 1 + 4).toFixed(1),
-          amenities: ["WiFi", "AC", "Kitchen", "Free Parking"],
+          guests: 0,
+          bedrooms: 0,
+          bathrooms: 0,
+          rating: 0,
+          amenities: [],
           type: "VILLA",
         })
       })
@@ -529,13 +554,14 @@ const AllRooms = () => {
       if (villa.price < priceRange[0] || villa.price > priceRange[1]) return false
 
       // Location filter
-      if (selectedTypes.length > 0 && !selectedTypes.includes(villa.location)) return false
+      if (selectedTypes.length > 0 && !selectedTypes.some(type => (villa.location || "").toLowerCase().includes(type.toLowerCase()))) return false
 
       // Bedrooms filter
       if (selectedBedrooms !== "Any" && villa.bedrooms !== Number.parseInt(selectedBedrooms)) return false
+      if (guests && guests !== "Any" && Number(villa.guests || 0) < Number(guests)) return false
 
       // Beds filter
-      if (selectedBeds !== "Any" && villa.beds !== Number.parseInt(selectedBeds)) return false
+      if (selectedBeds !== "Any" && (villa.beds || villa.bedrooms) !== Number.parseInt(selectedBeds)) return false
 
       // Amenities filter
       if (selectedAmenities.length > 0) {
@@ -584,7 +610,8 @@ const AllRooms = () => {
       "Ram Water Villa", 
       "Lavish Villa I",
       "Lavish Villa II",
-      "Lavish Villa III"
+      "Lavish Villa III",
+      "Opal Villa"
     ];
     
     // Create a sorting function based on the preferred order
@@ -652,24 +679,12 @@ const AllRooms = () => {
     try {
       const images = villa.images || []
       if (images.length === 0) {
-        Swal.fire({
-          title: "No Images",
-          text: "This villa has no images to download.",
-          icon: "warning",
-          timer: 2000,
-          showConfirmButton: false,
-        })
+        toast.warning("This villa has no images to download.");
         return
       }
 
       // Show loading notification
-      Swal.fire({
-        title: "Downloading Images...",
-        text: `Preparing to download ${images.length} image(s) for ${villa.name}`,
-        icon: "info",
-        timer: 2000,
-        showConfirmButton: false,
-      })
+      toast.info(`Preparing to download ${images.length} image(s) for ${villa.name}`);
 
       // Create a ZIP file or download all images in a folder-like structure
       const folderName = villa.name.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_]/g, "")
@@ -717,23 +732,11 @@ const AllRooms = () => {
 
       // Success notification
       setTimeout(() => {
-        Swal.fire({
-          title: "Download Complete!",
-          text: `Successfully downloaded ${images.length} image(s) for ${villa.name}`,
-          icon: "success",
-          timer: 3000,
-          showConfirmButton: false,
-        })
+        toast.success(`Successfully downloaded ${images.length} image(s) for ${villa.name}`);
       }, 1500)
     } catch (error) {
       console.error("Error downloading villa images:", error)
-      Swal.fire({
-        title: "Download Failed",
-        text: "There was an error downloading the images. Please try again.",
-        icon: "error",
-        timer: 3000,
-        showConfirmButton: false,
-      })
+      toast.error("There was an error downloading the images. Please try again.");
     }
   }
 
@@ -787,14 +790,18 @@ const AllRooms = () => {
     setError(null)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/villas/search?location=${encodeURIComponent(searchTerm)}`)
+      const response = await fetch(`${API_BASE_URL}/api/villas`)
 
       if (response.ok) {
         const data = await response.json()
-        const transformedData = data.map((villa, index) => {
+        const rawList = Array.isArray(data) ? data : (data.villas || data.data || []);
+        const filtered = searchTerm
+          ? rawList.filter(v => (v.location || '').toLowerCase().includes(searchTerm.toLowerCase()) || (v.name || '').toLowerCase().includes(searchTerm.toLowerCase()))
+          : rawList;
+        const transformedData = filtered.map((villa, index) => {
           let images = villa.images || []
           if (images.length === 1 && images[0] === "empireAnandVillaImages") {
-            images = getRandomImages(villaImageCollections["Empire Anand Villa Samudra"])
+            images = []
           }
 
           const generatedId = villa._id || `villa-${villa.name.toLowerCase().replace(/\s+/g, "-")}-${index}`
@@ -833,17 +840,21 @@ const AllRooms = () => {
 
   // Local search function
   const performLocalSearch = () => {
+    if (!villas || villas.length === 0) return
     const searchLower = searchTerm.toLowerCase().trim()
+    if (!searchLower) {
+      setFilteredVillas(applyAllFilters(villas))
+      return
+    }
     const filtered = villas.filter((villa) => {
       return (
         villa.name.toLowerCase().includes(searchLower) ||
-        villa.location.toLowerCase().includes(searchLower) ||
+        (villa.location || "").toLowerCase().includes(searchLower) ||
         villa.description?.toLowerCase().includes(searchLower) ||
-        villa.amenities.some((amenity) => amenity.toLowerCase().includes(searchLower))
+        (villa.amenities && villa.amenities.some((amenity) => amenity.toLowerCase().includes(searchLower)))
       )
     })
-    // Limit to only 6 villas
-    setFilteredVillas(filtered.slice(0, 6))
+    setFilteredVillas(filtered)
   }
 
   // Helper function to get fallback images based on villa name
@@ -1286,7 +1297,7 @@ const AllRooms = () => {
             villaName={selectedVilla.name}
             isOpen={showPhotoGallery}
             onClose={closePhotoGallery}
-            backTo="/rooms"
+            backTo={location.pathname || "/"}
             villa={selectedVilla}
           />
         )}

@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import styled from 'styled-components';
+import SEOHead from '../components/SEO/SEOHead';
 
 // Import components
 import HeroSection from '../components/About/HeroSection';
@@ -26,13 +27,13 @@ const About = () => {
     }, []);
 
     return (
-        <AboutWrapper>
-        
-                <title>About Us | Luxor Holiday Home Stays</title>
-                <meta name="description" content="Learn about Luxor Holiday Home Stays, our journey, mission, and the luxury villa experiences we've been crafting since 2010." />
-                <meta name="keywords" content="luxury villas Chennai, luxury villas Pondicherry, Luxor Holiday Home Stays history, about us, villa experiences" />
-       
-            
+        <>
+            <SEOHead
+                title="About Us | Luxor Holiday Home Stays"
+                description="Learn about Luxor Holiday Home Stays, our journey, mission, and the luxury villa experiences we've been crafting since 2010."
+                keywords="luxury villas Chennai, luxury villas Pondicherry, Luxor Holiday Home Stays history, about us, villa experiences"
+            />
+            <AboutWrapper>
             {/* Hero Section with Video Background */}
             <HeroSection />
             
@@ -45,8 +46,9 @@ const About = () => {
             {/* Stats Counter Section */}
             {/* <StatsCounter /> */}
     
-            <Gallery />
-        </AboutWrapper>
+                <Gallery />
+            </AboutWrapper>
+        </>
     );
 };
 

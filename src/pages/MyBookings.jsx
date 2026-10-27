@@ -28,18 +28,15 @@ const formatTimeFor12Hour = (time24) => {
   }
 };
 
-// Import villa images - same imports as in AllRooms.jsx
-// Amrith Palace Images
-import AP1 from "/AmrithPalace/AP8.jpg"
-// East Coast Villa Images
-import EC1 from "/eastcoastvilla/EC1.jpg"
-// Empire Anand Villa Samudra Images
-import anandvilla1 from "/empireanandvillasamudra/anandvilla1.jpg"
-// Ram Water Villa Images
-import RW1 from "/ramwatervilla/RW1.jpg"
-import LAV1 from "/LavishVilla 1/lvone18.jpg"
-import LAV2 from "/LavishVilla 2/lvtwo22.jpg"
-import LAV3  from "/LavishVilla 3/lvthree5.jpg"
+// Import villa images from src/assets for Vite asset hashing
+import AP1 from "../assets/villas/AmrithPalace/AP8.jpg"
+import EC1 from "../assets/villas/eastcoastvilla/EC1.jpg"
+import anandvilla1 from "../assets/villas/empireanandvillasamudra/anandvilla1.jpg"
+import RW1 from "../assets/villas/ramwatervilla/RW1.jpg"
+import LAV1 from "../assets/villas/LavishVilla 1/lvone18.jpg"
+import LAV2 from "../assets/villas/LavishVilla 2/lvtwo22.jpg"
+import LAV3  from "../assets/villas/LavishVilla 3/lvthree5.jpg"
+import OPAL5 from "../assets/villas/opal/opal5.jpg"
 
 // Villa image mapping for each villa type
 const villaImageMap = {
@@ -50,6 +47,8 @@ const villaImageMap = {
   "Lavish Villa I": LAV1,
   "Lavish Villa II": LAV2,
   "Lavish Villa III": LAV3,
+  "Opal Villa": OPAL5,
+  "Opal": OPAL5,
   "default": AP1  // Default image if no match found
 };
 
@@ -64,7 +63,9 @@ const getVillaImage = (villaName) => {
   
   // Case insensitive partial match
   const lowerName = villaName.toLowerCase();
-  if (lowerName.includes('amrith') || lowerName.includes('palace')) {
+  if (lowerName.includes('opal')) {
+    return villaImageMap["Opal Villa"];
+  } else if (lowerName.includes('amrith') || lowerName.includes('palace')) {
     return villaImageMap["Amrith Palace"];
   } else if (lowerName.includes('east') || lowerName.includes('coast')) {
     return villaImageMap["East Coast Villa"];
@@ -72,12 +73,12 @@ const getVillaImage = (villaName) => {
     return villaImageMap["Empire Anand Villa Samudra"];
   } else if (lowerName.includes('ram') || lowerName.includes('water')) {
     return villaImageMap["Ram Water Villa"];
-  } else if (lowerName.includes('lavish') && lowerName.includes('i')) {
-    return villaImageMap["Lavish Villa I"];
-  } else if (lowerName.includes('lavish') && lowerName.includes('ii')) {
-    return villaImageMap["Lavish Villa II"];
   } else if (lowerName.includes('lavish') && lowerName.includes('iii')) {
     return villaImageMap["Lavish Villa III"];
+  } else if (lowerName.includes('lavish') && lowerName.includes('ii')) {
+    return villaImageMap["Lavish Villa II"];
+  } else if (lowerName.includes('lavish') && lowerName.includes('i')) {
+    return villaImageMap["Lavish Villa I"];
   }
   
   return villaImageMap.default;
@@ -122,9 +123,9 @@ const MyBookings = () => {
         throw new Error('No authentication token found. Please log in again.');
       }
       
-      console.log("Using auth token:", token.substring(0, 15) + "..."); // Debug token
+      // Never log token material, even truncated: it is a bearer credential.
       
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/bookings/user-bookings`, {
+      const response = await fetch(`${API_BASE_URL}/api/bookings/my`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -359,7 +360,7 @@ const MyBookings = () => {
         ) : (
           <div className="grid grid-cols-1 gap-8">
             {filteredBookings.map((booking) => (
-              <div key={booking._id} className="bg-white rounded-xl overflow-hidden shadow-md border border-gray-200 hover:shadow-lg transition duration-300">
+              <div key={booking.id ?? booking._id} className="bg-white rounded-xl overflow-hidden shadow-md border border-gray-200 hover:shadow-lg transition duration-300">
                 <div className="md:flex">
                   {/* Villa Image */}
                   <div className="md:w-1/3 h-72 md:h-auto relative overflow-hidden">
@@ -455,7 +456,7 @@ const MyBookings = () => {
                       
                       <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
                         <p className="text-sm text-gray-500">Duration</p>
-                        <p className="font-medium text-gray-800">{booking.totalDays} {booking.totalDays === 1 ? 'Day' : 'Days'}</p>
+                        <p className="font-medium text-gray-800">{booking.totalDays} {booking.totalDays === 1 ? 'Night' : 'Nights'}</p>
                       </div>
                     </div>
 
@@ -488,9 +489,9 @@ const MyBookings = () => {
                       
                       <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                         <button 
-                          onClick={() => navigate(`/booking/${booking._id}`, { 
+                          onClick={() => navigate(`/booking/${booking.id ?? booking._id}`, { 
                             state: { 
-                              bookingId: booking._id,
+                              bookingId: booking.id ?? booking._id,
                               villaName: booking.villaName,
                               villaImage: getVillaImage(booking.villaName) 
                             }

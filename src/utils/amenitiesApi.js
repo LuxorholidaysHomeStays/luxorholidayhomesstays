@@ -1,6 +1,6 @@
 // Utility functions for amenities API calls
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://luxorstay-backend.vercel.app";
+import { API_BASE_URL } from '../config/api'
 
 /**
  * Fetch amenities for a specific villa by villa name
@@ -30,14 +30,21 @@ export const fetchVillaAmenities = async (villaName) => {
     }
 
     const data = await response.json();
-    console.log(`[AMENITIES API] Successfully fetched amenities for ${villaName}:`, data.data?.amenities?.length || 0, 'amenities');
+    const amenities = data.data?.amenities || data.amenities || [];
+    console.log(`[AMENITIES API] Successfully fetched amenities for ${villaName}:`, amenities.length, 'amenities');
     
-    return data;
+    return {
+      success: true,
+      data: {
+        villaName: data.data?.villaName || villaName,
+        location: data.data?.location || '',
+        amenities: amenities
+      }
+    };
   } catch (error) {
     console.error(`[AMENITIES API] Error fetching amenities for ${villaName}:`, error);
-    // Return empty amenities as fallback instead of throwing
     return { 
-      success: true, 
+      success: false, 
       data: { 
         amenities: [],
         villaName: villaName,
@@ -68,9 +75,14 @@ export const fetchAllVillasAmenities = async () => {
     }
 
     const data = await response.json();
-    console.log('[AMENITIES API] Successfully fetched amenities for all villas:', data.count || 0, 'villas');
+    const list = data.data || [];
+    console.log('[AMENITIES API] Successfully fetched amenities for all villas:', list.length, 'villas');
     
-    return data;
+    return {
+      success: true,
+      count: list.length,
+      data: list
+    };
   } catch (error) {
     console.error('[AMENITIES API] Error fetching all villas amenities:', error);
     return { 

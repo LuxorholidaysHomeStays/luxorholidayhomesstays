@@ -2,382 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { ChevronLeft, ChevronRight, Home, Users, Maximize, MapPin, Star } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { API_BASE_URL } from "../config/api"
-
-// // Amrith Palace Images
-import AP1 from "/AmrithPalace/AP1.jpg"
-import AP2 from "/AmrithPalace/AP2.jpg"
-import AP3 from "/AmrithPalace/AP3.jpg"
-import AP4 from "/AmrithPalace/AP4.jpg"
-import AP5 from "/AmrithPalace/AP5.jpg"
-import AP6 from "/AmrithPalace/AP6.jpg"
-import AP7 from "/AmrithPalace/AP7.jpg"
-import AP8 from "/AmrithPalace/AP8.jpg"
-import AP9 from "/AmrithPalace/AP9.jpg"
-import AP10 from "/AmrithPalace/AP10.jpg"
-import AP11 from "/AmrithPalace/AP11.jpg"
-import AP12 from "/AmrithPalace/AP12.jpg"
-import AP13 from "/AmrithPalace/AP13.jpg"
-import AP14 from "/AmrithPalace/AP14.jpg"
-import AP15 from "/AmrithPalace/AP15.jpg"
-import AP16 from "/AmrithPalace/AP16.jpg"
-import AP17 from "/AmrithPalace/AP17.jpg"
-import AP18 from "/AmrithPalace/AP18.jpg"
-import AP19 from "/AmrithPalace/AP19.jpg"
-import AP20 from "/AmrithPalace/AP20.jpg"
-import AP21 from "/AmrithPalace/AP21.jpg"
-import AP22 from "/AmrithPalace/AP22.jpg"
-import AP23 from "/AmrithPalace/AP23.jpg"
-import AP24 from "/AmrithPalace/AP24.jpg"
-import AP25 from "/AmrithPalace/AP25.jpg"
-import AP26 from "/AmrithPalace/AP26.jpg"
-import AP27 from "/AmrithPalace/AP27.jpg"
-import AP28 from "/AmrithPalace/AP28.jpg"
-import AP29 from "/AmrithPalace/AP29.jpg"
-import AP30 from "/AmrithPalace/AP30.jpg"
-
-// East Coast Villa Images
-import EC1 from "/eastcoastvilla/EC1.jpg"
-import EC2 from "/eastcoastvilla/EC2.jpg"
-import EC3 from "/eastcoastvilla/EC3.jpg"
-import EC4 from "/eastcoastvilla/EC4.jpg"
-import EC5 from "/eastcoastvilla/EC5.jpg"
-import EC6 from "/eastcoastvilla/EC6.jpg"
-import EC7 from "/eastcoastvilla/EC7.jpg"
-import EC8 from "/eastcoastvilla/EC8.jpg"
-import EC9 from "/eastcoastvilla/EC9.jpg"
-import EC10 from "/eastcoastvilla/EC10.jpg"
-import EC11 from "/eastcoastvilla/EC11.jpg"
-import EC12 from "/eastcoastvilla/EC12.jpg"
-import EC13 from "/eastcoastvilla/EC13.jpg"
-import EC14 from "/eastcoastvilla/EC14.jpg"
-import EC15 from "/eastcoastvilla/EC15.jpg"
-
-// Empire Anand Villa Samudra Images
-import anandvilla1 from "/empireanandvillasamudra/anandvilla1.jpg"
-import anandvilla2 from "/empireanandvillasamudra/anandvilla2.jpg"
-import anandvilla3 from "/empireanandvillasamudra/anandvilla3.jpg"
-import anandvilla4 from "/empireanandvillasamudra/anandvilla4.jpg"
-import anandvilla5 from "/empireanandvillasamudra/anandvilla5.jpg"
-import anandvilla6 from "/empireanandvillasamudra/anandvilla6.jpg"
-import anandvilla7 from "/empireanandvillasamudra/anandvilla7.jpg"
-import anandvilla8 from "/empireanandvillasamudra/anandvilla8.jpg"
-import anandvilla9 from "/empireanandvillasamudra/anandvilla9.jpg"
-import anandvilla10 from "/empireanandvillasamudra/anandvilla10.jpg"
-import anandvilla11 from "/empireanandvillasamudra/anandvilla11.jpg"
-import anandvilla12 from "/empireanandvillasamudra/anandvilla12.jpg"
-import anandvilla13 from "/empireanandvillasamudra/anandvilla13.jpg"
-import anandvilla14 from "/empireanandvillasamudra/anandvilla14.jpg"
-import anandvilla15 from "/empireanandvillasamudra/anandvilla15.jpg"
-import anandvilla16 from "/empireanandvillasamudra/anandvilla16.jpg"
-
-// Ram Water Villa Images
-import RW1 from "/ramwatervilla/RW1.jpg"
-import RW2 from "/ramwatervilla/RW2.jpg"
-import RW3 from "/ramwatervilla/RW3.jpg"
-import RW4 from "/ramwatervilla/RW4.jpg"
-import RW5 from "/ramwatervilla/RW5.jpg"
-import RW6 from "/ramwatervilla/RW6.jpg"
-import RW7 from "/ramwatervilla/RW7.jpg"
-import RW8 from "/ramwatervilla/RW8.jpg"
-import RW9 from "/ramwatervilla/RW9.jpg"
-import RW10 from "/ramwatervilla/RW10.jpg"
-import RW11 from "/ramwatervilla/RW11.jpg"
-import RW13 from "/ramwatervilla/RW13.jpg"
-import RW14 from "/ramwatervilla/RW14.jpg"
-import RW15 from "/ramwatervilla/RW15.jpg"
-import RW16 from "/ramwatervilla/RW16.jpg"
-import RW17 from "/ramwatervilla/RW17.jpg"
-import RW18 from "/ramwatervilla/RW18.jpg"
-import RW19 from "/ramwatervilla/RW19.jpg"
-
-// LavishVilla 1 Images
-import lvone1 from "/LavishVilla 1/lvone1.jpg"
-import lvone2 from "/LavishVilla 1/lvone2.jpg"
-import lvone3 from "/LavishVilla 1/lvone3.jpg"
-import lvone4 from "/LavishVilla 1/lvone4.jpg"
-import lvone5 from "/LavishVilla 1/lvone5.jpg"
-import lvone6 from "/LavishVilla 1/lvone6.jpg"
-import lvone7 from "/LavishVilla 1/lvone7.jpg"
-import lvone8 from "/LavishVilla 1/lvone8.jpg"
-import lvone9 from "/LavishVilla 1/lvone9.jpg"
-import lvone10 from "/LavishVilla 1/lvone10.jpg"
-import lvone11 from "/LavishVilla 1/lvone11.jpg"
-import lvone12 from "/LavishVilla 1/lvone12.jpg"
-import lvone13 from "/LavishVilla 1/lvone13.jpg"
-import lvone14 from "/LavishVilla 1/lvone14.jpg"
-import lvone15 from "/LavishVilla 1/lvone15.jpg"
-import lvone16 from "/LavishVilla 1/lvone16.jpg"
-import lvone17 from "/LavishVilla 1/lvone17.jpg"
-import lvone18 from "/LavishVilla 1/lvone18.jpg"
-import lvone19 from "/LavishVilla 1/lvone19.jpg"
-import lvone20 from "/LavishVilla 1/lvone20.jpg"
-import lvone21 from "/LavishVilla 1/lvone21.jpg"
-import lvone22 from "/LavishVilla 1/lvone22.jpg"
-
-// LavishVilla 2 Images
-import lvtwo1 from "/LavishVilla 2/lvtwo1.jpg"
-import lvtwo2 from "/LavishVilla 2/lvtwo2.jpg"
-import lvtwo3 from "/LavishVilla 2/lvtwo3.jpg"
-import lvtwo4 from "/LavishVilla 2/lvtwo4.jpg"
-import lvtwo5 from "/LavishVilla 2/lvtwo5.jpg"
-import lvtwo6 from "/LavishVilla 2/lvtwo6.jpg"
-import lvtwo7 from "/LavishVilla 2/lvtwo7.jpg"
-import lvtwo8 from "/LavishVilla 2/lvtwo8.jpg"
-import lvtwo9 from "/LavishVilla 2/lvtwo9.jpg"
-import lvtwo10 from "/LavishVilla 2/lvtwo10.jpg"
-import lvtwo11 from "/LavishVilla 2/lvtwo11.jpg"
-import lvtwo12 from "/LavishVilla 2/lvtwo12.jpg"
-import lvtwo13 from "/LavishVilla 2/lvtwo13.jpg"
-import lvtwo14 from "/LavishVilla 2/lvtwo14.jpg"
-import lvtwo15 from "/LavishVilla 2/lvtwo15.jpg"
-import lvtwo16 from "/LavishVilla 2/lvtwo16.jpg"
-import lvtwo17 from "/LavishVilla 2/lvtwo17.jpg"
-import lvtwo18 from "/LavishVilla 2/lvtwo18.jpg"
-import lvtwo19 from "/LavishVilla 2/lvtwo19.jpg"
-import lvtwo20 from "/LavishVilla 2/lvtwo20.jpg"
-import lvtwo21 from "/LavishVilla 2/lvtwo21.jpg"
-import lvtwo22 from "/LavishVilla 2/lvtwo22.jpg"
-
-// LavishVilla 3 Images
-import lvthree1 from "/LavishVilla 3/lvthree1.jpg"
-import lvthree2 from "/LavishVilla 3/lvthree2.jpg"
-import lvthree3 from "/LavishVilla 3/lvthree3.jpg"
-import lvthree4 from "/LavishVilla 3/lvthree4.jpg"
-import lvthree5 from "/LavishVilla 3/lvthree5.jpg"
-import lvthree6 from "/LavishVilla 3/lvthree6.jpg"
-import lvthree7 from "/LavishVilla 3/lvthree7.jpg"
-import lvthree8 from "/LavishVilla 3/lvthree8.jpg"
-import lvthree9 from "/LavishVilla 3/lvthree9.jpg"
-import lvthree10 from "/LavishVilla 3/lvthree10.jpg"
-import lvthree12 from "/LavishVilla 3/lvthree12.jpg"
-import lvthree13 from "/LavishVilla 3/lvthree13.jpg"
-import lvthree14 from "/LavishVilla 3/lvthree14.jpg"
-import lvthree15 from "/LavishVilla 3/lvthree15.jpg"
-import lvthree16 from "/LavishVilla 3/lvthree16.jpg"
-import lvthree17 from "/LavishVilla 3/lvthree17.jpg"
-import lvthree18 from "/LavishVilla 3/lvthree18.jpg"
-
-// Villa Image Collections - Updated to match FeaturedDestination format
-const villaImageCollections = {
-  "Amrith Palace": [
-    AP8,
-    AP2,
-    AP3,
-    AP4,
-    AP5,
-    AP6,
-    AP7,
-    AP1,
-    AP9,
-    AP10,
-    AP11,
-    AP12,
-    AP13,
-    AP14,
-    AP15,
-    AP16,
-    AP17,
-    AP18,
-    AP19,
-    AP20,
-    AP21,
-    AP22,
-    AP23,
-    AP24,
-    AP25,
-    AP26,
-    AP27,
-    AP28,
-    AP29,
-    AP30,
-  ],
-  "East Coast Villa": [EC1, EC2, EC3, EC4, EC5, EC6, EC7, EC8, EC9, EC10, EC11, EC12, EC13, EC14, EC15],
-  "Ram Water Villa": [
-    RW19,
-    RW2,
-    RW3,
-    RW4,
-    RW5,
-    RW6,
-    RW7,
-    RW8,
-    RW9,
-    RW10,
-    RW11,
-    RW13,
-    RW14,
-    RW15,
-    RW16,
-    RW17,
-    RW18,
-    RW1,
-  ],
-  "Empire Anand Villa Samudra": [
-    anandvilla1,
-    anandvilla2,
-    anandvilla3,
-    anandvilla4,
-    anandvilla5,
-    anandvilla6,
-    anandvilla7,
-    anandvilla8,
-    anandvilla9,
-    anandvilla10,
-    anandvilla11,
-    anandvilla12,
-    anandvilla13,
-    anandvilla14,
-    anandvilla15,
-    anandvilla16,
-  ],
-  "Lavish Villa I": [
-    lvone18,
-    lvone2,
-    lvone3,
-    lvone4,
-    lvone5,
-    lvone6,
-    lvone7,
-    lvone8,
-    lvone9,
-    lvone10,
-    lvone11,
-    lvone12,
-    lvone13,
-    lvone14,
-    lvone15,
-    lvone16,
-    lvone17,
-    lvone1,
-    lvone19,
-    lvone20,
-    lvone21,
-    lvone22,
-  ],
-  "Lavish Villa II": [
-    lvtwo4,
-    lvtwo2,
-    lvtwo3,
-    lvtwo1,
-    lvtwo5,
-    lvtwo6,
-    lvtwo7,
-    lvtwo8,
-    lvtwo9,
-    lvtwo10,
-    lvtwo11,
-    lvtwo12,
-    lvtwo13,
-    lvtwo14,
-    lvtwo15,
-    lvtwo16,
-    lvtwo17,
-    lvtwo18,
-    lvtwo19,
-    lvtwo20,
-    lvtwo21,
-    lvtwo22,
-  ],
-  "Lavish Villa III": [
-    lvthree17,
-    lvthree2,
-    lvthree3,
-    lvthree4,
-    lvthree5,
-    lvthree6,
-    lvthree7,
-    lvthree8,
-    lvthree9,
-    lvthree10,
-    lvthree12,
-    lvthree13,
-    lvthree14,
-    lvthree15,
-    lvthree16,
-    lvthree1,
-    lvthree18,
-  ],
-}
-
-// Fallback images if none are found
-const unsplashImages = [
-  "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
-  "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
-]
-
-// Helper function to get a random unsplash image
-function getRandomUnsplash() {
-  return unsplashImages[Math.floor(Math.random() * unsplashImages.length)]
-}
-
-// Format price as "45k" similar to unified calendar (without ₹ symbol)
-const formatCompactPrice = (price) => {
-  if (!price || isNaN(Number(price))) return "0";
-  const formattedPrice = Math.round(Number(price) / 1000);
-  return `${formattedPrice}k`;
-}
-
-// Fallback prices for villas when API data is not available
-const villaFallbackPrices = {
-  "Amrith Palace": { weekday: 45000, weekend: 65000 },
-  "Ram Water Villa": { weekday: 30000, weekend: 45000 },
-  "East Coast Villa": { weekday: 15000, weekend: 25000 },
-  "Lavish Villa I": { weekday: 18000, weekend: 25000 },
-  "Lavish Villa II": { weekday: 18000, weekend: 25000 },
-  "Lavish Villa III": { weekday: 16000, weekend: 23000 },
-  "Empire Anand Villa Samudra": { weekday: 40000, weekend: 60000 }
-}
-
-// Get the accurate price for a villa based on its name
-const getAccurateVillaPrice = (villa) => {
-  if (!villa) return { weekday: 0, weekend: 0 };
-
-  let weekdayPrice = villa.price || 0;
-  if (typeof weekdayPrice === 'string') {
-    weekdayPrice = parseInt(weekdayPrice.replace(/,/g, ""));
-  }
-
-  let weekendPrice = villa.weekendPrice || villa.weekendprice || 0;
-  if (typeof weekendPrice === 'string') {
-    weekendPrice = parseInt(weekendPrice.replace(/,/g, ""));
-  }
-
-  // If we don't have a weekend price, try to find a fallback
-  if (weekendPrice === 0 || isNaN(weekendPrice)) {
-    // Check for villa name match in fallbacks
-    if (villa.name || villa.roomType) {
-      const villaName = villa.name || villa.roomType;
-
-      // Direct match
-      if (villaFallbackPrices[villaName]) {
-        weekdayPrice = villaFallbackPrices[villaName].weekday;
-        weekendPrice = villaFallbackPrices[villaName].weekend;
-        return { weekday: weekdayPrice, weekend: weekendPrice };
-      }
-
-      // Partial match
-      for (const [name, pricing] of Object.entries(villaFallbackPrices)) {
-        if (villaName.toLowerCase().includes(name.toLowerCase()) ||
-          name.toLowerCase().includes(villaName.toLowerCase())) {
-          weekdayPrice = pricing.weekday;
-          weekendPrice = pricing.weekend;
-          return { weekday: weekdayPrice, weekend: weekendPrice };
-        }
-      }
-    }
-
-    // If we have a weekday price but no weekend price
-    if (weekdayPrice > 0) {
-      weekendPrice = Math.round(weekdayPrice * 1.5);
-    } else {
-      // Default fallback
-      weekdayPrice = 30000;
-      weekendPrice = 45000;
-    }
-  }
-
-  return { weekday: weekdayPrice, weekend: weekendPrice };
-}
+import { getDisplayVillaImage, formatCompactPrice, getAccurateVillaPrice, getBestMatchingVillaImages, createFallbackProperties } from "../utils/villaImageUtils"
 
 const VillaSwiper = () => {
   const navigate = useNavigate()
@@ -400,168 +25,58 @@ const VillaSwiper = () => {
   const dragOffset = useRef(0)
   const swiperRef = useRef(null)
 
-  // Helper function to find the best matching villa name in our collections - Same as FeaturedDestination
-  const getBestMatchingVillaImages = (villaName) => {
-    // Direct match
-    if (villaImageCollections[villaName]) {
-      return villaImageCollections[villaName]
-    }
-
-    // Case insensitive match
-    const lowercaseVillaName = villaName.toLowerCase().trim()
-    for (const [key, imageArray] of Object.entries(villaImageCollections)) {
-      if (key.toLowerCase().trim() === lowercaseVillaName) {
-        return imageArray
-      }
-    }
-
-    // Partial match (for villas with slightly different names)
-    for (const [key, imageArray] of Object.entries(villaImageCollections)) {
-      if (lowercaseVillaName.includes(key.toLowerCase()) || key.toLowerCase().includes(lowercaseVillaName)) {
-        return imageArray
-      }
-    }
-
-    // Check for specific keywords in names
-    const nameKeywords = {
-      amrith: "Amrith Palace",
-      palace: "Amrith Palace",
-      "east coast": "East Coast Villa",
-      eastcoast: "East Coast Villa",
-      "ram water": "Ram Water Villa",
-      ramwater: "Ram Water Villa",
-      empire: "Empire Anand Villa Samudra",
-      anand: "Empire Anand Villa Samudra",
-      samudra: "Empire Anand Villa Samudra",
-      "lavish villa 1": "Lavish Villa I",
-      "lavish villa i": "Lavish Villa I",
-      "lavish villa 2": "Lavish Villa II",
-      "lavish villa ii": "Lavish Villa II",
-      "lavish villa 3": "Lavish Villa III",
-      "lavish villa iii": "Lavish Villa III",
-    }
-
-    for (const [keyword, villaKey] of Object.entries(nameKeywords)) {
-      if (lowercaseVillaName.includes(keyword)) {
-        return villaImageCollections[villaKey]
-      }
-    }
-
-    // Return null if no match found
-    return null
-  }
-
-  // Function to create fallback properties if API fails - Same as FeaturedDestination
-  const createFallbackProperties = () => {
-    try {
-      console.log("Creating fallback properties")
-      // Create fallback properties using our predefined image collections
-      const fallbackProperties = Object.entries(villaImageCollections).map(([name, images], index) => {
-        // Get prices from our fallback price mapping
-        const pricing = villaFallbackPrices[name];
-
-        return {
-          id: `fallback-villa-${index}`,
-          _id: `fallback-${index}`,
-          roomType: name,
-          hotel: {
-            name: name,
-            address: index % 2 === 0 ? "ECR Road, Chennai" : "East Coast Road, Pondicherry",
-            city: index % 2 === 0 ? "Chennai" : "Pondicherry",
-          },
-          images: images.slice(0, 5), // First 5 images for carousel
-          allImages: images, // All images for detail view
-          pricePerNight: pricing.weekday.toLocaleString(),
-          pricing: {
-            weekday: pricing.weekday.toLocaleString(),
-            weekend: pricing.weekend.toLocaleString(),
-            holiday: Math.round(pricing.weekend * 1.2).toLocaleString(),
-          },
-          description: "A beautiful luxury villa with stunning views and modern amenities.",
-          amenities: ["Private Pool", "WiFi", "Air Conditioning", "Kitchen", "Parking"],
-          capacity: Math.floor(Math.random() * 8) + 4,
-          rating: (Math.random() * 1 + 4).toFixed(1),
-          rooms: Math.floor(Math.random() * 4) + 2,
-          area: `${Math.floor(Math.random() * 2000) + 3000} sq ft`,
-          features: {
-            bedrooms: Math.floor(Math.random() * 4) + 2,
-            bathrooms: Math.floor(Math.random() * 3) + 2,
-            balcony: index % 2 === 0 ? "Sea View" : "Garden View",
-            speciality: index % 2 === 0 ? "Beach Access" : "Private Pool",
-          },
-        }
-      })
-      setVillas(fallbackProperties)
-    } catch (fallbackError) {
-      console.error("Even fallback creation failed:", fallbackError)
-    }
-  }
-
-  // Fetch properties from backend - Same as FeaturedDestination
+  // Fetch properties from backend
   useEffect(() => {
     const fetchProperties = async () => {
       setLoading(true)
       setError(null)
       try {
-        console.log("Fetching villas from:", `${API_BASE_URL}/api/villas/`)
-        const res = await fetch(`${API_BASE_URL}/api/villas/`)
+        console.log("Fetching villas from:", `${API_BASE_URL}/api/villas`)
+        const res = await fetch(`${API_BASE_URL}/api/villas`)
         if (!res.ok) throw new Error("Failed to load properties")
         const data = await res.json()
         console.log("API Response data:", data)
+        const villaList = Array.isArray(data) ? data : (data.villas || data.data || [])
+
+        if (villaList.length === 0) {
+          throw new Error("No properties returned")
+        }
 
         // Map backend data to carousel property format
-        const processedProperties = data.map((villa, idx) => {
-          // Try to match villa name with our image collections
-          const villaName = villa.name || ""
-          let images = []
-          let featuredImage = null
-
-          // Get the full image collection for this villa
-          const imageCollection = getBestMatchingVillaImages(villaName)
-          if (imageCollection) {
-            // Use our predefined image collections
-            images = imageCollection
-            featuredImage = imageCollection[0] // Use first image as featured
-          } else if (Array.isArray(villa.images) && villa.images.length > 0) {
-            // Use images from API if available
-            images = villa.images
-            featuredImage = villa.images[0]
-          } else {
-            // Fallback to random image
-            featuredImage = getRandomUnsplash()
-            images = [featuredImage]
-          }
+        const processedProperties = villaList.map((villa, idx) => {
+          const backendImages = Array.isArray(villa.images) ? villa.images.filter(Boolean) : []
+          const images = backendImages.length > 0 ? backendImages : getBestMatchingVillaImages(villa.name || "")
 
           // Get accurate pricing using our helper function
           const accuratePricing = getAccurateVillaPrice(villa);
 
           return {
-            id: villa._id || `villa-${idx}`,
-            _id: villa._id || `villa-${idx}`,
+            id: villa.id || villa._id || `villa-${idx}`,
+            _id: villa.id || villa._id || `villa-${idx}`,
             roomType: villa.name,
             hotel: {
               name: villa.name,
-              address: villa.location || "Luxury Location",
-              city: villa.location?.split(",")[0]?.trim() || "Chennai",
+              address: villa.location || "",
+              city: villa.location?.split(",")[0]?.trim() || "",
             },
             images: images.slice(0, 5), // First 5 images for carousel
             allImages: images, // All images for detail view
-            pricePerNight: accuratePricing.weekday.toLocaleString(),
+            pricePerNight: accuratePricing.weekday ? accuratePricing.weekday.toLocaleString() : "Contact for Price",
             pricing: {
-              weekday: accuratePricing.weekday.toLocaleString(),
-              weekend: accuratePricing.weekend.toLocaleString(),
-              holiday: Math.round(accuratePricing.weekend * 1.2).toLocaleString(),
+              weekday: accuratePricing.weekday ? accuratePricing.weekday.toLocaleString() : "N/A",
+              weekend: accuratePricing.weekend ? accuratePricing.weekend.toLocaleString() : "N/A",
+              holiday: accuratePricing.weekend ? Math.round(accuratePricing.weekend * 1.2).toLocaleString() : "N/A",
             },
-            description: villa.description || "A beautiful luxury villa with stunning views and modern amenities.",
-            amenities: villa.facilities?.map((f) => f.name) || ["WiFi", "AC", "Kitchen", "Free Parking"],
-            capacity: villa.guests || 8,
-            rating: villa.rating || (4.5 + Math.random() * 0.5).toFixed(1),
-            rooms: villa.bedrooms || 3,
-            area: `${Math.floor(Math.random() * 2000) + 3000} sq ft`,
+            description: villa.description || "",
+            amenities: Array.isArray(villa.amenities) ? villa.amenities : (villa.facilities?.map((f) => f.name) || []),
+            capacity: Number(villa.guests) || 0,
+            rating: Number(villa.rating) || 4.8,
+            rooms: Number(villa.bedrooms) || 0,
+            area: "3500 sq ft",
             features: {
-              bedrooms: villa.bedrooms || 3,
-              bathrooms: villa.bathrooms || villa.bedrooms || 3,
-              balcony: "Sea View",
+              bedrooms: Number(villa.bedrooms) || 0,
+              bathrooms: Number(villa.bathrooms) || 0,
+              balcony: "Ocean View",
               speciality: "Private Pool",
             },
           }
@@ -569,9 +84,10 @@ const VillaSwiper = () => {
         setVillas(processedProperties)
       } catch (err) {
         console.error("Error fetching villas:", err)
-        setError("Failed to load properties")
+        setError("Our server is currently updating. Showing our luxury collection below.")
         // Create fallback properties using our image collections
-        createFallbackProperties()
+        const fallbacks = createFallbackProperties()
+        setVillas(fallbacks)
       } finally {
         setLoading(false)
       }
@@ -1129,7 +645,7 @@ const VillaSwiper = () => {
         )}
 
         {/* Villa Swiper Carousel Container - Scaled & Responsive */}
-        {!loading && !error && villas.length > 0 && (
+        {!loading && villas.length > 0 && (
           <div className="relative h-[440px] sm:h-[480px] md:h-[520px] mb-4 sm:mb-6 overflow-hidden villa-swiper-container w-full select-none">
             <div
               ref={swiperRef}
@@ -1151,12 +667,15 @@ const VillaSwiper = () => {
                     {/* Villa Image */}
                     <div className="relative">
                       <img
-                        src={villa.images[0] || "/placeholder.svg"}
+                        src={Math.abs(index - currentIndex) <= 1 ? (villa.images[0] || "/placeholder.svg") : undefined}
                         alt={villa.roomType}
                         className="w-full h-36 sm:h-40 md:h-44 object-cover"
-                        loading="lazy"
+                        loading={index === currentIndex ? "eager" : "lazy"}
+                        decoding="async"
+                        width="640"
+                        height="360"
                         onError={(e) => {
-                          e.target.src = getRandomUnsplash()
+                          e.currentTarget.style.visibility = "hidden"
                         }}
                       />
                       <div className="absolute top-2.5 right-2.5 bg-white/95 backdrop-blur-sm rounded-full px-2.5 py-0.5 flex items-center gap-1 border border-gray-100">
@@ -1253,7 +772,7 @@ const VillaSwiper = () => {
         )}
 
         {/* Enhanced Dots Indicator */}
-        {!loading && !error && villas.length > 0 && (
+        {!loading && villas.length > 0 && (
           <div className="flex justify-center items-center gap-1.5 mb-4 sm:mb-6">
             {villas.map((_, index) => (
               <button
@@ -1271,7 +790,7 @@ const VillaSwiper = () => {
         )}
 
         {/* Booking & Pricing Summary Box */}
-        {!loading && !error && villas.length > 0 && (
+        {!loading && villas.length > 0 && (
           <div className="bg-white rounded-xl border border-gray-200 p-3 sm:p-4 md:p-5 max-w-3xl mx-auto">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               {/* Pricing details */}

@@ -1,15 +1,24 @@
-"use client"
-
-import { useEffect, useState } from "react"
+import React, { useEffect, useState, useRef } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import Swal from "sweetalert2"
-import { Calendar, Users, MapPin, Phone, Clock, Edit3, Save, X } from "lucide-react"
+import { toast } from "../utils/toast"
+import {
+  Calendar,
+  Users,
+  MapPin,
+  Phone,
+  Clock,
+  Mail,
+  User,
+  Shield,
+  CreditCard,
+  ArrowLeft,
+  CheckCircle2,
+  Lock,
+} from "lucide-react"
 import { useAuth } from "../context/AuthContext"
+import { api } from "../utils/apiClient"
+import { API_BASE_URL, requireApiBaseUrl } from "../config/api"
 
-
-// Import with lazy loading
-
-// Define paths instead of importing directly
 const villaImageMap = {
   "Amrith Palace": "/AmrithPalace/AP8.jpg",
   "East Coast Villa": "/eastcoastvilla/EC1.jpg",
@@ -18,10 +27,11 @@ const villaImageMap = {
   "Lavish Villa I": "/LavishVilla 1/lvone18.jpg",
   "Lavish Villa II": "/LavishVilla 2/lvtwo22.jpg",
   "Lavish Villa III": "/LavishVilla 3/lvthree5.jpg",
+  "Opal Villa": "/opal/opal5.jpg",
+  "Opal": "/opal/opal5.jpg",
   default: "/AmrithPalace/AP8.jpg",
 }
 
-// Optimized Razorpay script loading with defer attribute and error handling
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
     if (window.Razorpay) {
@@ -29,7 +39,7 @@ const loadRazorpayScript = () => {
     }
     const script = document.createElement("script")
     script.src = "https://checkout.razorpay.com/v1/checkout.js"
-    script.defer = true // Add defer attribute to non-blocking loading
+    script.async = true
     script.onload = () => resolve(true)
     script.onerror = () => {
       console.error("Failed to load Razorpay script")
@@ -39,981 +49,775 @@ const loadRazorpayScript = () => {
   })
 }
 
+// Helper to clean & extract valid human name (not email address)
+const getCleanName = (rawName, userObj) => {
+  if (rawName && typeof rawName === "string" && !rawName.includes("@") && rawName.trim().length > 0) {
+    return rawName.trim()
+  }
+  const uName = userObj?.name || userObj?.firstName || ""
+  if (uName && typeof uName === "string" && !uName.includes("@") && uName.trim().length > 0) {
+    return uName.trim()
+  }
+  // Check previous booking details from localStorage
+  const lastGuest = localStorage.getItem("lastBookingGuest")
+  if (lastGuest) {
+    try {
+      const parsed = JSON.parse(lastGuest)
+      if (parsed.name && !parsed.name.includes("@") && parsed.name.trim().length > 0) {
+        return parsed.name.trim()
+      }
+    } catch (_e) {
+      /* ignore invalid JSON */
+    }
+  }
+  return ""
+}
+
+const getCleanEmail = (rawEmail, userObj) => {
+  if (rawEmail && typeof rawEmail === "string" && rawEmail.includes("@")) {
+    return rawEmail.trim()
+  }
+  if (userObj?.email && typeof userObj.email === "string" && userObj.email.includes("@")) {
+    return userObj.email.trim()
+  }
+  const lastGuest = localStorage.getItem("lastBookingGuest")
+  if (lastGuest) {
+    try {
+      const parsed = JSON.parse(lastGuest)
+      if (parsed.email && parsed.email.includes("@")) return parsed.email.trim()
+    } catch (_e) {
+      /* ignore invalid JSON */
+    }
+  }
+  return ""
+}
+
+const getCleanPhone = (rawPhone, userObj) => {
+  const sanitize = (p) => (p ? String(p).replace(/^\+91\s*/, "").replace(/\D/g, "").slice(-10) : "")
+  if (rawPhone && sanitize(rawPhone).length >= 10) return sanitize(rawPhone)
+  const uPhone = userObj?.phoneNumber || userObj?.phone || ""
+  if (uPhone && sanitize(uPhone).length >= 10) return sanitize(uPhone)
+  const lastGuest = localStorage.getItem("lastBookingGuest")
+  if (lastGuest) {
+    try {
+      const parsed = JSON.parse(lastGuest)
+      if (parsed.phone && sanitize(parsed.phone).length >= 10) return sanitize(parsed.phone)
+    } catch (_e) {
+      /* ignore invalid JSON */
+    }
+  }
+  return ""
+}
+
 export default function BookingReview() {
   const location = useLocation()
   const navigate = useNavigate()
   const { authToken, isAuthenticated, user } = useAuth()
+
   const [bookingData, setBookingData] = useState(null)
   const [paymentProcessing, setPaymentProcessing] = useState(false)
-  const [editMode, setEditMode] = useState(false)
-  const [editedData, setEditedData] = useState(null)
-  const [bookingDetails, setBookingDetails] = useState(null)
 
-  // States for dropdowns
-  const [countries, setCountries] = useState([])
-  const [states, setStates] = useState([])
-  const [cities, setCities] = useState([])
-  const [isLoadingCountries, setIsLoadingCountries] = useState(false)
-  const [isLoadingStates, setIsLoadingStates] = useState(false)
-  const [isLoadingCities, setIsLoadingCities] = useState(false)
+  // Guest details form state
+  const [guestName, setGuestName] = useState("")
+  const [guestEmail, setGuestEmail] = useState("")
+  const [phone, setPhone] = useState("")
+  const [countryCode, setCountryCode] = useState("+91")
+
+  // Hold Timer (5 minutes) and server-side booking lock
+  const [timeLeft, setTimeLeft] = useState(300)
+  const timerRef = useRef(null)
+  const [bookingLockId, setBookingLockId] = useState(null)
 
   useEffect(() => {
-    // Check if user is authenticated
-    if (!isAuthenticated && !authToken) {
-      // Store current location for redirect after login
+    // Auth check
+    const token = authToken || localStorage.getItem("authToken")
+    if (!isAuthenticated && !token) {
       localStorage.setItem("authRedirectUrl", "/booking-review")
-      // Store booking data if available
-      if (location.state && location.state.bookingData) {
+      if (location.state?.bookingData) {
         localStorage.setItem("pendingBookingReview", JSON.stringify(location.state.bookingData))
       }
-      // Redirect to login
-      navigate("/sign-in", {
-        state: { from: "/booking-review" },
-        replace: true,
-      })
+      toast.warning("Please sign in to complete your booking.")
+      navigate("/sign-in", { state: { from: "/booking-review" }, replace: true })
       return
     }
 
-    // Load booking data
-    if (location.state && location.state.bookingData) {
-      setBookingData(location.state.bookingData)
-      setEditedData(location.state.bookingData)
-      localStorage.setItem("pendingBookingReview", JSON.stringify(location.state.bookingData))
-    } else {
-      const stored = localStorage.getItem("pendingBookingReview")
+    // Load booking data from location state or localStorage
+    let data = location.state?.bookingData
+    if (!data) {
+      const stored = localStorage.getItem("pendingBookingReview") || localStorage.getItem("pendingBookingData")
       if (stored) {
-        const data = JSON.parse(stored)
-        setBookingData(data)
-        setEditedData(data)
+        try {
+          data = JSON.parse(stored)
+        } catch (e) {
+          console.error("Failed to parse stored booking data:", e)
+        }
       }
     }
 
-    // Fetch countries on component mount
-    fetchCountries()
-  }, [location.state, isAuthenticated, authToken, navigate])
+    if (data) {
+      setBookingData(data)
+      setGuestName(getCleanName(data.guestName, user))
+      setGuestEmail(getCleanEmail(data.email, user))
+      setPhone(getCleanPhone(data.phone, user))
+      if (data.countryCode) setCountryCode(data.countryCode)
 
-  // Fetch countries
-  const fetchCountries = async () => {
-    setIsLoadingCountries(true)
-    try {
-      const INDIA = { name: "India", code: "IN" }
-      const response = await fetch("https://countriesnow.space/api/v0.1/countries/positions")
-      const data = await response.json()
-
-      if (data.data && Array.isArray(data.data)) {
-        let mappedCountries = data.data
-          .map((c) => ({ name: c.name, code: c.iso2 || "" }))
-          .sort((a, b) => a.name.localeCompare(b.name))
-
-        mappedCountries = mappedCountries.filter((country) => country.name.toLowerCase() !== "india")
-        const finalCountries = [INDIA, ...mappedCountries]
-        setCountries(finalCountries)
-      } else {
-        setCountries([INDIA])
+      // Create server-side booking lock when data loads
+      const createLock = async () => {
+        try {
+          requireApiBaseUrl()
+          const lockResponse = await fetch(`${API_BASE_URL}/api/booking-locks`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              villaId: data.villaId || data.id || data._id,
+              villaName: data.villaName || "Villa",
+              checkIn: data.checkInDate || data.checkIn,
+              checkOut: data.checkOutDate || data.checkOut,
+            }),
+          })
+          if (lockResponse.ok) {
+            const lockData = await lockResponse.json()
+            const newLockId = lockData.id || lockData.lock?.id
+            if (newLockId) setBookingLockId(newLockId)
+          }
+        } catch (e) {
+          console.warn("Failed to create booking lock:", e)
+        }
       }
-    } catch (error) {
-      console.error("Error fetching countries:", error)
-      setCountries([{ name: "India", code: "IN" }])
-    } finally {
-      setIsLoadingCountries(false)
-    }
-  }
-
-  // Fetch states
-  const fetchStates = async (country) => {
-    if (!country) {
-      setStates([])
-      setCities([])
-      return
+      createLock()
+    } else {
+      toast.error("No active booking found. Please select a villa to book.")
+      navigate("/rooms")
     }
 
-    setIsLoadingStates(true)
-    setStates([])
-    setCities([])
+    // Compute or retrieve hold expiry timestamp for seamless page refreshes
+    let holdExpiry = Number(localStorage.getItem("bookingHoldExpiry"))
+    const now = Date.now()
+    if (!holdExpiry || isNaN(holdExpiry) || holdExpiry < now) {
+      holdExpiry = now + 5 * 60 * 1000 // 5 minutes
+      localStorage.setItem("bookingHoldExpiry", String(holdExpiry))
+    }
 
-    try {
-      const response = await fetch("https://countriesnow.space/api/v0.1/countries/states", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ country }),
-      })
+    const initialRemaining = Math.max(0, Math.floor((holdExpiry - now) / 1000))
+    setTimeLeft(initialRemaining)
 
-      const data = await response.json()
-      if (data.data && data.data.states) {
-        setStates(data.data.states)
+    // Start slot lock countdown
+    if (timerRef.current) clearInterval(timerRef.current)
+    timerRef.current = setInterval(() => {
+      const currentHoldExpiry = Number(localStorage.getItem("bookingHoldExpiry")) || holdExpiry
+      const remaining = Math.max(0, Math.floor((currentHoldExpiry - Date.now()) / 1000))
+      setTimeLeft(remaining)
+      if (remaining <= 0) {
+        clearInterval(timerRef.current)
       }
-    } catch (error) {
-      console.error("Error fetching states:", error)
-      setStates([])
-    } finally {
-      setIsLoadingStates(false)
-    }
-  }
+    }, 1000)
 
-  // Fetch cities
-  const fetchCities = async (country, state) => {
-    if (!country || !state) {
-      setCities([])
-      return
-    }
-
-    setIsLoadingCities(true)
-    setCities([])
-
-    try {
-      const response = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ country, state }),
-      })
-
-      const data = await response.json()
-      if (data.data) {
-        setCities(data.data)
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+      // Release server-side lock on unmount
+      if (bookingLockId) {
+        const releaseLock = async () => {
+          try {
+            await fetch(`${API_BASE_URL}/api/booking-locks/${bookingLockId}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${token}` },
+            })
+          } catch (e) {
+            console.warn("Failed to release lock on unmount:", e)
+          }
+        }
+        releaseLock()
       }
-    } catch (error) {
-      console.error("Error fetching cities:", error)
-      setCities([])
-    } finally {
-      setIsLoadingCities(false)
     }
-  }
+  }, [location.state, isAuthenticated, authToken, user, navigate])
 
-  // Handle country change
-  const handleCountryChange = (country) => {
-    handleAddressChange("country", country)
-    handleAddressChange("state", "")
-    handleAddressChange("city", "")
-    fetchStates(country)
-  }
-
-  // Handle state change
-  const handleStateChange = (state) => {
-    handleAddressChange("state", state)
-    handleAddressChange("city", "")
-    fetchCities(editedData?.address?.country, state)
-  }
-
-  const handleInputChange = (field, value) => {
-    setEditedData((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
-  }
-
-  const handleAddressChange = (field, value) => {
-    setEditedData((prev) => ({
-      ...prev,
-      address: {
-        ...prev.address,
-        [field]: value,
-      },
-    }))
-  }
-
-  const handleSaveChanges = () => {
-    setBookingData(editedData)
-    setEditMode(false)
-    localStorage.setItem("pendingBookingReview", JSON.stringify(editedData))
-
-    Swal.fire({
-      icon: "success",
-      title: "Changes Saved",
-      text: "Your booking details have been updated.",
-      confirmButtonColor: "#D4AF37",
-      timer: 2000,
-      showConfirmButton: false,
-    })
-  }
-
-  const handleCancelEdit = () => {
-    setEditedData(bookingData)
-    setEditMode(false)
-  }
-
-  const handleBack = () => {
-    // Prepare the data to be passed to the booking form
-    const bookingFormData = {
-      ...editedData,
-      fromReview: true,
-      // Ensure we have the villaId for navigation
-      villaId: bookingData.villaId || editedData.villaId
-    };
-    
-    // Store in localStorage as fallback
-    localStorage.setItem("pendingBookingData", JSON.stringify(bookingFormData));
-    
-    // Navigate to the villa booking page with the form data
-    navigate(`/villa/${bookingFormData.villaId}`, {
-      state: bookingFormData,
-      replace: true
-    });
-  }
-
-  const handlePayment = async (bookingData) => {
+  const handleExtendHold = async () => {
     try {
-      setPaymentProcessing(true)
-      const API_URL = import.meta.env.VITE_API_BASE_URL || "https://luxorstay-backend.vercel.app"
+      requireApiBaseUrl()
 
-      // 1. First create the booking
-      const bookingResponse = await fetch(`${API_URL}/api/bookings`, {
+      // Extend server-side lock by creating a new one (locks have 15-minute expiry)
+      const token = authToken || localStorage.getItem("authToken")
+      const lockResponse = await fetch(`${API_BASE_URL}/api/booking-locks`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-        },
-        body: JSON.stringify(bookingData),
-      })
-
-      if (!bookingResponse.ok) {
-        const error = await bookingResponse.json()
-        throw new Error(error.message || "Failed to create booking")
-      }
-
-      const booking = await bookingResponse.json()
-      setBookingDetails(booking)
-
-      // 2. Create Razorpay order
-      const orderResponse = await fetch(`${API_URL}/api/payments/create-order`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          amount: booking.totalAmount * 100, // Convert to paise
-          currency: "INR",
-          receipt: `booking_${booking._id}`,
+          villaId: bookingData?.villaId || bookingData?.id || bookingData?._id,
+          villaName: bookingData?.villaName || "Villa",
+          checkIn: bookingData?.checkInDate || bookingData?.checkIn,
+          checkOut: bookingData?.checkOutDate || bookingData?.checkOut,
+        }),
+      })
+
+      if (lockResponse.ok) {
+        const lockData = await lockResponse.json()
+        const newLockId = lockData.id || lockData.lock?.id
+        if (newLockId) {
+          // Release old lock if we have one
+          if (bookingLockId) {
+            try {
+              await fetch(`${API_BASE_URL}/api/booking-locks/${bookingLockId}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` },
+              })
+            } catch (e) {
+              console.warn("Failed to release old lock:", e)
+            }
+          }
+          setBookingLockId(newLockId)
+        }
+      }
+
+      // Update client-side timer
+      const newExpiry = Date.now() + 5 * 60 * 1000
+      localStorage.setItem("bookingHoldExpiry", String(newExpiry))
+      setTimeLeft(300)
+      toast.info("Reservation hold extended by 5 minutes.")
+      if (timerRef.current) clearInterval(timerRef.current)
+      timerRef.current = setInterval(() => {
+        const remaining = Math.max(0, Math.floor((newExpiry - Date.now()) / 1000))
+        setTimeLeft(remaining)
+        if (remaining <= 0) {
+          clearInterval(timerRef.current)
+        }
+      }, 1000)
+    } catch (error) {
+      console.error("Failed to extend hold:", error)
+      toast.error("Could not extend reservation hold. Please try again.")
+    }
+  }
+
+  const formatTimer = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+  }
+
+  const getVillaImage = (name) => {
+    if (!name) return villaImageMap.default
+    for (const [key, image] of Object.entries(villaImageMap)) {
+      if (name.toLowerCase().includes(key.toLowerCase())) {
+        return image
+      }
+    }
+    return villaImageMap.default
+  }
+
+  // The backend owns pricing: it charges the base nightly rate plus a 5% service
+  // fee plus 18% GST, and stores that split on the booking. Deriving these numbers
+  // here as well is how the page came to show a different total from the one
+  // Razorpay captured, so the amounts now come from /api/quote and nothing is
+  // computed locally.
+  const [serverPricing, setServerPricing] = useState(null)
+  const [pricingError, setPricingError] = useState("")
+
+  const quoteVillaId = bookingData?.villaId
+  const quoteCheckIn = bookingData?.checkInDate || bookingData?.checkIn
+  const quoteCheckOut = bookingData?.checkOutDate || bookingData?.checkOut
+
+  useEffect(() => {
+    let cancelled = false
+    setServerPricing(null)
+    setPricingError("")
+
+    if (!quoteVillaId || !quoteCheckIn || !quoteCheckOut) {
+      setPricingError("Select your dates to see the final price.")
+      return
+    }
+
+    api("/api/quote", {
+      method: "POST",
+      auth: false,
+      body: { villaId: quoteVillaId, checkIn: quoteCheckIn, checkOut: quoteCheckOut },
+    })
+      .then((data) => {
+        if (cancelled) return
+        if (data?.breakdown) setServerPricing(data.breakdown)
+        else setPricingError("We could not price these dates. Please try again.")
+      })
+      .catch(() => {
+        if (!cancelled) setPricingError("We could not reach the pricing service. Please retry.")
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [quoteVillaId, quoteCheckIn, quoteCheckOut])
+
+  const totalNights = serverPricing?.nights || 0
+  const totalGuests = (Number(bookingData?.adults) || 1) + (Number(bookingData?.children) || 0)
+  const baseAccommodation = serverPricing?.base || 0
+  const serviceFee = serverPricing?.serviceFee || 0
+  const taxAmount = serverPricing?.gstAmount || 0
+  const grandTotal = serverPricing?.total || 0
+
+  const handleProceedPayment = async () => {
+    requireApiBaseUrl()
+
+    if (timeLeft <= 0) {
+      toast.warning("Your 5-minute reservation hold has expired. Please re-select dates to continue.")
+      navigate(-1)
+      return
+    }
+
+    // Never start a payment we cannot price. Charging a locally computed total
+    // against a server-side booking is what let the shown and captured amounts
+    // disagree.
+    if (!serverPricing || grandTotal <= 0) {
+      toast.warning(pricingError || "The price for these dates is still loading. Please try again.")
+      return
+    }
+
+    if (!guestName.trim() || guestName.includes("@") || guestName.trim().length < 2) {
+      toast.warning("Please enter the primary guest's full name (not an email address).")
+      return
+    }
+
+    if (!guestEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
+      toast.warning("Please enter a valid email address for booking confirmation.")
+      return
+    }
+
+    const cleanDigits = phone.replace(/\D/g, "")
+    if (!cleanDigits || cleanDigits.length < 10) {
+      toast.warning("Please enter a valid 10-digit mobile number.")
+      return
+    }
+
+    // Save for future pre-filling
+    localStorage.setItem(
+      "lastBookingGuest",
+      JSON.stringify({
+        name: guestName.trim(),
+        email: guestEmail.trim(),
+        phone: cleanDigits.slice(-10),
+        countryCode: countryCode,
+      })
+    )
+
+    setPaymentProcessing(true)
+    const token = authToken || localStorage.getItem("authToken")
+
+    try {
+      const scriptReady = await loadRazorpayScript()
+      if (!scriptReady) {
+        throw new Error("Unable to load payment gateway. Please check your internet connection.")
+      }
+
+      // 1. Create booking record in Go backend
+      const bookingPayload = {
+        villaId: bookingData.villaId || bookingData.id || bookingData._id,
+        villaName: bookingData.villaName || "Luxury Villa",
+        checkIn: bookingData.checkInDate || bookingData.checkIn,
+        checkOut: bookingData.checkOutDate || bookingData.checkOut,
+        checkInTime: "14:00",
+        checkOutTime: "11:00",
+        guests: totalGuests,
+        infants: Number(bookingData?.infants || 0),
+        totalDays: totalNights,
+        guestName: guestName.trim(),
+        email: guestEmail.trim(),
+        phone: `${countryCode} ${phone.trim()}`,
+        paymentMethod: "Razorpay",
+        status: "pending",
+        paymentStatus: "pending",
+      }
+
+      const bookingRes = await fetch(`${API_BASE_URL}/api/bookings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(bookingPayload),
+      })
+
+      if (!bookingRes.ok) {
+        const errorData = await bookingRes.json().catch(() => ({}))
+        throw new Error(errorData.error || errorData.message || "Failed to initialize booking.")
+      }
+
+      const createdBookingData = await bookingRes.json()
+      const bookingRecord = createdBookingData.booking || createdBookingData.data || createdBookingData
+      const bookingId = bookingRecord?.id || bookingRecord?._id || bookingRecord?.bookingId
+
+      // Release booking lock now that we have a booking record
+      if (bookingLockId) {
+        try {
+          await fetch(`${API_BASE_URL}/api/booking-locks/${bookingLockId}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          setBookingLockId(null)
+        } catch (e) {
+          console.warn("Failed to release lock after booking:", e)
+        }
+      }
+
+      // 2. Create Razorpay order. The backend is the pricing authority: it ignores
+      // any client-supplied amount and calculates the total from the booking record.
+      const orderRes = await fetch(`${API_BASE_URL}/api/payments/create-order`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          bookingId: String(bookingId),
           notes: {
-            bookingId: booking._id,
-            villaId: booking.villa._id,
+            villaName: bookingPayload.villaName,
+            guestName: bookingPayload.guestName,
           },
         }),
       })
 
-      if (!orderResponse.ok) {
-        throw new Error("Failed to create payment order")
+      if (!orderRes.ok) {
+        const errorData = await orderRes.json().catch(() => ({}))
+        throw new Error(errorData.error || errorData.message || "Failed to create payment order.")
       }
 
-      const order = await orderResponse.json()
+      const orderData = await orderRes.json()
+      const order = orderData.order || orderData
 
-      // 3. Initialize Razorpay
-      await loadRazorpayScript()
+      // 3. Launch Razorpay Checkout
+      const keyId = orderData.keyId || orderData.key || import.meta.env.VITE_RAZORPAY_KEY
+      if (!keyId) {
+        throw new Error("The payment gateway is not configured for this site. Please contact us.")
+      }
 
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY || "rzp_live_quNHH9YfEhaAru",
+        key: keyId,
         amount: order.amount,
-        currency: order.currency,
-        name: "Luxor Villas",
-        description: `Booking for ${booking.villa.name}`,
+        currency: order.currency || "INR",
+        name: "Luxor Holiday Homes Stays",
+        description: `Reservation for ${bookingPayload.villaName}`,
         order_id: order.id,
+        prefill: {
+          name: guestName.trim(),
+          email: guestEmail.trim(),
+          contact: `${countryCode}${phone.trim()}`,
+        },
+        theme: {
+          color: "#D4AF37",
+        },
         handler: async (response) => {
           try {
-            // Verify payment on the server
-            const verifyResponse = await fetch(`${API_URL}/api/payments/verify`, {
+            // 4. Verify payment
+            const verifyRes = await fetch(`${API_BASE_URL}/api/payments/verify`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+                Authorization: `Bearer ${token}`,
               },
               body: JSON.stringify({
-                razorpay_payment_id: response.razorpay_payment_id,
+                bookingId: String(bookingId),
                 razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
-                bookingId: booking._id,
               }),
             })
 
-            const result = await verifyResponse.json()
+            const verifyResult = await verifyRes.json()
 
-            if (result.success) {
-              Swal.fire({
-                title: "Success!",
-                text: "Payment successful! Your booking is confirmed.",
-                icon: "success",
-                confirmButtonText: "View My Bookings",
-              }).then(() => {
-                navigate("/my-bookings")
-              })
+            if (verifyResult.success === true) {
+              localStorage.removeItem("pendingBookingReview")
+              localStorage.removeItem("pendingBookingData")
+              toast.success("Payment successful! Your luxury stay is confirmed.")
+              navigate("/my-bookings", { replace: true })
             } else {
-              throw new Error(result.message || "Payment verification failed")
+              throw new Error(verifyResult.error || verifyResult.message || "Payment verification failed.")
             }
-          } catch (error) {
-            console.error("Payment verification error:", error)
-            Swal.fire({
-              title: "Error",
-              text: error.message || "Payment verification failed. Please contact support.",
-              icon: "error",
-            })
+          } catch (verifyErr) {
+            console.error("Payment verification failed:", verifyErr)
+            toast.error(verifyErr.message || "Payment verification failed. Please contact customer support.")
           } finally {
             setPaymentProcessing(false)
           }
         },
-        prefill: {
-          name: booking.guestName,
-          email: booking.email,
-          contact: booking.phone || "",
-        },
-        theme: {
-          color: "#3399cc",
+        modal: {
+          ondismiss: async () => {
+            setPaymentProcessing(false)
+            // Release booking lock on payment dismissal (abandoned checkout)
+            if (bookingLockId) {
+              try {
+                await fetch(`${API_BASE_URL}/api/booking-locks/${bookingLockId}`, {
+                  method: "DELETE",
+                  headers: { Authorization: `Bearer ${token}` },
+                })
+                setBookingLockId(null)
+              } catch (e) {
+                console.warn("Failed to release lock on payment dismissal:", e)
+              }
+            }
+          },
         },
       }
 
-      const rzp = new window.Razorpay(options)
-      rzp.open()
+      const rzpInstance = new window.Razorpay(options)
+      rzpInstance.open()
 
-      rzp.on("payment.failed", (response) => {
-        Swal.fire({
-          title: "Payment Failed",
-          text: response.error.description || "Payment was not completed successfully",
-          icon: "error",
-        })
+      rzpInstance.on("payment.failed", (err) => {
+        toast.error(err.error?.description || "Payment was not completed.")
         setPaymentProcessing(false)
       })
-    } catch (error) {
-      console.error("Payment error:", error)
-      Swal.fire({
-        title: "Error",
-        text: error.message || "Something went wrong with the payment",
-        icon: "error",
-      })
-      setPaymentProcessing(false)
-    }
-  }
-
-  const handlePay = async () => {
-    setPaymentProcessing(true)
-
-    try {
-      const isScriptLoaded = await loadRazorpayScript()
-      if (!isScriptLoaded) {
-        throw new Error("Failed to load payment gateway. Please refresh and try again.")
-      }
-
-      let calculatedTotalAmount = editedData.totalAmount
-      let basePrice = 0
-      let serviceFee = 0
-      let taxAmount = 0
-      
-      // Try to use breakdown data from booking form first
-      if (editedData.breakdown) {
-        basePrice = editedData.breakdown.basePrice
-        serviceFee = editedData.breakdown.serviceFee
-        taxAmount = editedData.breakdown.taxAmount
-        calculatedTotalAmount = editedData.breakdown.total
-      } else if (!calculatedTotalAmount) {
-        // Fallback calculation if breakdown data not available
-        const nights = Math.max(
-          1,
-          Math.ceil(
-            (new Date(editedData.checkOutDate).getTime() - new Date(editedData.checkInDate).getTime()) /
-              (1000 * 3600 * 24),
-          ),
-        )
-        
-        // Calculate price based on weekday/weekend pricing
-        let totalPrice = 0
-        const weekdayPrice = editedData.pricePerNight || 10000
-        const weekendPrice = editedData.weekendPrice || weekdayPrice * 1.5
-        
-        // Calculate for each night (simple approach - can be enhanced for exact weekday/weekend calculation)
-        // For now, using weekday price as base
-        totalPrice = weekdayPrice * nights
-
-        basePrice = totalPrice
-        serviceFee = Math.round(totalPrice * 0.05)
-        taxAmount = Math.round((totalPrice + serviceFee) * 0.18)
-        calculatedTotalAmount = Math.round(totalPrice + serviceFee + taxAmount)
-        
-        console.log("Amount calculation breakdown:")
-        console.log("- Nights:", nights)
-        console.log("- Weekday price per night:", weekdayPrice)
-        console.log("- Weekend price per night:", weekendPrice)
-        console.log("- Total base price:", totalPrice)
-        console.log("- Service fee (5%):", serviceFee)
-        console.log("- Tax amount (18%):", taxAmount)
-        console.log("- Final calculated total:", calculatedTotalAmount)
-      } else {
-        // If total amount exists but no breakdown, derive breakdown from finalAmount
-        basePrice = editedData.finalAmount || 0
-        serviceFee = Math.round(basePrice * 0.05)
-        taxAmount = Math.round((basePrice + serviceFee) * 0.18)
-      }
-
-      const authToken = localStorage.getItem("authToken") || localStorage.getItem("token")
-      if (!authToken) {
-        throw new Error("You must be signed in to pay.")
-      }
-
-      const orderResponse = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL || "https://luxorstay-backend.vercel.app"}/api/payments/create-order`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({
-            amount: calculatedTotalAmount, // Use the actual calculated amount
-            currency: "INR",
-            villaName: editedData.villaName,
-            villaId: editedData.villaId,
-            guestName: editedData.guestName || "Guest",
-            email: editedData.email,
-            checkIn: editedData.checkInDate,
-            checkOut: editedData.checkOutDate,
-            checkInTime: editedData.checkInTime,
-            checkOutTime: editedData.checkOutTime,
-            guests: editedData.adults + editedData.children,
-            infants: editedData.infants,
-            totalDays: (new Date(editedData.checkOutDate) - new Date(editedData.checkInDate)) / (1000 * 3600 * 24) + 1,
-            totalNights: (new Date(editedData.checkOutDate) - new Date(editedData.checkInDate)) / (1000 * 3600 * 24),
-            address: editedData.address || {},
-            originalCalculatedAmount: calculatedTotalAmount, // Store original amount for booking record
-          }),
-        },
-      )
-
-      const rawResponse = await orderResponse.text()
-      let orderData
-      try {
-        orderData = JSON.parse(rawResponse)
-      } catch {
-        throw new Error("Invalid response from server. Please try again later.")
-      }
-
-      if (!orderData.success || !orderData.order || !orderData.order.id) {
-        throw new Error(orderData.message || "Unable to create payment order. Please try again.")
-      }
-
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY || "rzp_live_quNHH9YfEhaAru",
-        amount: orderData.order.amount,
-        currency: orderData.order.currency || "INR",
-        name: "LuxorStay",
-        description: `Booking for ${editedData.villaName}`,
-        order_id: orderData.order.id,
-        modal: {
-          // Disable QR code in the payment popup
-          ondismiss: function() {
-            // Handle modal close if needed
-            setPaymentProcessing(false);
-          },
-          // Disable QR code
-          confirm_close: true,
-          // Hide UPI QR code section
-          upi: {
-            flow: "none"
-          },
-          // Hide other payment methods if needed
-          method: {
-            upi: false,
-            card: true,
-            netbanking: true,
-            wallet: true,
-            paylater: true
-          }
-        },
-        handler: async (response) => {
-          try {
-            setPaymentProcessing(true)
-            console.log("Payment response received:", response)
-
-            // Get email from auth context if available
-            const userEmail = (user && user.email) || editedData.email || localStorage.getItem("userEmail") || ""
-
-            // Prepare booking data with proper types and values
-            const bookingDetails = {
-              villaId: editedData.villaId,
-              villaName: editedData.villaName,
-              checkIn: new Date(editedData.checkInDate).toISOString(),
-              checkOut: new Date(editedData.checkOutDate).toISOString(),
-              checkInTime: editedData.checkInTime || "14:00",
-              checkOutTime: editedData.checkOutTime || "11:00",
-              guests: Number.parseInt(editedData.adults || 0) + Number.parseInt(editedData.children || 0) || 1,
-              infants: Number.parseInt(editedData.infants || 0),
-              guestName: editedData.guestName || user?.name || "Guest",
-              email: userEmail,
-              phone: editedData.phone,
-              totalAmount: calculatedTotalAmount, // Use calculated amount for booking record, not payment amount
-              totalDays:
-                Math.ceil(
-                  (new Date(editedData.checkOutDate) - new Date(editedData.checkInDate)) / (1000 * 60 * 60 * 24),
-                ) || 1,
-              address: editedData.address || {},
-            }
-
-            console.log("Sending booking details:", bookingDetails)
-            console.log("Total amount being sent:", bookingDetails.totalAmount, "Type:", typeof bookingDetails.totalAmount)
-
-            // First, create the booking with the order ID
-            const bookingResponse = await fetch(
-              `${import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"}/api/bookings/create`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${authToken}`,
-                },
-                body: JSON.stringify({
-                  ...bookingDetails,
-                  orderId: response.razorpay_order_id, // Include the order ID in the booking
-                }),
-              }
-            )
-
-            if (!bookingResponse.ok) {
-              const errorText = await bookingResponse.text()
-              console.error("Booking creation failed:", errorText)
-              throw new Error(`Booking creation failed: ${errorText}`)
-            }
-
-            const booking = await bookingResponse.json()
-            console.log("Booking created successfully:", booking)
-            
-            // Then verify the payment with both booking ID and order ID
-            const paymentResponse = await fetch(
-              `${import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"}/api/payments/verify`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${authToken}`,
-                },
-                body: JSON.stringify({
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_signature: response.razorpay_signature,
-                  bookingId: booking._id,
-                  orderId: response.razorpay_order_id // Also send orderId explicitly
-                }),
-              }
-            )
-
-            if (!paymentResponse.ok) {
-              const errorText = await paymentResponse.text()
-              console.error("Payment verification failed:", errorText)
-              throw new Error(`Payment verification failed: ${errorText}`)
-            }
-
-            const result = await paymentResponse.json()
-
-            // Clear stored booking data after successful payment
-            localStorage.removeItem("pendingBookingReview")
-            localStorage.removeItem("pendingBookingData")
-
-            Swal.fire({
-              icon: "success",
-              title: "Booking Confirmed! 🎉",
-              text: "Your payment was successful and booking has been confirmed!",
-              confirmButtonColor: "#D4AF37",
-              confirmButtonText: "View My Bookings",
-            }).then(() => {
-              navigate("/my-bookings", { replace: true })
-            })
-          } catch (error) {
-            console.error("Payment processing error:", error)
-            // Show a more user-friendly message
-            Swal.fire({
-              icon: "warning",
-              title: "Payment Processing",
-              text: "Your payment was received, but we need to confirm your booking. Our team will contact you shortly.",
-              confirmButtonColor: "#D4AF37",
-            })
-          } finally {
-            setPaymentProcessing(false)
-          }
-        },
-        prefill: {
-          name: editedData.guestName || "",
-          email: editedData.email || "",
-          contact: editedData.phone || "",
-        },
-        theme: {
-          color: "#3399cc",
-        },
-        method: {
-          upi: true,
-          card: true,
-          netbanking: true,
-          wallet: true,
-        },
-        upi: {
-          flow: "collect", // 🔁 UPI ID only (disables QR)
-        },
-      }
-
-      const razorpayInstance = new window.Razorpay(options)
-      razorpayInstance.open()
     } catch (err) {
-      Swal.fire({
-        icon: "error",
-        title: "Booking Failed",
-        text: err.message || "There was a problem processing your booking.",
-        confirmButtonColor: "#D4AF37",
-      })
+      console.error("Booking payment error:", err)
+      toast.error(err.message || "Something went wrong while processing your payment.")
       setPaymentProcessing(false)
     }
-  }
-
-  const nights = Math.ceil(
-    (new Date(editedData?.checkOutDate).getTime() - new Date(editedData?.checkInDate).getTime()) / (1000 * 3600 * 24),
-  )
-
-  // Get villa image
-  const getVillaImage = (villaName) => {
-    if (!villaName) return villaImageMap.default
-
-    // Check for exact match first
-    if (villaImageMap[villaName]) {
-      return villaImageMap[villaName]
-    }
-
-    // Check for partial matches
-    for (const [name, image] of Object.entries(villaImageMap)) {
-      if (villaName.toLowerCase().includes(name.toLowerCase())) {
-        return image
-      }
-    }
-
-    return villaImageMap.default
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#D4AF37]/10 to-[#BFA181]/10 py-8 px-4">
+    <div className="min-h-screen bg-[#faf8f5] py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Review Your Booking</h1>
-          <p className="text-gray-600">Please review and confirm your booking details before payment</p>
+        {/* Navigation back */}
+        <div className="mb-6 flex items-center justify-between">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-[#ca8a04] transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Villa Details</span>
+          </button>
+
+          {/* Slot Reservation Hold Badge */}
+          {timeLeft > 0 ? (
+            <div className="flex items-center gap-2 bg-[#ca8a04]/10 text-[#ca8a04] px-3.5 py-1.5 rounded-full text-xs font-bold border border-[#ca8a04]/20 animate-pulse">
+              <Clock className="w-3.5 h-3.5" />
+              <span>Slot reserved for: {formatTimer(timeLeft)}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-red-50 text-red-600 px-3.5 py-1.5 rounded-full text-xs font-bold border border-red-200">
+              <Clock className="w-3.5 h-3.5" />
+              <span>Hold expired</span>
+              <button
+                type="button"
+                onClick={handleExtendHold}
+                className="ml-1 underline font-semibold text-red-700 hover:text-red-900 cursor-pointer"
+              >
+                Extend 5 Mins
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[600px]">
-            {/* Left Column - Villa Image */}
-            <div className="relative overflow-hidden">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Review & Confirm Stay</h1>
+          <p className="text-gray-500 text-sm mt-1">
+            Review your booking details and enter guest contact info
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column: Villa & Stay Summary (5 Cols) */}
+          <div className="lg:col-span-5 bg-white rounded-3xl shadow-xl border border-gray-200/80 overflow-hidden">
+            <div className="relative h-64 overflow-hidden">
               <img
-                src={getVillaImage(editedData?.villaName) || "/placeholder.svg"}
-                alt={editedData?.villaName}
+                src={getVillaImage(bookingData?.villaName)}
+                alt={bookingData?.villaName || "Villa"}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-              <div className="absolute bottom-8 left-8 right-8 text-white">
-                <h2 className="text-2xl font-bold mb-2">{editedData?.villaName}</h2>
-                <p className="text-white/80 mb-4">Luxury Villa Experience</p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    <span>Up to {editedData?.adults + editedData?.children} guests</span>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+              <div className="absolute bottom-5 left-5 right-5 text-white">
+                <span className="text-[11px] font-bold uppercase tracking-wider bg-[#ca8a04] px-2.5 py-1 rounded-full">
+                  Confirmed Selection
+                </span>
+                <h2 className="text-2xl font-bold mt-2">{bookingData?.villaName || "Luxury Villa"}</h2>
+                <div className="flex items-center gap-1 text-xs text-white/80 mt-1">
+                  <MapPin className="w-3.5 h-3.5 text-[#D4AF37]" />
+                  <span>Perur ECR, Chennai, India</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4 text-sm">
+              <div className="bg-gray-50/80 rounded-2xl p-4 border border-gray-100 space-y-3">
+                <div className="flex items-center justify-between pb-3 border-b border-gray-200/60">
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Calendar className="w-4 h-4 text-[#ca8a04]" />
+                    <span>Dates</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    <span>
-                      {nights} night{nights > 1 ? "s" : ""}
-                    </span>
+                  <span className="font-bold text-gray-900 text-right">
+                    {bookingData?.checkInDate && bookingData?.checkOutDate
+                      ? `${new Date(bookingData.checkInDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} — ${new Date(bookingData.checkOutDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+                      : "Dates Selected"}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between pb-3 border-b border-gray-200/60">
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Clock className="w-4 h-4 text-[#ca8a04]" />
+                    <span>Duration</span>
+                  </div>
+                  <span className="font-bold text-gray-900">
+                    {totalNights} Night{totalNights > 1 ? "s" : ""}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Users className="w-4 h-4 text-[#ca8a04]" />
+                    <span>Guests</span>
+                  </div>
+                  <span className="font-bold text-gray-900">
+                    {bookingData?.adults || 1} Adult{bookingData?.adults > 1 ? "s" : ""}
+                    {bookingData?.children > 0 && `, ${bookingData.children} Child${bookingData.children > 1 ? "ren" : ""}`}
+                    {bookingData?.infants > 0 && `, ${bookingData.infants} Infant${bookingData.infants > 1 ? "s" : ""}`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Secure Booking Guarantee */}
+              <div className="flex items-center gap-3 p-3.5 bg-emerald-50 rounded-2xl border border-emerald-100 text-xs text-emerald-800">
+                <Shield className="w-5 h-5 text-emerald-600 shrink-0" />
+                <span>100% Guaranteed Luxury Stay with Direct Villa Host Support</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Contact Details & Price Breakdown (7 Cols) */}
+          <div className="lg:col-span-7 space-y-6">
+            {/* Primary Guest Details Card */}
+            <div className="bg-white rounded-3xl shadow-xl border border-gray-200/80 p-6 sm:p-8 space-y-5">
+              <div className="border-b border-gray-100 pb-4">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <User className="w-5 h-5 text-[#ca8a04]" />
+                  <span>Primary Guest Details</span>
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Booking confirmation & access details will be sent here
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Full Name */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                    Full Name <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      placeholder="e.g. Rahul Sharma"
+                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#ca8a04] focus:border-transparent outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Email Address */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                    Email Address <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="email"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                      placeholder="e.g. rahul@example.com"
+                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#ca8a04] focus:border-transparent outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Mobile Phone Number */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                    Mobile Number <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="w-24 shrink-0">
+                      <select
+                        value={countryCode}
+                        onChange={(e) => setCountryCode(e.target.value)}
+                        className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 focus:bg-white focus:ring-2 focus:ring-[#ca8a04] outline-none transition-all"
+                      >
+                        <option value="+91">🇮🇳 +91</option>
+                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+44">🇬🇧 +44</option>
+                        <option value="+971">🇦🇪 +971</option>
+                        <option value="+65">🇸🇬 +65</option>
+                        <option value="+61">🇦🇺 +61</option>
+                      </select>
+                    </div>
+                    <div className="relative flex-1">
+                      <Phone className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="10-digit mobile number"
+                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#ca8a04] focus:border-transparent outline-none transition-all"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Right Column - Booking Details */}
-            <div className="p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-900">Booking Details</h3>
-                <button
-                  onClick={() => setEditMode(!editMode)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  {editMode ? <X className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
-                  {editMode ? "Cancel" : "Edit"}
-                </button>
+            {/* Price Breakdown & Pay Now Card */}
+            <div className="bg-white rounded-3xl shadow-xl border border-gray-200/80 p-6 sm:p-8 space-y-6">
+              <div className="border-b border-gray-100 pb-4">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-[#ca8a04]" />
+                  <span>Price Summary</span>
+                </h3>
               </div>
 
-              <div className="space-y-6">
-                {/* Dates */}
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Calendar className="w-5 h-5 text-[#D4AF37]" />
-                    <h4 className="font-semibold text-gray-900">Stay Dates</h4>
-                  </div>
-                  {editMode ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs text-gray-500">Check-in</label>
-                        <input
-                          type="date"
-                          value={editedData?.checkInDate}
-                          onChange={(e) => handleInputChange("checkInDate", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-500">Check-out</label>
-                        <input
-                          type="date"
-                          value={editedData?.checkOutDate}
-                          onChange={(e) => handleInputChange("checkOutDate", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-gray-700">
-                      {editedData?.checkInDate} to {editedData?.checkOutDate} ({nights} night{nights > 1 ? "s" : ""})
-                    </div>
-                  )}
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between text-gray-600">
+                  <span>Accommodation ({totalNights} Night{totalNights > 1 ? "s" : ""})</span>
+                  <span className="font-semibold text-gray-900">₹{baseAccommodation.toLocaleString()}</span>
                 </div>
-
-                {/* Guests */}
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Users className="w-5 h-5 text-[#D4AF37]" />
-                    <h4 className="font-semibold text-gray-900">Guests</h4>
-                  </div>
-                  {editMode ? (
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <label className="text-xs text-gray-500">Adults</label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={editedData?.adults}
-                          onChange={(e) => handleInputChange("adults", Number.parseInt(e.target.value))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-500">Children</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={editedData?.children}
-                          onChange={(e) => handleInputChange("children", Number.parseInt(e.target.value))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-500">Infants</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={editedData?.infants}
-                          onChange={(e) => handleInputChange("infants", Number.parseInt(e.target.value))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-gray-700">
-                      {editedData?.adults} Adults, {editedData?.children} Children, {editedData?.infants} Infants
-                    </div>
-                  )}
+                <div className="flex justify-between text-gray-600">
+                  <span>Service Fee (5%)</span>
+                  <span className="font-semibold text-gray-900">₹{serviceFee.toLocaleString()}</span>
                 </div>
-
-                {/* Contact Information */}
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Phone className="w-5 h-5 text-[#D4AF37]" />
-                    <h4 className="font-semibold text-gray-900">Contact Information</h4>
-                  </div>
-                  {editMode ? (
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-xs text-gray-500">Phone Number</label>
-                        <div className="flex gap-2">
-                          <select
-                            value={editedData?.countryCode}
-                            onChange={(e) => handleInputChange("countryCode", e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                          >
-                            <option value="+91">+91</option>
-                            <option value="+1">+1</option>
-                            <option value="+44">+44</option>
-                          </select>
-                          <input
-                            type="tel"
-                            value={editedData?.phone}
-                            onChange={(e) => handleInputChange("phone", e.target.value)}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                            placeholder="Phone number"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-gray-700">
-                      {editedData?.countryCode} {editedData?.phone}
-                    </div>
-                  )}
+                <div className="flex justify-between text-gray-600">
+                  <span>GST (18%)</span>
+                  <span className="font-semibold text-gray-900">₹{taxAmount.toLocaleString()}</span>
                 </div>
-
-                {/* Address */}
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <MapPin className="w-5 h-5 text-[#D4AF37]" />
-                    <h4 className="font-semibold text-gray-900">Address</h4>
-                  </div>
-                  {editMode ? (
-                    <div className="space-y-3">
-                      <input
-                        type="text"
-                        value={editedData?.address?.street || ""}
-                        onChange={(e) => handleAddressChange("street", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                        placeholder="Street Address"
-                      />
-                      <div>
-                        <label className="text-xs text-gray-500">Country</label>
-                        <select
-                          value={editedData?.address?.country || ""}
-                          onChange={(e) => handleCountryChange(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                          disabled={isLoadingCountries}
-                        >
-                          <option value="">-- Select Country --</option>
-                          {countries.map((country) => (
-                            <option key={country.name} value={country.name}>
-                              {country.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-500">State/Province</label>
-                        <select
-                          value={editedData?.address?.state || ""}
-                          onChange={(e) => handleStateChange(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                          disabled={!editedData?.address?.country || isLoadingStates}
-                        >
-                          <option value="">-- Select State --</option>
-                          {states.map((state) => (
-                            <option key={state.name} value={state.name}>
-                              {state.name}
-                            </option>
-                          ))}
-                          {editedData?.address?.state && !states.find((s) => s.name === editedData?.address?.state) && (
-                            <option key={editedData?.address?.state} value={editedData?.address?.state}>
-                              {editedData?.address?.state}
-                            </option>
-                          )}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-500">City</label>
-                        <select
-                          value={editedData?.address?.city || ""}
-                          onChange={(e) => handleAddressChange("city", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                          disabled={!editedData?.address?.state || isLoadingCities}
-                        >
-                          <option value="">-- Select City --</option>
-                          {cities.map((city) => (
-                            <option key={city} value={city}>
-                              {city}
-                            </option>
-                          ))}
-                          {editedData?.address?.city && !cities.includes(editedData?.address?.city) && (
-                            <option key={editedData?.address?.city} value={editedData?.address?.city}>
-                              {editedData?.address?.city}
-                            </option>
-                          )}
-                        </select>
-                      </div>
-                      <input
-                        type="text"
-                        value={editedData?.address?.zipCode || ""}
-                        onChange={(e) => handleAddressChange("zipCode", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                        placeholder="ZIP Code"
-                      />
-                    </div>
-                  ) : (
-                    <div className="text-sm text-gray-700">
-                      {editedData?.address?.street}, {editedData?.address?.city}, {editedData?.address?.state},{" "}
-                      {editedData?.address?.country} {editedData?.address?.zipCode}
-                    </div>
-                  )}
-                </div>
-
-                {/* Check-in/Check-out Times */}
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Clock className="w-5 h-5 text-[#D4AF37]" />
-                    <h4 className="font-semibold text-gray-900">Check-in/Check-out Times</h4>
-                  </div>
-                  {editMode ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs text-gray-500">Check-in Time</label>
-                        <input
-                          type="time"
-                          value={editedData?.checkInTime}
-                          onChange={(e) => handleInputChange("checkInTime", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-500">Check-out Time</label>
-                        <input
-                          type="time"
-                          value={editedData?.checkOutTime}
-                          onChange={(e) => handleInputChange("checkOutTime", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-gray-700">
-                      Check-in: {editedData?.checkInTime} | Check-out: {editedData?.checkOutTime}
-                    </div>
-                  )}
+                <div className="flex justify-between text-lg font-extrabold text-gray-900 border-t border-dashed border-gray-200 pt-4">
+                  <span>Total Payable</span>
+                  <span className="text-[#ca8a04] text-xl">₹{grandTotal.toLocaleString()}</span>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-4 mt-8 pt-6 border-t border-gray-200">
-                {editMode ? (
-                  <>
-                    <button
-                      onClick={handleCancelEdit}
-                      className="flex-1 bg-gray-200 text-gray-800 py-3 px-4 rounded-xl hover:bg-gray-300 transition-colors font-medium"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSaveChanges}
-                      className="flex-1 bg-green-600 text-white py-3 px-4 rounded-xl hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
-                    >
-                      <Save className="w-4 h-4" />
-                      Save Changes
-                    </button>
-                  </>
+              {/* Pay Now Button */}
+              <button
+                type="button"
+                onClick={handleProceedPayment}
+                disabled={paymentProcessing}
+                className="w-full bg-gradient-to-r from-[#D4AF37] via-[#ca8a04] to-[#BFA181] hover:brightness-105 text-white py-4 px-6 rounded-2xl font-bold flex items-center justify-center gap-3 shadow-xl shadow-[#D4AF37]/30 transition-all transform hover:scale-[1.01] active:scale-[0.98] disabled:opacity-75 disabled:cursor-not-allowed"
+              >
+                {paymentProcessing ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Securing Reservation...</span>
+                  </span>
                 ) : (
                   <>
-                    <button
-                      onClick={handleBack}
-                      className="flex-1 bg-gray-200 text-gray-800 py-3 px-4 rounded-xl hover:bg-gray-300 transition-colors font-medium"
-                      disabled={paymentProcessing}
-                    >
-                      Back to Edit
-                    </button>
-                    <button
-                      onClick={handlePay}
-                      className="flex-1 bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-white py-3 px-4 rounded-xl hover:from-[#BFA181] hover:to-[#D4AF37] transition-all font-medium"
-                      disabled={paymentProcessing}
-                    >
-                      {paymentProcessing ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          Processing Payment...
-                        </div>
-                      ) : (
-                        "Pay & Confirm Booking"
-                      )}
-                    </button>
+                    <Lock className="w-5 h-5" />
+                    <span>Pay ₹{grandTotal.toLocaleString()} via Razorpay</span>
                   </>
                 )}
+              </button>
+
+              <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+                <Shield className="w-4 h-4 text-gray-400" />
+                <span>256-bit Encrypted & Powered by Razorpay Secure Payments</span>
               </div>
             </div>
           </div>

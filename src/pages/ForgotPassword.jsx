@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config/api';
-import Swal from 'sweetalert2';
+import { toast } from '../utils/toast';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
@@ -49,33 +49,20 @@ const ForgotPassword = () => {
       // Store email in session for OTP verification
       sessionStorage.setItem('verificationEmail', email);
       
-      // Show success popup
-      Swal.fire({
-        icon: 'success',
-        title: 'Verification Code Sent',
-        text: 'We have sent a verification code to your email. Please check your inbox.',
-        confirmButtonColor: '#ca8a04',
-        timer: 5000
-      }).then(() => {
-        // Redirect to OTP verification page for password reset
-        navigate('/verify-otp', { 
-          state: { 
-            email, 
-            isPasswordReset: true 
-          } 
-        });
+      // Show toast
+      toast.success('We have sent a verification code to your email.');
+      // The reset code is consumed by /api/auth/reset-password, not by the login
+      // verifier, so this must land on the reset OTP page.
+      navigate('/reset-otp', { 
+        state: { 
+          email, 
+          isPasswordReset: true 
+        } 
       });
       
     } catch (error) {
       console.error("Forgot password error:", error);
-      
-      // Show error popup with appropriate message
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.message || 'Something went wrong. Please try again.',
-        confirmButtonColor: '#ca8a04'
-      });
+      toast.error(error.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -124,7 +111,7 @@ const ForgotPassword = () => {
                 We have sent a verification code to <span className="font-medium">{email}</span>
               </p>
               <Link 
-                to="/verify-otp" 
+                to="/reset-otp" 
                 state={{ email, isPasswordReset: true }}
                 className="inline-block w-full py-3 px-4 text-center bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl"
               >

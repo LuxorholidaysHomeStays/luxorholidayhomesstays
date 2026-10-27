@@ -18,8 +18,8 @@ Luxor Holiday Home Stays is a sophisticated vacation rental platform specializin
 
 ### User Features
 - **Advanced Search & Filtering** - Find perfect accommodations by location, dates, guests, and amenities
-- **Interactive Booking System** - Real-time availability checking and instant booking
-- **User Authentication** - Secure login with Google OAuth and OTP verification
+- **Villa Search and Booking** - Date-based search with server-side availability and pricing checks, followed by Razorpay checkout
+- **User Authentication** - Email OTP and password sign-in
 - **Profile Management** - Complete user profiles with booking history
 - **Photo Gallery** - High-quality villa images with lightbox viewing
 - **Responsive Design** - Optimized for all devices and screen sizes
@@ -38,7 +38,7 @@ Luxor Holiday Home Stays is a sophisticated vacation rental platform specializin
 ## 🛠️ Technology Stack
 
 ### Frontend
-- **React 18** - Modern React with hooks and functional components
+- **React 19** - Modern React with hooks and functional components
 - **Vite** - Fast build tool and development server
 - **React Router** - Client-side routing and navigation
 - **Tailwind CSS** - Utility-first CSS framework
@@ -58,8 +58,8 @@ Luxor Holiday Home Stays is a sophisticated vacation rental platform specializin
 - **Local Storage** - Client-side data persistence
 
 ### Authentication & Security
-- **Firebase Auth** - Google OAuth integration
-- **JWT Tokens** - Secure API authentication
+- **Email OTP and password sign-in** - Authentication through the Go API
+- **JWT Tokens** - API authentication and protected routes
 - **Protected Routes** - Role-based access control
 
 

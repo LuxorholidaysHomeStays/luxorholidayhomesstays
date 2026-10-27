@@ -1,5 +1,3 @@
-"use client"
-
 import React, { useState, useEffect } from "react"
 import { API_BASE_URL } from "../../config/api"
 import { useAuth } from "../../context/AuthContext"
@@ -16,14 +14,13 @@ import {
   MagnifyingGlassIcon,
   ArrowPathIcon
 } from "@heroicons/react/24/outline"
-import { useNavigate } from "react-router-dom"
 const UserManagement = () => {
   const [users, setUsers] = useState([])
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [showForm, setShowForm] = useState(false) // Changed from showCreateModal
+  const [showForm, setShowForm] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [savingUser, setSavingUser] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
   const [newUserData, setNewUserData] = useState({
     name: "",
@@ -47,8 +44,7 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     setLoading(true)
     try {
-      // Direct API call to your backend
-      const response = await fetch(`${API_BASE_URL}/api/users`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
         headers: {
           Authorization: `Bearer ${authToken}`,
           "Content-Type": "application/json",
@@ -56,112 +52,28 @@ const UserManagement = () => {
       })
       
       const data = await response.json()
-      console.log("Fetched users data:", data)
-      
       if (response.ok) {
-        // Check if data is an array directly or nested in a property
         if (Array.isArray(data)) {
           setUsers(data)
-        } else if (data.users && Array.isArray(data.users)) {
+        } else if (data && Array.isArray(data.users)) {
           setUsers(data.users)
         } else {
-          // Fallback to sample data
-          console.warn("API returned users in unexpected format, using sample data")
-          setUsers([
-            {
-              _id: "1",
-              name: "Admin User",
-              email: "admin@gmail.com",
-              isVerified: true,
-              role: "admin",
-              profileImage: null
-            },
-            {
-              _id: "2",
-              name: "Regular User",
-              email: "user@example.com",
-              isVerified: true,
-              role: "user",
-              profileImage: null
-            },
-            {
-              _id: "3",
-              name: "New User",
-              email: "newuser@example.com",
-              isVerified: false,
-              role: "user",
-              profileImage: null
-            }
-          ])
+          setUsers([])
         }
       } else {
-        addToast(`Failed to fetch users: ${data.error || 'Unknown error'}`, "error")
-        // Use sample data as fallback
-        console.warn("Using fallback user data as API request failed")
-        setUsers([
-          {
-            _id: "1",
-            name: "Admin User",
-            email: "admin@gmail.com",
-            isVerified: true,
-            role: "admin",
-            profileImage: null
-          },
-          {
-            _id: "2",
-            name: "Regular User",
-            email: "user@example.com",
-            isVerified: true,
-            role: "user",
-            profileImage: null
-          },
-          {
-            _id: "3",
-            name: "New User",
-            email: "newuser@example.com",
-            isVerified: false,
-            role: "user",
-            profileImage: null
-          }
-        ])
+        addToast(`Failed to fetch users: ${data?.error || 'Unknown error'}`, "error")
+        setUsers([])
       }
     } catch (error) {
       console.error("Error fetching users:", error)
-      addToast("Error fetching users. Using sample data instead.", "warning")
-      // Fallback data
-      setUsers([
-        {
-          _id: "1",
-          name: "Admin User",
-          email: "admin@gmail.com",
-          isVerified: true,
-          role: "admin",
-          profileImage: null
-        },
-        {
-          _id: "2",
-          name: "Regular User",
-          email: "user@example.com",
-          isVerified: true,
-          role: "user",
-          profileImage: null
-        },
-        {
-          _id: "3",
-          name: "New User",
-          email: "newuser@example.com",
-          isVerified: false,
-          role: "user",
-          profileImage: null
-        }
-      ])
+      addToast("Error fetching users from server", "error")
+      setUsers([])
     } finally {
       setLoading(false)
     }
   }
 
-  const updateUserRole = async (userId, newRole) => {
-    // Simply return without doing anything - roles are no longer changeable
+  const updateUserRole = async () => {
     addToast("Role changes are restricted for security reasons", "info");
     return;
   }
@@ -169,104 +81,107 @@ const UserManagement = () => {
   const deleteUser = async (userId) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return
 
-    // Update UI immediately
-    setUsers(users.filter(user => user._id !== userId))
-    addToast("User deleted successfully", "success")
-    
     try {
-      await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${authToken}`,
           "Content-Type": "application/json",
         },
       })
+
+      if (response.ok) {
+        setUsers(prev => prev.filter(user => (user._id || user.id) !== userId))
+        addToast("User deleted successfully", "success")
+      } else {
+        const data = await response.json().catch(() => ({}))
+        addToast(data?.error || "Failed to delete user", "error")
+      }
     } catch (error) {
       console.error("Error deleting user:", error)
+      addToast("Error deleting user", "error")
     }
   }
 
-  const handleCreateUser = () => {
-    // Validate form
+  const handleCreateUser = async () => {
     if (!newUserData.name || !newUserData.email || !newUserData.password) {
       addToast("Please fill in all required fields", "error");
       return;
     }
     
-    // Create new user with ID and add to list - ensure role is always "user"
-    const newUser = {
-      _id: Date.now().toString(),
-      ...newUserData,
-      role: "user", // Force role to be "user"
-      isVerified: newUserData.isVerified,
-      profileImage: null
-    };
-    
-    setUsers([...users, newUser]);
-    addToast("User created successfully", "success");
-    setShowForm(false); // Changed from setShowCreateModal
-    
-    // Reset form
-    setNewUserData({
-      name: "",
-      email: "",
-      password: "",
-      role: "user", // Keep default as user
-      isGoogleUser: false,
-      phoneAuthOnly: false,
-      phoneVerified: false,
-      isVerified: true,
-      isActive: true
-    });
-    
-    // Try API call if available
-    createUser({...newUserData, role: "user"}); // Force role to be "user" here too
-  }
-
-  const createUser = async (userData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/users/register`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${authToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(userData),
+        body: JSON.stringify({ ...newUserData, role: "user" }),
       })
 
+      const data = await response.json()
       if (!response.ok) {
-        const errorData = await response.json();
-        console.warn("Server user creation failed:", errorData.error || "Unknown error");
-        addToast(`User creation failed: ${errorData.error || "Unknown error"}`, "error");
-      } else {
-        const data = await response.json();
-        // Replace the temporary ID with the real one from the server
-        setUsers(prevUsers => prevUsers.map(user => 
-          user._id === newUser._id ? {...user, _id: data._id} : user
-        ));
+        addToast(`User creation failed: ${data?.error || "Unknown error"}`, "error")
+        return
       }
-      window.location.reload();
-    // Reload to fetch updated user list
+
+      addToast("User created successfully", "success")
+      setShowForm(false)
+      setNewUserData({
+        name: "",
+        email: "",
+        password: "",
+        role: "user",
+        isGoogleUser: false,
+        phoneAuthOnly: false,
+        phoneVerified: false,
+        isVerified: true,
+        isActive: true
+      })
+      fetchUsers()
     } catch (error) {
-      console.error("Error creating user:", error);
-      addToast("Error connecting to server", "error");
+      console.error("Error creating user:", error)
+      addToast("Error connecting to server", "error")
     }
   }
 
-  const handleEditUser = () => {
-    if (!selectedUser || !selectedUser._id) return;
-    
-    // Update user in the state
-    setUsers(users.map(user => 
-      user._id === selectedUser._id ? {...selectedUser} : user
-    ))
-    
-    // Close modal and show success message
-    setShowEditModal(false)
-    addToast("User updated successfully", "success")
-    
-    // Reset selected user
-    setSelectedUser(null)
+  const handleEditUser = async () => {
+    const userId = selectedUser?.id || selectedUser?._id
+    if (!userId) return
+
+    setSavingUser(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: selectedUser.name,
+          email: selectedUser.email,
+          phoneNumber: selectedUser.phoneNumber || selectedUser.phone,
+          address: selectedUser.address,
+          isVerified: selectedUser.isVerified,
+        }),
+      })
+
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok || data?.success === false) {
+        addToast(data?.error || "Failed to update user", "error")
+        return
+      }
+
+      setUsers((prev) => prev.map((user) => ((user.id || user._id) === userId ? { ...user, ...selectedUser } : user)))
+      setShowEditModal(false)
+      addToast("User updated successfully", "success")
+      setSelectedUser(null)
+    } catch (error) {
+      console.error("Error updating user:", error)
+      addToast("Error connecting to server", "error")
+    } finally {
+      setSavingUser(false)
+    }
   }
 
   const filteredUsers = users.filter(
@@ -568,7 +483,7 @@ const UserManagement = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredUsers.length > 0 ? (
                 filteredUsers.map((user) => (
-                  <tr key={user._id} className="hover:bg-gray-50">
+                  <tr key={user.id || user._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-12 w-12">
@@ -634,7 +549,7 @@ const UserManagement = () => {
                           </button>
                           
                           <button
-                            onClick={() => deleteUser(user._id)}
+                            onClick={() => deleteUser(user.id || user._id)}
                             className="p-1.5 bg-red-50 rounded-full text-red-600 hover:text-white hover:bg-red-600 transition-colors"
                             title="Delete User"
                           >
@@ -813,9 +728,10 @@ const UserManagement = () => {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    disabled={savingUser}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    Save Changes
+                    {savingUser ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
               </form>

@@ -1,1533 +1,349 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { API_BASE_URL } from '../config/api';
 import { useAuth } from '../context/AuthContext';
+import { toast } from '../utils/toast';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-import { signInWithGoogle } from '../utils/firebase';
-import { FcGoogle } from 'react-icons/fc';
-import { useToast } from '../context/ToastContext';
-import { setupRecaptcha, setupHiddenRecaptcha, sendOTP, verifyOTP, isSessionLikelyExpired } from '../utils/otp';
+import { Mail, ArrowRight, ShieldCheck, RefreshCw } from 'lucide-react';
 
 const SignIn = () => {
-  // Initialize AOS for animations
   useEffect(() => {
     AOS.init({
       duration: 800,
       easing: 'ease-out',
-      once: true
+      once: true,
     });
   }, []);
 
-  const [isLogin, setIsLogin] = useState(true);
-  const [authMethod, setAuthMethod] = useState('email'); // 'email' or 'phone'
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [countryCode, setCountryCode] = useState('+91'); // Default to India
-  const [otp, setOtp] = useState('');
-  const [showOtpInput, setShowOtpInput] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState(null);
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [step, setStep] = useState(1); // 1: Email input, 2: OTP input
   const [loading, setLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
-  const [firebaseUserData, setFirebaseUserData] = useState(null);
-  const [isEmailStep, setIsEmailStep] = useState(false);
-  const [userEmail, setUserEmail] = useState('');
-  const [userName, setUserName] = useState('');
-  const [isEmailVerified, setIsEmailVerified] = useState(false);
-  
-  const { setAuthToken, setUserData, handleGoogleSignIn } = useAuth();
+  const [rememberMe, setRememberMe] = useState(true);
+
+  const { sendOTP, verifyOTP, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const isRedirectFromBooking = searchParams.get('redirect') === 'booking';
-  const { addToast } = useToast();
 
-  // Country codes list
-  const countryCodes = [
-    { code: '+1', name: 'United States', flag: '🇺🇸' },
-    { code: '+44', name: 'United Kingdom', flag: '🇬🇧' },
-    { code: '+91', name: 'India', flag: '🇮🇳' },
-    { code: '+86', name: 'China', flag: '🇨🇳' },
-    { code: '+81', name: 'Japan', flag: '🇯🇵' },
-    { code: '+49', name: 'Germany', flag: '🇩🇪' },
-    { code: '+33', name: 'France', flag: '🇫🇷' },
-    { code: '+39', name: 'Italy', flag: '🇮🇹' },
-    { code: '+7', name: 'Russia', flag: '🇷🇺' },
-    { code: '+55', name: 'Brazil', flag: '🇧🇷' },
-    { code: '+61', name: 'Australia', flag: '🇦🇺' },
-    { code: '+34', name: 'Spain', flag: '🇪🇸' },
-    { code: '+82', name: 'South Korea', flag: '🇰🇷' },
-    { code: '+65', name: 'Singapore', flag: '🇸🇬' },
-    { code: '+971', name: 'UAE', flag: '🇦🇪' },
-    { code: '+966', name: 'Saudi Arabia', flag: '🇸🇦' },
-    { code: '+60', name: 'Malaysia', flag: '🇲🇾' },
-    { code: '+66', name: 'Thailand', flag: '🇹🇭' },
-    { code: '+84', name: 'Vietnam', flag: '🇻🇳' },
-    { code: '+62', name: 'Indonesia', flag: '🇮🇩' },
-    { code: '+63', name: 'Philippines', flag: '🇵🇭' },
-    { code: '+880', name: 'Bangladesh', flag: '🇧🇩' },
-    { code: '+94', name: 'Sri Lanka', flag: '🇱🇰' },
-    { code: '+977', name: 'Nepal', flag: '🇳🇵' },
-    { code: '+92', name: 'Pakistan', flag: '🇵🇰' },
-    { code: '+27', name: 'South Africa', flag: '🇿🇦' },
-    { code: '+20', name: 'Egypt', flag: '🇪🇬' },
-    { code: '+234', name: 'Nigeria', flag: '🇳🇬' },
-    { code: '+254', name: 'Kenya', flag: '🇰🇪' },
-    { code: '+52', name: 'Mexico', flag: '🇲🇽' },
-    { code: '+54', name: 'Argentina', flag: '🇦🇷' },
-    { code: '+56', name: 'Chile', flag: '🇨🇱' },
-    { code: '+57', name: 'Colombia', flag: '🇨🇴' },
-    { code: '+51', name: 'Peru', flag: '🇵🇪' },
-    { code: '+90', name: 'Turkey', flag: '🇹🇷' },
-    { code: '+98', name: 'Iran', flag: '🇮🇷' },
-    { code: '+964', name: 'Iraq', flag: '🇮🇶' },
-    { code: '+972', name: 'Israel', flag: '🇮🇱' },
-    { code: '+31', name: 'Netherlands', flag: '🇳🇱' },
-    { code: '+46', name: 'Sweden', flag: '🇸🇪' },
-    { code: '+47', name: 'Norway', flag: '🇳🇴' },
-    { code: '+45', name: 'Denmark', flag: '🇩🇰' },
-    { code: '+358', name: 'Finland', flag: '🇫🇮' },
-    { code: '+41', name: 'Switzerland', flag: '🇨🇭' },
-    { code: '+43', name: 'Austria', flag: '🇦🇹' },
-    { code: '+32', name: 'Belgium', flag: '🇧🇪' },
-    { code: '+351', name: 'Portugal', flag: '🇵🇹' },
-    { code: '+48', name: 'Poland', flag: '🇵🇱' },
-    { code: '+420', name: 'Czech Republic', flag: '🇨🇿' },
-    { code: '+36', name: 'Hungary', flag: '🇭🇺' },
-    { code: '+30', name: 'Greece', flag: '🇬🇷' },
-  ];
-  
-  // Function to handle post-login navigation
-  const handleSuccessfulLogin = () => {
-    // First check for sessionStorage redirect data (from BookingDetails)
-    const redirectAfterLogin = sessionStorage.getItem('redirectAfterLogin');
-    if (redirectAfterLogin) {
-      try {
-        const redirectData = JSON.parse(redirectAfterLogin);
-        sessionStorage.removeItem('redirectAfterLogin');
-        
-        // Navigate back to the exact location with state
-        navigate(redirectData.pathname + redirectData.search, { 
-          state: redirectData.state,
-          replace: true 
-        });
-        return;
-      } catch (error) {
-        console.error("Error parsing redirect after login data:", error);
-      }
+  const otpInputRefs = useRef([]);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      const redirectPath = location.state?.from || (isRedirectFromBooking ? '/booking-review' : '/');
+      navigate(redirectPath, { replace: true });
     }
-    
-    // Then check for auth redirect URL
-    const redirectUrl = localStorage.getItem("authRedirectUrl");
-    if (redirectUrl) {
-      localStorage.removeItem("authRedirectUrl");
-      
-      // Special handling for booking review page
-      if (redirectUrl === '/booking-review') {
-        const pendingBookingReview = localStorage.getItem('pendingBookingReview');
-        if (pendingBookingReview) {
-          try {
-            const bookingData = JSON.parse(pendingBookingReview);
-            navigate('/booking-review', { state: { bookingData } });
-            return;
-          } catch (error) {
-            console.error("Error parsing pending booking review data:", error);
-          }
-        }
-      }
-      
-      navigate(redirectUrl);
+  }, [isAuthenticated, navigate, location, isRedirectFromBooking]);
+
+  // Resend countdown timer
+  useEffect(() => {
+    let timer;
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+  const handleSendOTP = async (e) => {
+    if (e) e.preventDefault();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError('Please enter a valid email address');
       return;
     }
-    
-    // Then check for location state redirect
-    const fromLocation = location.state?.from;
-    if (fromLocation) {
-      // Special handling for booking review page
-      if (fromLocation === '/booking-review') {
-        const pendingBookingReview = localStorage.getItem('pendingBookingReview');
-        if (pendingBookingReview) {
-          try {
-            const bookingData = JSON.parse(pendingBookingReview);
-            navigate('/booking-review', { state: { bookingData } });
-            return;
-          } catch (error) {
-            console.error("Error parsing pending booking review data:", error);
-          }
-        }
-      }
-      
-      navigate(fromLocation);
+
+    setLoading(true);
+    setError('');
+
+    const res = await sendOTP(email);
+    setLoading(false);
+
+    if (res.success) {
+      setStep(2);
+      setResendCooldown(60);
+      toast.success(`Verification code sent to ${email}`);
+    } else {
+      setError(res.message || 'Failed to send OTP. Please try again.');
+    }
+  };
+
+  const handleOtpChange = (index, value) => {
+    if (value && !/^\d+$/.test(value)) return;
+
+    const newOtp = [...otp];
+    newOtp[index] = value.slice(-1);
+    setOtp(newOtp);
+
+    if (value && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').trim();
+    if (/^\d{6}$/.test(pastedData)) {
+      const digits = pastedData.split('');
+      setOtp(digits);
+      otpInputRefs.current[5]?.focus();
+    }
+  };
+
+  const handleVerifyOTP = async (e) => {
+    if (e) e.preventDefault();
+    const fullOtp = otp.join('');
+    if (fullOtp.length !== 6) {
+      setError('Please enter all 6 digits of the verification code');
       return;
     }
-    
-    // Check for redirectTo from location state (enhanced redirect handling)
-    const redirectTo = location.state?.redirectTo;
-    const redirectState = location.state?.redirectState;
-    if (redirectTo && redirectState) {
-      navigate(redirectTo, { 
-        state: redirectState.state,
-        replace: true 
-      });
-      return;
-    }
-    
-    // Check for pending booking data (use pendingBookingData instead of pendingBooking)
-    const pendingBookingData = localStorage.getItem('pendingBookingData');
-    
-    if (pendingBookingData && isRedirectFromBooking) {
-      try {
-        const bookingData = JSON.parse(pendingBookingData);
-        
-        if (bookingData.returnUrl) {
-          // Navigate back to the specific villa details page
-          navigate(bookingData.returnUrl);
-          return;
-        } else if (bookingData.villaId) {
-          // If no return URL but we have villa ID, construct the URL
-          navigate(`/villas/${bookingData.villaId}`);
-          return;
-        }
-      } catch (error) {
-        console.error("Error parsing pending booking data:", error);
-      }
-    }
-    
-    // Default redirect to home
-    navigate('/');
-  };
 
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
     setLoading(true);
     setError('');
-    
-    try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-      
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Important for cookies
-        body: JSON.stringify({ email, password, name }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Authentication failed');
-      }
-      
-      // Save token and user data to localStorage and auth context
-      if (data.token) {
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userData', JSON.stringify(data.user));
-        setAuthToken(data.token);
-      }
-      setUserData(data.user);
-      
-      setSuccess(isLogin ? "Login successful!" : "Account created successfully!");
-      
-      setTimeout(() => {
-        handleSuccessfulLogin();
-      }, 1000);
-      
-    } catch (error) {
-      console.error("Auth error:", error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Google sign-in handler
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    setError('');
-    
-    try {
-      const result = await handleGoogleSignIn();
-      
-      if (result.success) {
-        addToast(
-          result.isAdmin ? 'Admin login successful!' : 'Login successful! Welcome back.',
-          'success',
-          4000
-        );
-        
-        if (result.isAdmin) {
-          setTimeout(() => {
-            navigate('/owner');
-          }, 500);
-        } else {
-          handleSuccessfulLogin();
-        }
+
+    const res = await verifyOTP(email, fullOtp);
+    setLoading(false);
+
+    if (res.success) {
+      toast.success('Signed in successfully!');
+
+      if (res.isAdmin) {
+        navigate('/dashboard', { replace: true });
       } else {
-        addToast(result.message || 'Login failed', 'error', 6000);
+        const redirectPath = location.state?.from || (isRedirectFromBooking ? '/booking-review' : '/');
+        navigate(redirectPath, { replace: true });
       }
-    } catch (error) {
-      console.error("Google sign-in error:", error);
-      addToast('Login failed', 'error', 6000);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Toggle between login and signup
-  const toggleAuthMode = () => {
-    setIsLogin(!isLogin);
-    setError('');
-    setSuccess('');
-    setEmail('');
-    setPassword('');
-    setName('');
-    setConfirmPassword('');
-    setPhoneNumber('');
-    setCountryCode('+91'); // Reset to default
-    setOtp('');
-    setShowOtpInput(false);
-    setConfirmationResult(null);
-  };
-
-  // Toggle between email and phone authentication
-  const toggleAuthMethod = () => {
-    setAuthMethod(authMethod === 'email' ? 'phone' : 'email');
-    setError('');
-    setSuccess('');
-    setPhoneNumber('');
-    setCountryCode('+91'); // Reset to default
-    setShowOtpInput(false);
-    setConfirmationResult(null);
-  };
-
-  // Handle phone number submission and OTP sending
-  const handlePhoneSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      // Validate phone number
-      const expectedLength = getExpectedPhoneLength();
-      if (!phoneNumber || phoneNumber.replace(/\D/g, '').length < expectedLength) {
-        throw new Error(`Please enter a valid ${expectedLength}-digit phone number for ${countryCodes.find(c => c.code === countryCode)?.name || 'selected country'}`);
-      }
-
-      // Clean phone number (remove spaces, dashes, etc.)
-      const cleanPhone = phoneNumber.replace(/\D/g, '');
-      
-      // Create full phone number with country code
-      const fullPhoneNumber = `${countryCode}${cleanPhone}`;
-      
-      console.log('Sending OTP to:', fullPhoneNumber);
-
-      // Ensure recaptcha container is ready
-      const recaptchaContainer = document.getElementById('recaptcha-container');
-      if (!recaptchaContainer) {
-        throw new Error('reCAPTCHA container not found');
-      }
-      
-      // Clear existing content to avoid duplicates
-      recaptchaContainer.innerHTML = '';
-      recaptchaContainer.style.display = 'block'; // Make sure it's visible
-      
-      // Setup reCAPTCHA with normal (visible) size for the phone input step
-      const recaptchaVerifier = setupRecaptcha('recaptcha-container');
-      
-      // Send OTP with full phone number
-      const confirmationResult = await sendOTP(fullPhoneNumber, recaptchaVerifier);
-      setConfirmationResult(confirmationResult);
-      
-      // Hide the main recaptcha after successful OTP send
-      if (recaptchaContainer) {
-        recaptchaContainer.style.display = 'none';
-      }
-      
-      setShowOtpInput(true);
-      setSuccess('OTP sent successfully! Please check your phone.');
-      
-    } catch (error) {
-      console.error('Phone auth error:', error);
-      
-      // Log more details about the reCAPTCHA setup
-      console.log('reCAPTCHA container exists:', !!document.getElementById('recaptcha-container'));
-      console.log('reCAPTCHA verifier exists:', !!window.recaptchaVerifier);
-      
-      // Clear recaptcha on error to allow retry
-      if (window.recaptchaVerifier) {
-        try {
-          window.recaptchaVerifier.clear();
-          window.recaptchaVerifier = null;
-        } catch (clearError) {
-          console.log('Recaptcha cleared after error');
-        }
-      }
-      
-      // Provide more helpful error message
-      if (error.message?.includes('reCAPTCHA') || error.code === 'auth/argument-error') {
-        setError('Please complete the reCAPTCHA verification before requesting OTP');
-      } else {
-        setError(error.message || 'Failed to send OTP');
-      }
-      
-      // Force the recaptcha to reset
-      setTimeout(() => {
-        const container = document.getElementById('recaptcha-container');
-        if (container) {
-          container.innerHTML = '';
-          // Try to set up a new reCAPTCHA
-          try {
-            setupRecaptcha('recaptcha-container');
-          } catch (e) {
-            console.log('Failed to reset reCAPTCHA:', e);
-          }
-        }
-      }, 500);
-    } finally {
-      setLoading(false);
+    } else {
+      setError(res.message || 'Invalid or expired OTP code. Please try again.');
     }
   };
 
-  // Handle OTP verification
-  const handleOtpVerification = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      if (!confirmationResult) {
-        throw new Error('Please request a new OTP first');
-      }
-      
-      // Check if session is likely expired before attempting verification
-      if (isSessionLikelyExpired(confirmationResult)) {
-        console.log('OTP session likely expired based on timestamp');
-        throw {
-          code: 'auth/session-expired',
-          message: 'Your verification session has expired. Please request a new code.'
-        };
-      }
-      
-      // Hide the main recaptcha container if it exists
-      const mainRecaptchaContainer = document.getElementById('recaptcha-container');
-      if (mainRecaptchaContainer) {
-        mainRecaptchaContainer.style.display = 'none';
-      }
-      
-      // Make sure we have a hidden recaptcha for verification if needed
-      // Some operations might require additional recaptcha verification
-      const verifyContainer = document.getElementById('recaptcha-verify-container');
-      if (verifyContainer) {
-        verifyContainer.style.display = 'none'; // Keep it hidden
-      }
-
-      console.log('Verifying OTP with Firebase...');
-      const result = await verifyOTP(confirmationResult, otp);
-      const firebaseUser = result.user;
-
-      console.log('✅ OTP verified with Firebase successfully');
-      console.log('Firebase User:', firebaseUser.phoneNumber);
-
-      // Save the firebase user data
-      setFirebaseUserData(firebaseUser);
-      
-      // Get Firebase ID token - we need this for backend verification
-      const idToken = await firebaseUser.getIdToken();
-
-      // Send to backend for verification and user login
-      // For both login and signup, we use the same endpoint and flow
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/phone-verify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            idToken,
-            phoneNumber: firebaseUser.phoneNumber,
-            // Use a generic name - user can update later in profile
-            name: firebaseUser.displayName || `User_${firebaseUser.phoneNumber.slice(-4)}`,
-            isSignUp: !isLogin, // Send info to backend whether this is a login or signup attempt
-            authMode: isLogin ? 'login' : 'signup',
-            forceProfileUpdate: !isLogin // Force profile update for all signups
-          }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          // Create enhanced error object with response data
-          const apiError = new Error(data.error || 'Phone authentication failed');
-          apiError.response = { 
-            status: response.status,
-            data: data 
-          };
-          throw apiError;
-        }
-
-        // Check if user needs to complete their profile
-        // For both login and signup via phone, handle the same way:
-        // - If email is not verified or is a placeholder, go to profile completion
-        // - Otherwise, go directly to home page
-        const emailIsVerified = data.user.emailVerified === true || data.emailVerified === true;
-        const hasPlaceholderEmail = data.user.email && (
-          data.user.email.includes('@phone.luxor.com') || 
-          data.user.email.includes('@phone.local')
-        );
-        
-        console.log('Auth flow info:', { 
-          isLogin, 
-          emailIsVerified,
-          hasPlaceholderEmail,
-          needsProfileUpdate: data.user.needsProfileUpdate,
-          isNewUser: data.isNewUser
-        });
-        
-        // For phone authentication, we want to ensure consistent behavior:
-        // 1. If this is a new signup (isLogin=false) -> always complete profile
-        // 2. If user is new according to backend -> always complete profile
-        // 3. If email is not verified or is placeholder -> complete profile
-        // 4. Otherwise -> go to home page
-        const needsProfileCompletion = !isLogin || !emailIsVerified || 
-                                    data.user.needsProfileUpdate || 
-                                    data.isNewUser || 
-                                    hasPlaceholderEmail;
-                                    
-        if (needsProfileCompletion) {
-          // Log detailed reason for redirecting to profile completion
-          const reason = !isLogin ? 'New signup' :
-                        !emailIsVerified ? 'Email not verified' :
-                        data.user.needsProfileUpdate ? 'Profile needs update' :
-                        data.isNewUser ? 'New user' :
-                        hasPlaceholderEmail ? 'Has placeholder email' : 'Unknown reason';
-                        
-          console.log(`Redirecting to complete profile. Reason: ${reason}`);
-          // Store the auth token and user ID in localStorage
-          localStorage.setItem('authToken', data.token);
-          localStorage.setItem('userId', data.user._id || data.user.id);
-          
-          // Update auth context (but don't set userData to avoid inconsistencies)
-          setAuthToken(data.token);
-          
-          // Navigate to profile completion page
-          navigate('/complete-profile', { 
-            state: { 
-              phoneNumber: data.user.phoneNumber,
-              authToken: data.token,
-              currentName: data.user.name,
-              currentEmail: data.user.email,
-              idToken,
-              isNewSignup: !isLogin,
-              reason: reason
-            } 
-          });
-        } else {
-          console.log('User profile complete, email is verified:', data.user.email);
-          // User has a complete profile, update auth context and navigate home
-          setUserData(data.user);
-          setAuthToken(data.token);
-          
-          // Always treat this as a login success since we've confirmed
-          // the user has a complete profile and verified email
-          addToast('Login successful! Welcome back.', 'success', 4000);
-          
-          // Navigate directly to home page
-          setTimeout(() => {
-            handleSuccessfulLogin();
-          }, 500);
-        }
-        
-      } catch (error) {
-        console.error('Error during backend verification:', error);
-        
-        // Check if this is a session expiration error from the backend
-        if (error.response && error.response.data && error.response.data.code === 'SESSION_EXPIRED') {
-          setError('Your verification session has expired. Please request a new code.');
-          // Automatically reset the flow to request new OTP
-          setShowOtpInput(false);
-          setOtp('');
-          setConfirmationResult(null);
-          
-          // Clear recaptcha
-          if (window.recaptchaVerifier) {
-            try {
-              window.recaptchaVerifier.clear();
-              window.recaptchaVerifier = null;
-            } catch (clearError) {
-              console.log('Failed to clear recaptcha after session expired:', clearError);
-            }
-          }
-        } else {
-          setError('Login failed: ' + (error.message || 'Server error'));
-        }
-      }
-      
-    } catch (error) {
-      console.error('OTP verification error:', error);
-      
-      if (error.code === 'auth/code-expired') {
-        setError('Verification code has expired. Please request a new code.');
-      } else if (error.code === 'auth/session-expired' || error.message?.includes('session expired')) {
-        console.log('Firebase session expired - resetting OTP flow');
-        setError('Your verification session has expired. Please request a new code.');
-        setShowOtpInput(false);
-        setConfirmationResult(null);
-        
-        // Clear the recaptcha to allow a fresh start
-        try {
-          if (window.recaptchaVerifier) {
-            window.recaptchaVerifier.clear();
-            window.recaptchaVerifier = null;
-          }
-        } catch (clearError) {
-          console.log('Failed to clear expired recaptcha:', clearError);
-        }
-      } else {
-        setError(error.message || 'Verification failed. Please try again.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Add function to handle email and name submission
-  const handleEmailNameSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    
-    try {
-      // Validate email and name
-      if (!userEmail || !userEmail.includes('@')) {
-        throw new Error('Please enter a valid email address');
-      }
-      
-      if (!userName || userName.trim().length < 2) {
-        throw new Error('Please enter your name (minimum 2 characters)');
-      }
-      
-      if (!firebaseUserData) {
-        throw new Error('Phone verification data is missing. Please try again.');
-      }
-      
-      // Get ID token from Firebase
-      const idToken = await firebaseUserData.getIdToken();
-      
-      // Update the user with email and name
-      const response = await fetch(`${API_BASE_URL}/api/auth/phone-verify-with-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          idToken,
-          phoneNumber: firebaseUserData.phoneNumber,
-          email: userEmail,
-          name: userName,
-          isEmailVerified: true // For simplicity, we're not verifying email in this flow
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update user information');
-      }
-      
-      // Store auth token
-      localStorage.setItem('authToken', data.token);
-      setAuthToken(data.token);
-      setUserData(data.user);
-      
-      // Show success and navigate to home
-      setSuccess('Account created successfully!');
-      setTimeout(() => {
-        handleSuccessfulLogin();
-      }, 1000);
-      
-    } catch (error) {
-      console.error('Error updating user data:', error);
-      setError(error.message || 'Failed to update user information');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Add function to skip the email step
-  const handleSkipEmailStep = async () => {
-    try {
-      if (!firebaseUserData) {
-        throw new Error('Phone verification data is missing. Please try again.');
-      }
-      
-      // Get ID token from Firebase
-      const idToken = await firebaseUserData.getIdToken();
-      
-      // Just do the normal phone verification without email/name
-      const response = await fetch(`${API_BASE_URL}/api/auth/phone-verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          idToken,
-          phoneNumber: firebaseUserData.phoneNumber,
-          name: `User_${firebaseUserData.phoneNumber.slice(-4)}`
-        }),
-      });
-      
-      const data = await response.json();
-      
-      // Store auth token
-      localStorage.setItem('authToken', data.token);
-      setAuthToken(data.token);
-      setUserData(data.user);
-      
-      // Navigate to home
-      setSuccess('Phone verification successful!');
-      setTimeout(() => {
-        handleSuccessfulLogin();
-      }, 1000);
-      
-    } catch (error) {
-      console.error('Error skipping email step:', error);
-      setError('Failed to complete login. Please try again.');
-    }
-  };
-
-  // Get placeholder text based on country code
-  const getPhoneNumberPlaceholder = () => {
-    switch (countryCode) {
-      case '+1': return '(555) 123-4567';
-      case '+44': return '7700 900123';
-      case '+91': return '9876543210';
-      case '+86': return '138 0013 8000';
-      case '+81': return '90 1234 5678';
-      case '+49': return '30 12345678';
-      case '+33': return '6 12 34 56 78';
-      case '+39': return '312 345 6789';
-      case '+7': return '912 345 67 89';
-      case '+55': return '11 99999 9999';
-      case '+61': return '412 345 678';
-      case '+34': return '612 34 56 78';
-      case '+82': return '10 1234 5678';
-      case '+65': return '8123 4567';
-      case '+971': return '50 123 4567';
-      case '+966': return '50 123 4567';
-      case '+60': return '12 345 6789';
-      case '+66': return '81 234 5678';
-      case '+84': return '912 345 678';
-      case '+62': return '812 3456 789';
-      case '+63': return '917 123 4567';
-      case '+880': return '1712 345678';
-      case '+94': return '71 234 5678';
-      case '+977': return '981 234 5678';
-      case '+92': return '301 234 5678';
-      default: return 'Phone number';
-    }
-  };
-
-  // Get expected phone number length based on country code
-  const getExpectedPhoneLength = () => {
-    switch (countryCode) {
-      case '+1': return 10;
-      case '+44': return 10;
-      case '+91': return 10;
-      case '+86': return 11;
-      case '+81': return 10;
-      case '+49': return 10;
-      case '+33': return 9;
-      case '+39': return 10;
-      case '+7': return 10;
-      case '+55': return 11;
-      case '+61': return 9;
-      case '+34': return 9;
-      case '+82': return 10;
-      case '+65': return 8;
-      case '+971': return 9;
-      case '+966': return 9;
-      case '+60': return 9;
-      case '+66': return 9;
-      case '+84': return 9;
-      case '+62': return 10;
-      case '+63': return 10;
-      case '+880': return 10;
-      case '+94': return 9;
-      case '+977': return 10;
-      case '+92': return 10;
-      default: return 10;
-    }
-  };
-  
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-yellow-50 px-4 py-20">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-10 left-10 w-72 h-72 bg-yellow-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-float"></div>
-        <div className="absolute top-40 right-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-float" style={{animationDelay: '2s'}}></div>
-        <div className="absolute -bottom-8 left-40 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-float" style={{animationDelay: '4s'}}></div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-yellow-50 px-4 py-20 relative overflow-hidden">
+      {/* Background ambient lighting */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute top-10 left-10 w-72 h-72 bg-yellow-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse"></div>
+        <div className="absolute top-40 right-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute -bottom-8 left-40 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse" style={{ animationDelay: '4s' }}></div>
       </div>
-      
+
       {/* Indicator if redirected from booking */}
       {isRedirectFromBooking && (
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium shadow-md z-20">
-          Log in to continue your booking
+        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 bg-yellow-100 text-yellow-900 border border-yellow-300 px-4 py-2 rounded-full text-sm font-semibold shadow-md z-20">
+          🔑 Sign in with your email to continue your booking
         </div>
       )}
-      
-      <div className="w-full max-w-4xl flex rounded-2xl shadow-2xl overflow-hidden">
-        {/* Left side: Auth form */}
-        <div className="bg-white w-full md:w-1/2 p-8 lg:p-12" data-aos="fade-right">
-          <div className="mb-8">
-            <Link to="/" className="flex items-center">
-              <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              <span className="ml-2 text-gray-600 hover:text-gray-800">Back to Home</span>
-            </Link>
-          </div>
-          
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">
-            {isLogin ? 'Welcome Back!' : 'Create Account'}
-          </h2>            <p className="text-gray-600 mb-8">
-            {isLogin ? 'Sign in to access your account' : 'Sign up to get started with Luxor Stays'}
-            {authMethod === 'phone' && !showOtpInput && (
-              <span className="block text-sm text-yellow-700 mt-2">
-                {isLogin ? 'Verify your phone number to continue' : 'Verify your phone number to create an account'}
-              </span>
+
+      {/* Main Split Auth Container */}
+      <div className="w-full max-w-4xl flex rounded-2xl shadow-2xl overflow-hidden bg-white border border-gray-100">
+        
+        {/* Left Side: Auth Form */}
+        <div className="bg-white w-full md:w-1/2 p-8 lg:p-12 flex flex-col justify-between" data-aos="fade-right">
+          <div>
+            <div className="mb-6">
+              <Link to="/" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-yellow-600 transition-colors">
+                <svg className="w-5 h-5 mr-1 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Home
+              </Link>
+            </div>
+
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">
+              Welcome Back!
+            </h2>
+            <p className="text-gray-500 text-sm mb-8">
+              {step === 1 ? 'Sign in with your email to access your account' : `Enter the 6-digit code sent to ${email}`}
+            </p>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded text-sm" data-aos="fade-up">
+                <p className="font-semibold">Error</p>
+                <p>{error}</p>
+              </div>
             )}
-          </p>
-          
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded" data-aos="fade-up">
-              <p className="font-medium">Error</p>
-              <p className="text-sm">{error}</p>
-            </div>
-          )}
-          
-          {success && (
-            <div className="mb-4 p-3 bg-green-50 border-l-4 border-green-500 text-green-700 rounded" data-aos="fade-up">
-              <p className="font-medium">Success</p>
-              <p className="text-sm">{success}</p>
-            </div>
-          )}
-          
-          {/* Auth Method Toggle */}
-          <div className="mb-6" data-aos="fade-up">
-            <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-              <button
-                type="button"
-                onClick={() => setAuthMethod('email')}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-                  authMethod === 'email'
-                    ? 'bg-white text-yellow-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                Email
-              </button>
-              <button
-                type="button"
-                onClick={() => setAuthMethod('phone')}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-                  authMethod === 'phone'
-                    ? 'bg-white text-yellow-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                Phone
-              </button>
-            </div>
-          </div>
 
-          {/* Phone Authentication Form */}
-          {authMethod === 'phone' && (
-            <div className="space-y-4">
-              {!showOtpInput ? (
-                <form onSubmit={handlePhoneSubmit} className="space-y-4">
-                  
-                  <div data-aos="fade-up" data-aos-delay="200">
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone Number
-                    </label>
-                    <div className="flex space-x-2">
-                      {/* Country Code Selector */}
-                      <div className="relative">
-                        <select
-                          value={countryCode}
-                          onChange={(e) => setCountryCode(e.target.value)}
-                          className="appearance-none bg-white border border-gray-300 rounded-lg px-3 py-3 pr-8 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300 text-sm font-medium"
-                        >
-                          {countryCodes.map((country) => (
-                            <option key={country.code} value={country.code}>
-                              {country.flag} {country.code}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
-                      </div>
-                      
-                      {/* Phone Number Input */}
-                      <div className="relative flex-1">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                          </svg>
-                        </div>
-                        <input
-                          id="phone"
-                          type="tel"
-                          value={phoneNumber}
-                          onChange={(e) => setPhoneNumber(e.target.value)}
-                          className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
-                          placeholder={getPhoneNumberPlaceholder()}
-                          required
-                        />
-                      </div>
+            {step === 1 ? (
+              <form onSubmit={handleSendOTP} className="space-y-5">
+                <div data-aos="fade-up">
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                      <Mail className="h-5 w-5" />
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Enter your phone number (format: {getPhoneNumberPlaceholder()})
-                    </p>
-                    <p className="text-xs text-yellow-600 mt-2">
-                      {isLogin ? 
-                        "We'll send a verification code to confirm it's you" : 
-                        "You'll complete your profile details after phone verification"}
-                    </p>
-                  </div>
-                  
-                  <div data-aos="fade-up" data-aos-delay="300">
-                    {/* reCAPTCHA container - only show in the phone input step */}
-                    <div id="recaptcha-container" className="flex justify-center mb-4 min-h-[78px] border border-gray-100 rounded p-2"></div>
-                    
-                    <button
-                      type="submit"
-                      className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-all duration-300 ${
-                        loading 
-                        ? 'bg-gray-400 cursor-not-allowed' 
-                        : 'bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 shadow-lg hover:shadow-xl'
-                      }`}
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <div className="flex items-center justify-center">
-                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                          </svg>
-                          Sending OTP...
-                        </div>
-                      ) : (
-                        'Send OTP'
-                      )}
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <form onSubmit={handleOtpVerification} className="space-y-4">
-                  {/* Hidden recaptcha container for OTP verification */}
-                  <div id="recaptcha-verify-container" className="hidden"></div>
-                  <div data-aos="fade-up" data-aos-delay="100">
-                    <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
-                      Enter OTP
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                      </div>
-                      <input
-                        id="otp"
-                        type="text"
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300 text-center text-lg tracking-widest"
-                        placeholder="000000"
-                        inputMode="numeric"
-                        maxLength="6"
-                        required
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">Enter the 6-digit OTP sent to {countryCode} {phoneNumber}</p>
-                    <p className="text-xs text-yellow-600 mt-2">
-                      {isLogin ? 
-                        "After verification, you'll be redirected to your dashboard or profile completion if needed" : 
-                        "After verification, you'll be directed to complete your profile information"}
-                    </p>
-                    <p className="text-xs text-orange-600 mt-1">
-                      Note: The verification code expires after 10 minutes. If expired, click "Request New OTP" below.
-                    </p>
-                    {!isLogin && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        This step is required to finish creating your account
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div data-aos="fade-up" data-aos-delay="200">
-                    <div className="flex space-x-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowOtpInput(false);
-                          setOtp('');
-                          setConfirmationResult(null);
-                          
-                          // Make sure the recaptcha container is visible again when going back
-                          const recaptchaContainer = document.getElementById('recaptcha-container');
-                          if (recaptchaContainer) {
-                            setTimeout(() => {
-                              recaptchaContainer.style.display = 'block';
-                            }, 100);
-                          }
-                        }}
-                        className="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-all duration-300"
-                      >
-                        Back
-                      </button>
-                      <button
-                        type="submit"
-                        className={`flex-1 py-3 px-4 rounded-lg text-white font-medium transition-all duration-300 ${
-                          loading 
-                          ? 'bg-gray-400 cursor-not-allowed' 
-                          : 'bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 shadow-lg hover:shadow-xl'
-                        }`}
-                        disabled={loading}
-                      >
-                        {loading ? (
-                          <div className="flex items-center justify-center">
-                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                            </svg>
-                            Verifying...
-                          </div>
-                        ) : (
-                          'Verify OTP'
-                        )}
-                      </button>
-                    </div>
-                    
-                    <button
-                      type="button"
-                      onClick={() => {
-                        // Reset the OTP flow and allow to request a new OTP
-                        setShowOtpInput(false);
-                        setOtp('');
-                        setConfirmationResult(null);
-                        setError('');
-                        setSuccess('Ready to request a new verification code');
-                        
-                        // Clear recaptcha if it exists
-                        if (window.recaptchaVerifier) {
-                          try {
-                            window.recaptchaVerifier.clear();
-                            window.recaptchaVerifier = null;
-                          } catch (clearError) {
-                            console.log('Failed to clear recaptcha:', clearError);
-                          }
-                        }
-                        
-                        // Make sure the recaptcha container is visible again
-                        const recaptchaContainer = document.getElementById('recaptcha-container');
-                        if (recaptchaContainer) {
-                          setTimeout(() => {
-                            recaptchaContainer.innerHTML = ''; // Clear existing content
-                            recaptchaContainer.style.display = 'block';
-                            // Setup a new recaptcha in case needed
-                            try {
-                              setupRecaptcha('recaptcha-container');
-                            } catch (e) {
-                              console.log('Failed to reset reCAPTCHA:', e);
-                            }
-                          }, 100);
-                        }
-                        
-                        // Add notification toast
-                        addToast('You can now request a new verification code', 'info');
+                    <input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (error) setError('');
                       }}
-                      className="w-full mt-4 py-3 px-4 border border-orange-400 bg-white rounded-lg text-orange-700 text-base font-medium hover:bg-orange-50 transition-all duration-300 shadow-sm"
-                    >
-                      Request New OTP
-                    </button>
+                      placeholder="name@example.com"
+                      className="pl-11 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-gray-900 text-sm transition-all"
+                      required
+                    />
                   </div>
-                </form>
-              )}
-            </div>
-          )}
+                </div>
 
-          {/* Email Authentication Form */}
-          {authMethod === 'email' && (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
-                <div data-aos="fade-up" data-aos-delay="100">
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
+                <div className="flex items-center justify-between pt-1">
+                  <label className="flex items-center text-xs text-gray-600 cursor-pointer">
                     <input
-                      id="name"
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
-                      placeholder="John Smith"
-                      required={!isLogin}
-                    />
-                  </div>
-                </div>
-              )}
-              
-              <div data-aos="fade-up" data-aos-delay={isLogin ? "100" : "200"}>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
-                    placeholder="example@email.com"
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div data-aos="fade-up" data-aos-delay={isLogin ? "200" : "300"}>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                  </div>
-                  <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
-                    placeholder="••••••••"
-                    required
-                  />
-                </div>
-              </div>
-              
-              {!isLogin && (
-                <div data-aos="fade-up" data-aos-delay="400">
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                    Confirm Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                    </div>
-                    <input
-                      id="confirmPassword"
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
-                      placeholder="••••••••"
-                      required={!isLogin}
-                    />
-                  </div>
-                </div>
-              )}
-              
-              {isLogin && (
-                <div className="flex items-center justify-between" data-aos="fade-up" data-aos-delay="300">
-                  <div className="flex items-center">
-                    <input
-                      id="remember-me"
-                      name="remember-me"
                       type="checkbox"
-                      className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded mr-2"
                     />
-                    <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                      Remember me
-                    </label>
-                  </div>
-                  <div className="text-sm">
-                    <Link to="/forgot-password" className="font-medium text-yellow-600 hover:text-yellow-500 transition-colors">
-                      Forgot password?
-                    </Link>
-                  </div>
+                    Remember me
+                  </label>
+                  <span className="text-xs text-yellow-600 hover:text-yellow-700 cursor-pointer">
+                    Need help?
+                  </span>
                 </div>
-              )}
-              
-              <div data-aos="fade-up" data-aos-delay={isLogin ? "400" : "500"}>
+
                 <button
                   type="submit"
-                  className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-all duration-300 ${
-                    loading 
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 shadow-lg hover:shadow-xl'
-                  }`}
                   disabled={loading}
+                  className="w-full mt-2 py-3 px-4 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm font-semibold shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   {loading ? (
-                    <div className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                      </svg>
-                      Processing...
-                    </div>
+                    <RefreshCw className="h-5 w-5 animate-spin" />
                   ) : (
-                    isLogin ? 'Sign In' : 'Create Account'
+                    <>
+                      <span>Send OTP Code</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </>
                   )}
                 </button>
-              </div>
-            </form>
-          )}
-          
-          <div className="mt-8 text-center" data-aos="fade-up" data-aos-delay={isLogin ? "500" : "600"}>
-            <p className="text-gray-600">
-              {isLogin ? "Don't have an account?" : "Already have an account?"}
-              <button
-                type="button"
-                onClick={toggleAuthMode}
-                className="ml-1 font-medium text-yellow-600 hover:text-yellow-500 transition-colors"
-              >
-                {isLogin ? 'Sign Up' : 'Sign In'}
-              </button>
-            </p>
-          </div>
-          
-          {/* Social Login Section */}
-          <div className="mt-6" data-aos="fade-up" data-aos-delay="600">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-            
-            <div className="mt-6">
-              <button
-                onClick={handleGoogleLogin}
-                className="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors items-center"
-                disabled={loading}
-              >
-                <FcGoogle className="w-5 h-5 mr-2" />
-                Sign in with Google
-              </button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyOTP} className="space-y-6">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-3 text-center">
+                    6-Digit Verification Code
+                  </label>
+                  <div className="flex justify-between gap-2" onPaste={handleOtpPaste}>
+                    {otp.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        ref={(el) => (otpInputRefs.current[idx] = el)}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(idx, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                        className="w-11 h-12 text-center text-lg font-bold bg-white border border-gray-300 rounded-lg text-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 shadow-sm"
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || otp.join('').length !== 6}
+                  className="w-full py-3 px-4 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm font-semibold shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                >
+                  {loading ? (
+                    <RefreshCw className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <ShieldCheck className="h-5 w-5" />
+                      <span>Verify & Continue</span>
+                    </>
+                  )}
+                </button>
+
+                <div className="flex items-center justify-between text-xs pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep(1);
+                      setOtp(['', '', '', '', '', '']);
+                      setError('');
+                    }}
+                    className="text-gray-500 hover:text-yellow-600 cursor-pointer"
+                  >
+                    ← Change Email
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={resendCooldown > 0 || loading}
+                    onClick={handleSendOTP}
+                    className="text-yellow-600 hover:text-yellow-700 font-medium disabled:text-gray-400 flex items-center gap-1 cursor-pointer"
+                  >
+                    {resendCooldown > 0 ? (
+                      `Resend in ${resendCooldown}s`
+                    ) : (
+                      <>
+                        <RefreshCw className="h-3 w-3" />
+                        <span>Resend OTP</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+              <p className="text-xs text-gray-400">
+                By continuing, you agree to Luxor's{' '}
+                <Link to="/si" className="text-yellow-600 hover:underline">
+                  Terms & Conditions
+                </Link>
+              </p>
             </div>
           </div>
         </div>
-        
-        {/* Right side: Image */}
-        <div className="hidden md:block md:w-1/2 bg-cover bg-center" style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1561501900-3701fa6a0864?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80')`
-        }} data-aos="fade-left">
-          <div className="w-full h-full bg-gradient-to-t from-black/60 via-black/30 to-transparent flex flex-col justify-end p-12">
+
+        {/* Right Side: Luxury Banner Image & Social Proof */}
+        <div
+          className="hidden md:block md:w-1/2 bg-cover bg-center relative"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1561501900-3701fa6a0864?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80')`,
+          }}
+          data-aos="fade-left"
+        >
+          <div className="w-full h-full bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-8 lg:p-12">
             <div className="text-white" data-aos="fade-up" data-aos-delay="300">
-              <h3 className="text-2xl font-bold mb-3">Luxurious Villa Experiences</h3>
-              <p className="mb-6">Experience the finest luxury villas and exceptional service with Luxor Holiday Home Stays.</p>
-              <div className="flex items-center space-x-4">
+              <h3 className="text-2xl font-bold mb-2">Luxurious Villa Experiences</h3>
+              <p className="text-gray-200 text-xs mb-6 leading-relaxed">
+                Experience the finest luxury villas and exceptional service with Luxor Holiday Home Stays.
+              </p>
+              <div className="flex items-center space-x-3">
                 <div className="flex -space-x-2">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="w-8 h-8 rounded-full border-2 border-white overflow-hidden">
-                      <img 
-                        src={`https://randomuser.me/api/portraits/${i % 2 ? 'women' : 'men'}/${i + 40}.jpg`}
+                    <div key={i} className="w-8 h-8 rounded-full border-2 border-white overflow-hidden shadow-sm">
+                      <img
+                        src="/logo.png"
                         alt={`User ${i}`}
                         className="w-full h-full object-cover"
                       />
                     </div>
                   ))}
                 </div>
-                <p className="text-sm font-medium">Joined by 10,000+ customers</p>
+                <p className="text-xs font-semibold text-gray-100">Joined by 10,000+ customers</p>
               </div>
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );
 };
 
 export default SignIn;
-
-// Add this to your auth context or utility file
-export const storePhoneUserLocally = (firebaseUser, name) => {
-  const phoneUserData = {
-    _id: firebaseUser.uid,
-    name: name || firebaseUser.displayName || `User_${firebaseUser.phoneNumber.slice(-4)}`,
-    phoneNumber: firebaseUser.phoneNumber,
-    email: `${firebaseUser.uid}@phone.local`,
-    isVerified: true,
-    isPhoneVerified: true,
-    userType: 'phone',
-    createdAt: new Date().toISOString(),
-    firebaseUid: firebaseUser.uid
-  };
-  
-  // Store in localStorage
-  const existingPhoneUsers = JSON.parse(localStorage.getItem('phoneUsers') || '[]');
-  const existingUserIndex = existingPhoneUsers.findIndex(u => u.phoneNumber === firebaseUser.phoneNumber);
-  
-  if (existingUserIndex >= 0) {
-    existingPhoneUsers[existingUserIndex] = phoneUserData;
-  } else {
-    existingPhoneUsers.push(phoneUserData);
-  }
-  
-  localStorage.setItem('phoneUsers', JSON.stringify(existingPhoneUsers));
-  localStorage.setItem('currentPhoneUser', JSON.stringify(phoneUserData));
-  
-  return phoneUserData;
-};
-
-// Add this component to collect email and name from first-time phone users
-const FirstTimePhoneUserForm = ({ firebaseUser, onComplete, onCancel }) => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [verificationSent, setVerificationSent] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    
-    try {
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        throw new Error('Please enter a valid email address');
-      }
-      
-      if (!name || name.trim().length < 2) {
-        throw new Error('Please enter your full name');
-      }
-      
-      // Send verification email
-      const response = await fetch(`${API_BASE_URL}/api/auth/send-email-verification`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email,
-          phoneNumber: firebaseUser.phoneNumber,
-          name
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to send verification email');
-      }
-      
-      setVerificationSent(true);
-      
-    } catch (error) {
-      console.error('Error:', error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const handleVerify = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    
-    try {
-      if (!verificationCode || verificationCode.length !== 6) {
-        throw new Error('Please enter the 6-digit verification code');
-      }
-      
-      // Verify the email verification code
-      const response = await fetch(`${API_BASE_URL}/api/auth/verify-email-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email,
-          otp: verificationCode,
-          phoneNumber: firebaseUser.phoneNumber,
-          name,
-          firebaseUid: firebaseUser.uid
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Verification failed');
-      }
-      
-      // Pass the updated user data back
-      onComplete({
-        name,
-        email,
-        phoneNumber: firebaseUser.phoneNumber,
-        isEmailVerified: true
-      });
-      
-    } catch (error) {
-      console.error('Error:', error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  return (
-    <div className="mt-4 p-6 bg-white rounded-lg shadow-lg">
-      <h3 className="text-xl font-semibold mb-4 text-gray-800">
-        Complete Your Profile
-      </h3>
-      <p className="text-gray-600 mb-6">
-        Please provide your name and email to complete your account setup.
-      </p>
-      
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
-          <p className="text-sm">{error}</p>
-        </div>
-      )}
-      
-      {!verificationSent ? (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name
-            </label>
-            <input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="px-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
-              placeholder="John Smith"
-              required
-            />
-          </div>
-          
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email Address
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="px-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
-              placeholder="example@email.com"
-              required
-            />
-          </div>
-          
-          <div className="flex space-x-3 pt-2">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
-            >
-              Skip for Now
-            </button>
-            <button
-              type="submit"
-              className={`flex-1 py-3 px-4 rounded-lg text-white font-medium ${
-                loading 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-yellow-600 hover:bg-yellow-700'
-              }`}
-              disabled={loading}
-            >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                  </svg>
-                  Sending...
-                </div>
-              ) : (
-                'Verify Email'
-              )}
-            </button>
-          </div>
-        </form>
-      ) : (
-        <form onSubmit={handleVerify} className="space-y-4">
-          <div>
-            <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700 mb-1">
-              Verification Code
-            </label>
-            <input
-              id="verificationCode"
-              type="text"
-              value={verificationCode}
-              onChange={(e) => setVerificationCode(e.target.value)}
-              className="px-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-center text-lg tracking-widest"
-              placeholder="000000"
-              maxLength="6"
-              required
-            />
-            <p className="text-xs text-gray-500 mt-1">Enter the 6-digit code sent to {email}</p>
-          </div>
-          
-          <div className="flex space-x-3 pt-2">
-            <button
-              type="button"
-              onClick={() => setVerificationSent(false)}
-              className="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
-            >
-              Back
-            </button>
-            <button
-              type="submit"
-              className={`flex-1 py-3 px-4 rounded-lg text-white font-medium ${
-                loading 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-yellow-600 hover:bg-yellow-700'
-              }`}
-              disabled={loading}
-            >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                  </svg>
-                  Verifying...
-                </div>
-              ) : (
-                'Complete Registration'
-              )}
-            </button>
-          </div>
-        </form>
-      )}
-    </div>
-  );
-};

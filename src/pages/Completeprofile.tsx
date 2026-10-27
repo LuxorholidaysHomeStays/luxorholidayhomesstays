@@ -113,7 +113,7 @@ const CompleteProfile = () => {
       if (data.user) {
         setUserData({
           ...data.user,
-          isEmailVerified: true
+          isVerified: true
         });
       }
       
@@ -138,44 +138,40 @@ const CompleteProfile = () => {
     }
   };
   
-  // Function to handle cases where email verification is skipped
+  // Saving the rest of the profile without touching the email. Changing the email
+  // requires proving control of the mailbox, so it cannot be skipped.
   const handleSkipVerification = async () => {
     setLoading(true);
     setError('');
-    
+
     try {
-      const response = await fetch(`${API_BASE_URL}/api/complete/profile/email/update`, {
-        method: 'POST',
+      const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
         },
         body: JSON.stringify({
-          email,
-          phoneNumber,
           name,
-          skipVerification: true
+          phoneNumber,
         }),
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Failed to update profile');
       }
-      
-      if (authToken) {
-        setUserData({
-          ...data.user,
-          isEmailVerified: false
-        });
+
+      if (data.user) {
+        setUserData(data.user);
       }
-      
-      setSuccess('Profile updated! Redirecting...');
+
+      setSuccess('Profile saved! You can verify your email later. Redirecting...');
       setTimeout(() => {
         navigate('/');
       }, 2000);
-      
+
     } catch (error) {
       setError(error.message || 'Failed to update profile');
     } finally {

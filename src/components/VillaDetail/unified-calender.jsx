@@ -1,14 +1,14 @@
 
-"use client"
 import { useState, useEffect } from "react"
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { applyIOSViewportFix, cleanupIOSViewportFix } from "./ios-viewport-fix"
+import { isWeekendDay, addMonths } from "../../utils/date"
 
 // Fix the price formatting function to avoid adding "+" to the price
 const formatPrice = (price) => {
-  if (!price || isNaN(Number(price))) return "₹0";
-  // Format as "₹45k" or "₹65k" - no "+" suffix
-  const formattedPrice = Math.round(Number(price) / 1000);
+  const num = Number(price);
+  if (!num || isNaN(num) || num <= 0) return "—";
+  const formattedPrice = Math.round(num / 1000);
   return `₹${formattedPrice}k`;
 };
 
@@ -20,7 +20,8 @@ const villaFallbackPrices = {
   "Lavish Villa I": { weekday: 18000, weekend: 25000 },
   "Lavish Villa II": { weekday: 18000, weekend: 25000 },
   "Lavish Villa III": { weekday: 16000, weekend: 23000 },
-  "Empire Anand Villa Samudra": { weekday: 40000, weekend: 60000 }
+  "Empire Anand Villa Samudra": { weekday: 40000, weekend: 60000 },
+  "Opal Villa": { weekday: 25000, weekend: 35000 }
 };
 
 export default function UnifiedCalendar({
@@ -33,84 +34,56 @@ export default function UnifiedCalendar({
   blockedDates = [],
   isModal = true
 }) {
-  console.log("UnifiedCalendar rendering with isVisible:", isVisible);
-  console.log("UnifiedCalendar received blockedDates:", blockedDates);
-  console.log("UnifiedCalendar blockedDates count:", blockedDates?.length || 0);
-
-  // Log types of blocked dates received
-  if (blockedDates && blockedDates.length > 0) {
-    const bookingBlocks = blockedDates.filter(d => d.type === 'booking');
-    const adminBlocks = blockedDates.filter(d => d.type === 'blocked');
-    console.log(`UnifiedCalendar: ${bookingBlocks.length} booking blocks, ${adminBlocks.length} admin blocks`);
-  }
-
-  // Initialize all state at component top level
-  const [currentMonth, setCurrentMonth] = useState(new Date())
+  // Always the 1st of the month. Carrying today's day-of-month into setMonth
+  // arithmetic makes JavaScript roll over (31 Jan + 1 month -> 3 Mar), which
+  // silently skipped a month for anyone browsing on the 29th-31st.
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), 1)
+  })
   const [selectionMode, setSelectionMode] = useState("checkin")
   const [tempCheckIn, setTempCheckIn] = useState(checkInDate)
   const [tempCheckOut, setTempCheckOut] = useState(checkOutDate)
 
-  // Fix the price calculation in the calendar
+  // Sync temp dates when props change
+  useEffect(() => {
+    setTempCheckIn(checkInDate)
+    setTempCheckOut(checkOutDate)
+  }, [checkInDate, checkOutDate])
+
   const getPriceForDate = (date) => {
-    if (!villa) {
-      console.log('No villa data provided to calendar');
-      return 0;
-    }
+    const isWeekend = isWeekendDay(date);
 
-    const dayOfWeek = date.getDay();
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // 0 is Sunday, 6 is Saturday
-
-    // Find a fallback price for the villa
     const getFallbackPrice = () => {
-      if (!villa.name) return isWeekend ? 60000 : 40000; // Default fallback
-
-      // Check for exact match in fallback prices
-      if (villaFallbackPrices[villa.name]) {
-        return isWeekend ? villaFallbackPrices[villa.name].weekend : villaFallbackPrices[villa.name].weekday;
-      }
-
-      // Check for partial name match
-      for (const [villaName, pricing] of Object.entries(villaFallbackPrices)) {
-        if (villa.name.toLowerCase().includes(villaName.toLowerCase())) {
-          return isWeekend ? pricing.weekend : pricing.weekday;
+      const villaName = villa?.name || "";
+      if (villaName) {
+        if (villaFallbackPrices[villaName]) {
+          return isWeekend ? villaFallbackPrices[villaName].weekend : villaFallbackPrices[villaName].weekday;
+        }
+        for (const [vName, pricing] of Object.entries(villaFallbackPrices)) {
+          if (villaName.toLowerCase().includes(vName.toLowerCase()) || vName.toLowerCase().includes(villaName.toLowerCase())) {
+            return isWeekend ? pricing.weekend : pricing.weekday;
+          }
         }
       }
-
-      // If we have weekday price but no weekend price
-      if (isWeekend && villa.price && villa.price > 0) {
-        return Math.round(villa.price * 1.5);
-      }
-
-      return isWeekend ? 60000 : 40000; // Last resort default
+      // Unknown villa: show nothing rather than a confidently wrong ₹30k/₹45k.
+      return 0;
     };
 
-    // Debug log to identify the issue
-    console.log('Villa data for pricing:', {
-      name: villa.name,
-      price: villa.price,
-      weekendprice: villa.weekendprice,
-      weekendPrice: villa.weekendPrice,
-      isWeekend: isWeekend,
-      day: dayOfWeek
-    });
-
-    if (isWeekend) {
-      // First try weekendprice (from backend)
-      if (villa.weekendprice && villa.weekendprice > 0) {
-        return Number(villa.weekendprice);
-      }
-      // Then try weekendPrice (camelCase version)
-      else if (villa.weekendPrice && villa.weekendPrice > 0) {
-        return Number(villa.weekendPrice);
-      }
-      // Use fallback pricing
-      else {
-        return getFallbackPrice();
-      }
+    if (!villa) {
+      return getFallbackPrice();
     }
 
-    // For weekdays, return the regular price or fallback if price is 0
-    return Number(villa.price) > 0 ? Number(villa.price) : getFallbackPrice();
+    const basePrice = Number(villa.weekdayPrice) || Number(villa.price) || 0;
+    const weekendPrice = Number(villa.weekendPrice) || Number(villa.weekendprice) || 0;
+
+    if (isWeekend) {
+      // A missing weekend rate means the villa has no weekend premium, not that
+      // one can be invented as 1.5x the weekday rate.
+      return weekendPrice > 0 ? weekendPrice : basePrice || getFallbackPrice();
+    }
+
+    return basePrice > 0 ? basePrice : getFallbackPrice();
   };
 
   useEffect(() => {
@@ -132,7 +105,6 @@ export default function UnifiedCalendar({
   const getDateBlockInfo = (date) => {
     if (!blockedDates || blockedDates.length === 0) return { isBlocked: false, type: null, reason: null };
 
-    const dateStr = formatDateToYYYYMMDD(date)
     const currentDate = new Date(date)
     currentDate.setHours(0, 0, 0, 0) // Normalize time part for comparison
 
@@ -143,20 +115,10 @@ export default function UnifiedCalendar({
       const checkOut = new Date(blockedRange.checkOut)
       checkOut.setHours(0, 0, 0, 0)
 
-      // Check if the date falls within any blocked range (inclusive)
-      const isInRange = currentDate >= checkIn && currentDate <= checkOut;
-
-      // Debug logging for specific dates
-      if (isInRange) {
-        console.log(`Date ${dateStr} is blocked by:`, {
-          type: blockedRange.type,
-          checkIn: blockedRange.checkIn,
-          checkOut: blockedRange.checkOut,
-          reason: blockedRange.reason
-        });
-      }
-
-      return isInRange;
+      // Half-open range: the backend stores check_out as the day the villa is
+      // vacated, so that day is free. Marking it blocked made it impossible to
+      // start a new stay the morning after another one ends.
+      return currentDate >= checkIn && currentDate < checkOut;
     })
 
     if (blockInfo) {
@@ -185,8 +147,10 @@ export default function UnifiedCalendar({
       const blockedStart = new Date(blockedRange.checkIn)
       const blockedEnd = new Date(blockedRange.checkOut)
 
-      // Check if any part of the range overlaps with blocked dates
-      return (start <= blockedEnd && end >= blockedStart)
+      // Half-open overlap test, matching the backend's
+      // `check_in < ? AND check_out > ?`: touching ranges (one stay's check-out
+      // day being another's check-in day) do not overlap.
+      return start < blockedEnd && blockedStart < end
     })
   }
 
@@ -223,21 +187,22 @@ export default function UnifiedCalendar({
       }
 
       setTimeout(() => {
-        onDateSelect(finalCheckIn, finalCheckOut)
-        onClose()
+        if (typeof onDateSelect === "function") {
+          onDateSelect(finalCheckIn, finalCheckOut)
+        }
+        if (typeof onClose === "function") {
+          onClose()
+        }
       }, 300)
     }
   }
 
   const navigateMonth = (direction) => {
-    const newDate = new Date(currentMonth)
-    newDate.setMonth(newDate.getMonth() + (direction === "next" ? 1 : -1))
-    setCurrentMonth(newDate)
+    setCurrentMonth(addMonths(currentMonth.getFullYear(), currentMonth.getMonth(), direction === "next" ? 1 : -1))
   }
 
   const renderCalendar = (monthOffset = 0) => {
-    const displayMonth = new Date(currentMonth)
-    displayMonth.setMonth(displayMonth.getMonth() + monthOffset)
+    const displayMonth = addMonths(currentMonth.getFullYear(), currentMonth.getMonth(), monthOffset)
 
     const year = displayMonth.getFullYear()
     const month = displayMonth.getMonth()

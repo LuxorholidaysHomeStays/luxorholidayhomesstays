@@ -160,6 +160,30 @@ import lvthree16 from "/LavishVilla 3/lvthree16.jpg";
 import lvthree17 from "/LavishVilla 3/lvthree17.jpg";
 import lvthree18 from "/LavishVilla 3/lvthree18.jpg";
 
+// Opal Villa Images
+import opal1 from "/opal/opal1.jpg";
+import opal2 from "/opal/opal2.jpg";
+import opal3 from "/opal/opal3.jpg";
+import opal4 from "/opal/opal4.jpg";
+import opal5 from "/opal/opal5.jpg";
+import opal6 from "/opal/opal6.jpg";
+import opal7 from "/opal/opal7.jpg";
+import opal8 from "/opal/opal8.jpg";
+import opal9 from "/opal/opal9.jpg";
+import opal10 from "/opal/opal10.jpg";
+import opal11 from "/opal/opal11.jpg";
+import opal12 from "/opal/opal12.jpg";
+import opal13 from "/opal/opal13.jpg";
+import opal14 from "/opal/opal14.jpg";
+import opal15 from "/opal/opal15.jpg";
+import opal16 from "/opal/opal16.jpg";
+import opal17 from "/opal/opal17.jpg";
+import opal18 from "/opal/opal18.jpg";
+import opal19 from "/opal/opal19.jpg";
+import opal20 from "/opal/opal20.jpg";
+import opal21 from "/opal/opal21.jpg";
+import opal22 from "/opal/opal22.jpg";
+
 // Create villa image collections object
 const villaImageCollections = {
   "Amrith Palace": [
@@ -192,18 +216,25 @@ const villaImageCollections = {
   "Lavish Villa III": [
     lvthree17, lvthree2, lvthree3, lvthree4, lvthree5, lvthree6, lvthree7, lvthree8, lvthree9, lvthree10,
     lvthree11, lvthree12, lvthree13, lvthree14, lvthree15, lvthree16, lvthree1, lvthree18
+  ],
+  "Opal Villa": [
+    opal5, opal1, opal2, opal3, opal4, opal6, opal7, opal8, opal9, opal10,
+    opal11, opal12, opal13, opal14, opal15, opal16, opal17, opal18, opal19, opal20,
+    opal21, opal22
   ]
 };
 
-// Fallback images if none are found
-const unsplashImages = [
-  "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
-  "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
-];
+const getVillaImages = (villa) => {
+  const backendImages = Array.isArray(villa.images) ? villa.images.filter(Boolean) : [];
+  if (backendImages.length > 0) return backendImages;
 
-// Helper function to get a random unsplash image
-function getRandomUnsplash() {
-  return unsplashImages[Math.floor(Math.random() * unsplashImages.length)];
+  const villaName = String(villa.name || '').trim().toLowerCase();
+  const matchedKey = Object.keys(villaImageCollections).find(
+    (key) => key.toLowerCase() === villaName,
+  );
+  if (matchedKey) return villaImageCollections[matchedKey];
+
+  return villa.mainImage ? [villa.mainImage] : [];
 }
 
 export const FeaturedDestination = () => {
@@ -293,6 +324,7 @@ export const FeaturedDestination = () => {
 
     // Check for specific keywords in names
     const nameKeywords = {
+      "opal": "Opal Villa",
       "amrith": "Amrith Palace",
       "palace": "Amrith Palace",
       "east coast": "East Coast Villa",
@@ -326,53 +358,40 @@ export const FeaturedDestination = () => {
       setLoading(true);
       setError(null);
       try {
-        console.log("Fetching villas from:", `${API_BASE_URL}/api/villas/`);
-        const res = await fetch(`${API_BASE_URL}/api/villas/`);
+        const res = await fetch(`${API_BASE_URL}/api/villas`);
         if (!res.ok) throw new Error("Failed to load properties");
         const data = await res.json();
         console.log("API Response data:", data);
 
+        const villaList = Array.isArray(data) ? data : (data.villas || data.data || []);
+
         // Map backend data to carousel property format
-        const processedProperties = data.map((villa, idx) => {
+        const processedProperties = villaList.map((villa, idx) => {
           // Try to match villa name with our image collections
           const villaName = villa.name || "";
           let images = [];
           let featuredImage = null;
 
-          // Get the full image collection for this villa
-          const imageCollection = getBestMatchingVillaImages(villaName);
-
-          if (imageCollection) {
-            // Use our predefined image collections
-            images = imageCollection;
-            featuredImage = imageCollection[0]; // Use first image as featured
-          } else if (Array.isArray(villa.images) && villa.images.length > 0) {
-            // Use images from API if available
-            images = villa.images;
-            featuredImage = villa.images[0];
-          } else {
-            // Fallback to random image
-            featuredImage = getRandomUnsplash();
-            images = [featuredImage];
-          }
+          images = getVillaImages(villa);
+          featuredImage = images[0] || null;
 
           return {
-            id: villa._id || `villa-${idx}`,
-            _id: villa._id || `villa-${idx}`,
+            id: villa.id || villa._id || `villa-${idx}`,
+            _id: villa._id || villa.id || `villa-${idx}`,
             name: villa.name,
-            location: villa.location || "Luxury Location",
-            rating: villa.rating || (4.5 + Math.random() * 0.5).toFixed(1),
-            guests: villa.guests || 8,
-            rooms: villa.bedrooms || 3,
-            baths: villa.bathrooms || villa.bedrooms || 3,
-            price: villa.price ? villa.price : 12000,
-            formattedPrice: villa.price ? `₹${villa.price.toLocaleString()}` : "₹12,000",
+            location: villa.location || "",
+            rating: Number(villa.rating) || 0,
+            guests: Number(villa.guests) || 0,
+            rooms: Number(villa.bedrooms) || 0,
+            baths: Number(villa.bathrooms) || 0,
+            price: Number(villa.price) || 0,
+            formattedPrice: villa.price ? `₹${Number(villa.price).toLocaleString()}` : "Price on request",
             featuredImage: featuredImage, // Single image for carousel
             images: images, // All images for detail view
-            bestRated: Math.random() > 0.5,
+            bestRated: Number(villa.rating) >= 4.5,
             category: villa.location?.split(",")[1]?.trim() || "All",
-            amenities: villa.facilities?.map(f => f.name) || ["WiFi", "AC", "Kitchen", "Free Parking"],
-            description: villa.description || "A beautiful luxury villa with stunning views and modern amenities.",
+            amenities: Array.isArray(villa.amenities) ? villa.amenities : (villa.facilities?.map(f => f.name) || []),
+            description: villa.description || "",
             type: villa.type || "VILLA"
           };
         });
@@ -403,19 +422,21 @@ export const FeaturedDestination = () => {
           id: `fallback-villa-${index}`,
           _id: `fallback-${index}`,
           name: name,
-          location: index % 2 === 0 ? "Chennai, India" : "Pondicherry, India",
-          rating: (Math.random() * 1 + 4).toFixed(1),
-          guests: Math.floor(Math.random() * 10) + 2,
-          rooms: Math.floor(Math.random() * 5) + 1,
-          baths: Math.floor(Math.random() * 5) + 1,
-          price: Math.floor(Math.random() * 30000) + 5000,
-          formattedPrice: `₹${(Math.floor(Math.random() * 30000) + 5000).toLocaleString()}`,
+          // Shown only if the villas request fails. Names and photos are ours;
+          // price, rating and occupancy are left unknown rather than randomised.
+          location: "",
+          rating: 0,
+          guests: 0,
+          rooms: 0,
+          baths: 0,
+          price: 0,
+          formattedPrice: "Price on request",
           featuredImage: images[0], // First image as featured
           images: images, // All images for detail view
-          bestRated: Math.random() > 0.5,
+          bestRated: false,
           category: "Luxury",
-          amenities: ["WiFi", "AC", "Kitchen", "Free Parking"],
-          description: "A beautiful luxury villa with stunning views and modern amenities.",
+          amenities: [],
+          description: "",
           type: "VILLA"
         };
       });
@@ -551,7 +572,7 @@ export const FeaturedDestination = () => {
             <div className="relative h-[420px] sm:h-[480px] md:h-[540px] lg:h-[600px] w-full">
               {properties.map((property, index) => (
                 <AnimatePresence key={property.id}>
-                  {index === activeIndex && (
+                  {Math.abs(index - activeIndex) <= 1 && index === activeIndex && (
                     <motion.div
                       className="absolute inset-0"
                       initial={{ opacity: 0 }}
@@ -565,12 +586,16 @@ export const FeaturedDestination = () => {
                           src={property.featuredImage}
                           alt={property.name}
                           className="w-full h-full object-cover"
+                          loading={index === activeIndex ? "eager" : "lazy"}
+                          fetchPriority={index === activeIndex ? "high" : "auto"}
+                          decoding="async"
+                          width="1200"
+                          height="600"
                           initial={{ scale: 1.08 }}
                           animate={{ scale: 1 }}
                           transition={{ duration: 0.7 }}
                           onError={(e) => {
-                            // Fallback if image fails to load
-                            e.target.src = getRandomUnsplash();
+                            e.currentTarget.style.visibility = "hidden";
                           }}
                         />
 

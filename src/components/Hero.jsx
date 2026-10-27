@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "framer-motion"
@@ -569,17 +567,13 @@ const Hero = () => {
   const handleSearch = async (e) => {
     e.preventDefault()
 
-    if (
-      !searchParams.destination ||
-      !searchParams.checkIn ||
-      !searchParams.checkOut ||
-      searchParams.adults < 1
-    ) {
-      setError("Please fill in all search fields (at least 1 adult required)")
-      return
-    }
+    const dest = searchParams.destination || "All Locations"
+    const checkIn = searchParams.checkIn || new Date().toISOString().split("T")[0]
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0]
+    const checkOut = searchParams.checkOut || tomorrow
+
     // Validate dates: checkOut must be after checkIn
-    if (new Date(searchParams.checkIn) >= new Date(searchParams.checkOut)) {
+    if (new Date(checkIn) >= new Date(checkOut)) {
       setError("Check-out date must be after check-in date.")
       return
     }
@@ -588,13 +582,17 @@ const Hero = () => {
       setLoading(true)
       setError(null)
 
-      const formattedDestination =
-        searchParams.destination.charAt(0).toUpperCase() +
-        searchParams.destination.slice(1).toLowerCase()
+      if (dest === "All Locations" || dest === "All") {
+        navigate(`/rooms?checkIn=${checkIn}&checkOut=${checkOut}&guests=${searchParams.adults + searchParams.children}`)
+      } else {
+        const formattedDestination =
+          dest.charAt(0).toUpperCase() +
+          dest.slice(1).toLowerCase()
 
-      navigate(
-        `/search-results?location=${formattedDestination}&checkIn=${searchParams.checkIn}&checkOut=${searchParams.checkOut}&adults=${searchParams.adults}&children=${searchParams.children}`
-      )
+        navigate(
+          `/search-results?location=${formattedDestination}&checkIn=${checkIn}&checkOut=${checkOut}&adults=${searchParams.adults}&children=${searchParams.children}`
+        )
+      }
     } catch (err) {
       console.error("Search error:", err)
       setError(err.message || "Error searching for properties")
@@ -660,8 +658,8 @@ const Hero = () => {
     { icon: <FaStar className="w-5 h-5" />, name: "5-Star Service" },
   ]
 
-  // Available locations - keeping only Chennai and Pondicherry
-  const locations = ["Chennai", "Pondicherry"]
+  // Available locations - Chennai, Pondicherry, and All Locations
+  const locations = ["Chennai", "Pondicherry", "All Locations"]
 
   // Calculate total nights between check-in and check-out
   const totalNights =
@@ -967,9 +965,9 @@ const Hero = () => {
 
   return (
     <div
-      className="hero-container relative w-full h-auto"
+      className="hero-container relative w-full min-h-screen bg-[#0a0d14] overflow-hidden flex flex-col justify-center"
       style={{
-        minHeight: `calc(100vh - ${navbarHeight}px)`,  /* Reduced from 100vh to 90vh */
+        minHeight: "100vh",
         marginTop: 0,
         paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
@@ -982,13 +980,13 @@ const Hero = () => {
 
       {/* Video Background */}
       <motion.div
-        className="absolute inset-0 z-0 "
-        initial={{ scale: 1.1, opacity: 0 }}
+        className="absolute inset-0 z-0 w-full h-full"
+        initial={{ scale: 1.05, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 1.2, ease: "easeOut" }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/40 z-10" />
-        <motion.div className="w-full h-full">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black/80 z-10" />
+        <div className="w-full h-full">
           <video
             ref={videoRef}
             autoPlay
@@ -1004,11 +1002,11 @@ const Hero = () => {
             <source src={backgroundVideo} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
-        </motion.div>
+        </div>
       </motion.div>
 
       {/* Hero Content */}
-      <div className="relative z-10 flex items-center h-full w-full">
+      <div className="relative z-10 flex items-center h-full w-full py-12 md:py-16">
         <div className="w-full px-4 md:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 lg:py-12 pt-20 sm:pt-24 lg:pt-12">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-8 lg:gap-16">
 

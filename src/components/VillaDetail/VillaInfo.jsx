@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import {
   MapPin,
@@ -43,8 +41,12 @@ const villaDescriptions = {
   "East Coast Villa": `East Coast Villa is a charming and compact 3BHK property in Perur ECR that offers an intimate, cozy atmosphere without compromising on luxury or amenities. This single-story villa spans approximately 2,500 sq. ft. and features three well-appointed air-conditioned bedrooms with quality furnishings, as well as a comfortable air-conditioned living room perfect for relaxation.`,
 
   "Empire Anand Villa Samudra": `Empire Anand Villa Samudra is a prestigious 6BHK beachfront luxury villa situated in the coveted Kovalam area of ECR, offering an unparalleled coastal living experience with direct sea views. This magnificent three-level property spans over 5,500 sq. ft. of thoughtfully designed living space that seamlessly blends indoor and outdoor environments.
+ 
+   The villa features six luxurious en-suite bedrooms, each uniquely decorated with designer furnishings, premium bedding, and large windows that frame spectacular ocean views. The master suite includes a private balcony overlooking the sea, a walk-in closet, and a spa-like bathroom with both shower and soaking tub.`,
 
-  The villa features six luxurious en-suite bedrooms, each uniquely decorated with designer furnishings, premium bedding, and large windows that frame spectacular ocean views. The master suite includes a private balcony overlooking the sea, a walk-in closet, and a spa-like bathroom with both shower and soaking tub.`
+  "Opal Villa": `Opal Villa is an ultra-luxurious 4BHK private sanctuary located along the scenic East Coast Road (ECR), Chennai. Featuring cutting-edge contemporary architecture, the villa boasts a stunning private swimming pool, sun-drenched deck, spacious air-conditioned living areas, and en-suite designer bedrooms.
+
+  With lush private landscaped gardens, gourmet kitchen amenities, and close proximity to the beach, Opal Villa is the quintessential luxury haven for family retreats, celebrations, and peaceful weekends.`
 }
 
 const villaLocations = {
@@ -75,6 +77,13 @@ const villaLocations = {
     description: "Premium beachfront location in Kovalam with direct sea views and private beach access",
     mapUrl: "https://maps.app.goo.gl/D1iCT5tYpnmbuHQr7",
     nearbyAttractions: ["Kovalam Beach - Direct access", "Crocodile Bank - 10 min drive", "Mahabalipuram Shore Temple - 20 min drive"]
+  },
+  "Opal Villa": {
+    address: "East Coast Road, Chennai, Tamil Nadu",
+    coordinates: "12.8210° N, 80.2415° E",
+    description: "Scenic and serene location along ECR with private pool and quick beach access",
+    mapUrl: "https://maps.google.com/?q=ECR+Chennai",
+    nearbyAttractions: ["ECR Beach - 5 min walk", "Muttukadu Backwaters - 10 min drive", "Covelong Beach - 12 min drive"]
   }
 }
 
@@ -111,6 +120,23 @@ const similarVillasList = [
     specs: "3 Beds · 15 Guests"
   }
 ]
+
+// Builds the map embed for THIS villa. Both branches of the previous ternary
+// hardcoded the same Kovalam latitude/longitude, so every villa showed the same
+// map regardless of where it actually stands.
+function mapEmbedSrc(location, villaName) {
+  const match = /([\d.]+)\s*°?\s*([NS]),\s*([\d.]+)\s*°?\s*([EW])/i.exec(location?.coordinates || "")
+  if (match) {
+    const lat = parseFloat(match[1]) * (match[2].toUpperCase() === "S" ? -1 : 1)
+    const lng = parseFloat(match[3]) * (match[4].toUpperCase() === "W" ? -1 : 1)
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      return `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`
+    }
+  }
+
+  const query = [villaName, location?.address].filter(Boolean).join(", ")
+  return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=14&output=embed`
+}
 
 export default function VillaInfo({
   villa,
@@ -207,16 +233,14 @@ export default function VillaInfo({
         <div className="flex items-center gap-2 text-sm text-gray-700 pt-1">
           <div className="flex items-center gap-1">
             <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-            <span className="font-bold text-gray-900">{villa?.rating || 4.7}</span>
+            {/* Show the stored rating, or nothing. A hardcoded 4.7 made every
+                unrated villa look good. */}
+            <span className="font-bold text-gray-900">{villa?.rating ? Number(villa.rating).toFixed(1) : "—"}</span>
           </div>
-          <span className="text-gray-400">·</span>
-          <span className="text-gray-600 underline cursor-pointer" onClick={() => scrollToSection("reviews")}>
-            (57 reviews)
-          </span>
           <span className="text-gray-400">·</span>
           <div className="flex items-center gap-1 text-gray-600">
             <MapPin className="w-3.5 h-3.5 text-gray-400" />
-            <span>{villa?.location || "Chennai, Tamil Nadu"}</span>
+            <span>{villa?.location || "Location on request"}</span>
           </div>
         </div>
       </div>
@@ -261,11 +285,7 @@ export default function VillaInfo({
         <h2 className="text-xl font-bold text-gray-900">Explore the area</h2>
         <div className="rounded-2xl overflow-hidden border border-gray-200 h-[280px] sm:h-[350px] bg-gray-100">
           <iframe
-            src={
-              villaLocation.mapUrl?.includes("maps.app.goo.gl")
-                ? `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3890!2d80.2483!3d12.7879!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2z${encodeURIComponent(villa?.name || "Luxury Villa")}!5e0!3m2!1sen!2sin!4v1703123456789!5m2!1sen!2sin`
-                : "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3890!2d80.2483!3d12.7879!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2z${encodeURIComponent(villa?.name || 'Luxury Villa')}!5e0!3m2!1sen!2sin!4v1703123456789!5m2!1sen!2sin"
-            }
+            src={mapEmbedSrc(villaLocation, villa?.name)}
             width="100%"
             height="100%"
             style={{ border: 0 }}

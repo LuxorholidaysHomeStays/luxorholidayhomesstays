@@ -1,20 +1,18 @@
-"use client"
 import { useState, useEffect, useRef } from "react"
 import { useNavigate, useParams, useLocation } from "react-router-dom"
-import Swal from "sweetalert2"
+import { toast } from "../utils/toast"
 import { X, MapPin, Users, Bed, Bath, Star, Heart, Share, ArrowLeft, ChevronRight } from "lucide-react"
 
 // Import enhanced components
 import VillaGallery from "../components/VillaDetail/villagallery"
 import VillaInfo from "../components/VillaDetail/VillaInfo.jsx"
 import BookingForm from "../components/VillaDetail/booking-form.jsx"
-import BookingModal from "../components/VillaDetail/booking-form.jsx"
 import axios from "axios"
 
 // Import existing dependencies
 import { useAuth } from "../context/AuthContext"
-import { API_BASE_URL } from "../config/api"
-import { getVillaPricing, getPriceForDate, getPriceForDateSync } from "../data/villa-pricing.jsx"
+import { API_BASE_URL, requireApiBaseUrl } from "../config/api"
+import { getVillaPricing } from "../data/villa-pricing.jsx"
 
 // Import all villa images (keeping existing imports)
 import AP1 from "/AmrithPalace/AP1.jpg"
@@ -83,6 +81,30 @@ import anandvilla14 from "/empireanandvillasamudra/anandvilla14.jpg"
 import anandvilla15 from "/empireanandvillasamudra/anandvilla15.jpg"
 import anandvilla16 from "/empireanandvillasamudra/anandvilla16.jpg"
 
+// Opal Villa Images
+import opal1 from "/opal/opal1.jpg"
+import opal2 from "/opal/opal2.jpg"
+import opal3 from "/opal/opal3.jpg"
+import opal4 from "/opal/opal4.jpg"
+import opal5 from "/opal/opal5.jpg"
+import opal6 from "/opal/opal6.jpg"
+import opal7 from "/opal/opal7.jpg"
+import opal8 from "/opal/opal8.jpg"
+import opal9 from "/opal/opal9.jpg"
+import opal10 from "/opal/opal10.jpg"
+import opal11 from "/opal/opal11.jpg"
+import opal12 from "/opal/opal12.jpg"
+import opal13 from "/opal/opal13.jpg"
+import opal14 from "/opal/opal14.jpg"
+import opal15 from "/opal/opal15.jpg"
+import opal16 from "/opal/opal16.jpg"
+import opal17 from "/opal/opal17.jpg"
+import opal18 from "/opal/opal18.jpg"
+import opal19 from "/opal/opal19.jpg"
+import opal20 from "/opal/opal20.jpg"
+import opal21 from "/opal/opal21.jpg"
+import opal22 from "/opal/opal22.jpg"
+
 // Villa image collections
 const villaImageCollections = {
   "Amrith Palace": [
@@ -136,17 +158,11 @@ const villaImageCollections = {
     anandvilla15,
     anandvilla16,
   ],
-}
-
-// Add this fallback pricing map after the villaImageCollections object
-const villaFallbackPricing = {
-  "Amrith Palace": { weekday: 45000, weekend: 65000 },
-  "Ram Water Villa": { weekday: 30000, weekend: 45000 },
-  "East Coast Villa": { weekday: 15000, weekend: 25000 },
-  "Lavish Villa I": { weekday: 18000, weekend: 25000 },
-  "Lavish Villa II": { weekday: 18000, weekend: 25000 },
-  "Lavish Villa III": { weekday: 16000, weekend: 23000 },
-  "Empire Anand Villa Samudra": { weekday: 40000, weekend: 60000 },
+  "Opal Villa": [
+    opal5, opal1, opal2, opal3, opal4, opal6, opal7, opal8, opal9, opal10,
+    opal11, opal12, opal13, opal14, opal15, opal16, opal17, opal18, opal19, opal20,
+    opal21, opal22
+  ],
 }
 
 const loadRazorpayScript = () => {
@@ -208,23 +224,33 @@ export default function VillaDetails() {
 
     try {
       setLoadingAddressInfo(true);
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://luxorstay-backend.vercel.app";
-      const token = authToken || localStorage.getItem('token');
+      const token = authToken || localStorage.getItem('authToken');
 
       if (!token) {
         console.log("No auth token available for fetching address");
         return;
       }
 
-      const response = await axios.get(`${baseUrl}/api/bookings/user-address-info`, {
+      const response = await axios.get(`${API_BASE_URL}/api/users/profile`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
 
-      if (response.data && response.data.success && response.data.addressInfo) {
-        console.log("Found user address info:", response.data.addressInfo);
-        setBookingAddress(response.data.addressInfo);
+      const user = response.data?.user || response.data;
+      if (user && user.address) {
+        let addrObj = { street: "", city: "", state: "", country: "", zipCode: "" };
+        if (typeof user.address === "string") {
+          try {
+            addrObj = JSON.parse(user.address);
+          } catch {
+            addrObj.street = user.address;
+          }
+        } else if (typeof user.address === "object") {
+          addrObj = user.address;
+        }
+        console.log("Found user address info:", addrObj);
+        setBookingAddress(addrObj);
       }
     } catch (error) {
       // Just log the error but don't show to user since this is just an enhancement
@@ -239,8 +265,7 @@ export default function VillaDetails() {
     if (!isSignedIn || !authToken) return;
 
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://luxorstay-backend.vercel.app";
-      const response = await axios.get(`${baseUrl}/api/users/favorites`, {
+      const response = await axios.get(`${API_BASE_URL}/api/users/favorites`, {
         headers: {
           Authorization: `Bearer ${authToken}`
         }
@@ -248,8 +273,9 @@ export default function VillaDetails() {
 
       if (response.data && response.data.success) {
         const favorites = response.data.favorites || [];
-        const isFavorite = favorites.some(fav =>
-          (fav._id === (villa._id || villa.id)) || (fav.id === (villa._id || villa.id))
+        const villaId = String(villa._id || villa.id || "");
+        const isFavorite = favorites.some((fav) =>
+          String(fav.villaId || fav.villa_id || "") === villaId
         );
         setIsSaved(isFavorite);
       }
@@ -261,40 +287,25 @@ export default function VillaDetails() {
   // Function to toggle save/unsave villa
   const handleSaveVilla = async () => {
     if (!isSignedIn) {
-      Swal.fire({
-        icon: "info",
-        title: "Login Required",
-        text: "Please log in to save this villa to your favorites.",
-        confirmButtonColor: "#D4AF37",
-      }).then(() => {
-        navigate("/sign-in?redirect=" + encodeURIComponent(window.location.pathname));
-      });
+      toast.info("Please log in to save this villa to your favorites.");
+      navigate("/sign-in?redirect=" + encodeURIComponent(window.location.pathname));
       return;
     }
 
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://luxorstay-backend.vercel.app";
-
       if (isSaved) {
         // Remove from favorites
-        await axios.delete(`${baseUrl}/api/users/favorites/${villa._id || villa.id}`, {
+        await axios.delete(`${API_BASE_URL}/api/users/favorites/${villa._id || villa.id}`, {
           headers: {
             Authorization: `Bearer ${authToken}`
           }
         });
 
         setIsSaved(false);
-        Swal.fire({
-          icon: "success",
-          title: "Removed from Favorites",
-          text: "Villa has been removed from your favorites.",
-          confirmButtonColor: "#D4AF37",
-          timer: 2000,
-          showConfirmButton: false
-        });
+        toast.success("Villa removed from your favorites.");
       } else {
         // Add to favorites
-        await axios.post(`${baseUrl}/api/users/favorites`, {
+        await axios.post(`${API_BASE_URL}/api/users/favorites`, {
           villaId: villa._id || villa.id,
           villaName: villa.name,
           villaLocation: villa.location,
@@ -307,23 +318,11 @@ export default function VillaDetails() {
         });
 
         setIsSaved(true);
-        Swal.fire({
-          icon: "success",
-          title: "Added to Favorites",
-          text: "Villa has been added to your favorites. You can view it in your profile.",
-          confirmButtonColor: "#D4AF37",
-          timer: 2000,
-          showConfirmButton: false
-        });
+        toast.success("Villa added to your favorites!");
       }
     } catch (error) {
       console.error("Error updating favorites:", error.response?.data || error.message);
-      Swal.fire({
-        icon: "error",
-        title: "Operation Failed",
-        text: "There was a problem updating your favorites. Please try again.",
-        confirmButtonColor: "#D4AF37",
-      });
+      toast.error("There was a problem updating your favorites. Please try again.");
     }
   };
 
@@ -339,6 +338,7 @@ export default function VillaDetails() {
 
   const fetchVillaDetails = async () => {
     try {
+      requireApiBaseUrl()
       setLoading(true)
       let response = await fetch(`${API_BASE_URL}/api/villas/${id}`)
       if (!response.ok) {
@@ -353,13 +353,15 @@ export default function VillaDetails() {
       }
 
       const data = await response.json()
-      console.log("Backend villa data:", data); // Debug log
+      const rawVilla = data.villa || data.room || data.data || data;
 
-      const villaName = data.name || "Unknown Villa"
+      const villaName = rawVilla.name || "Unknown Villa"
       let images = []
 
       // Get images based on villa name
-      if (villaName.toLowerCase().includes("amrith") || villaName.toLowerCase().includes("palace")) {
+      if (villaName.toLowerCase().includes("opal")) {
+        images = villaImageCollections["Opal Villa"]
+      } else if (villaName.toLowerCase().includes("amrith") || villaName.toLowerCase().includes("palace")) {
         images = villaImageCollections["Amrith Palace"]
       } else if (villaName.toLowerCase().includes("east") || villaName.toLowerCase().includes("coast")) {
         images = villaImageCollections["East Coast Villa"]
@@ -367,53 +369,30 @@ export default function VillaDetails() {
         images = villaImageCollections["Empire Anand Villa Samudra"]
       }
 
-      // Get fallback pricing if needed
-      let weekendPrice = data.weekendprice || data.weekendPrice || 0;
-      let weekdayPrice = data.price || 0;
+      const weekendPrice = Number(rawVilla.weekendprice) || Number(rawVilla.weekendPrice) || 0;
+      const weekdayPrice = Number(rawVilla.price) || Number(rawVilla.weekdayPrice) || 0;
 
-      // Apply fallback pricing if weekend price is missing or zero
-      if (weekendPrice === 0 || !weekendPrice) {
-        // Try to find a match in our fallback pricing data
-        const fallbackPricing = Object.entries(villaFallbackPricing).find(([name]) =>
-          villaName.toLowerCase().includes(name.toLowerCase())
-        );
 
-        if (fallbackPricing) {
-          console.log(`Using fallback pricing for ${villaName}:`, fallbackPricing[1]);
-          weekendPrice = fallbackPricing[1].weekend;
-          // Only override weekday price if it's also zero/missing
-          if (weekdayPrice === 0 || !weekdayPrice) {
-            weekdayPrice = fallbackPricing[1].weekday;
-          }
-        } else if (weekdayPrice > 0) {
-          // If we can't find a match but have a weekday price, use a standard multiplier
-          console.log(`No fallback pricing found for ${villaName}, using standard 1.5x multiplier`);
-          weekendPrice = Math.round(weekdayPrice * 1.5);
-        }
-      }
-
-      // Don't use pricing from getVillaPricing - use direct backend data with fallback
       const transformedVilla = {
-        id: data._id,
-        _id: data._id,
-        name: data.name,
-        location: data.location,
+        id: rawVilla._id || rawVilla.id || id,
+        _id: rawVilla._id || rawVilla.id || id,
+        name: rawVilla.name || villaName,
+        location: rawVilla.location || "Perur ECR, Chennai",
         price: weekdayPrice,
         weekendPrice: weekendPrice,
-        weekendprice: weekendPrice, // Keep both for compatibility
-        description: data.description || "Luxury villa with all modern amenities for a comfortable stay.",
-        longDescription: data.longDescription || "Experience unparalleled luxury in our stunning villa...",
-        images: images,
-        guests: data.guests || 8,
-        capacity: data.guests || 8,
-        bedrooms: data.bedrooms || 4,
-        bathrooms: data.bathrooms || data.bedrooms || 3,
-        rating: data.rating || 4.5,
-        amenities: data.amenities || [],
-        type: data.type || "VILLA",
+        weekendprice: weekendPrice,
+        description: rawVilla.description || "Luxury villa with all modern amenities for a comfortable stay.",
+        longDescription: rawVilla.longDescription || "Experience unparalleled luxury in our stunning villa...",
+        images: (rawVilla.images && rawVilla.images.length > 0) ? rawVilla.images : images,
+        guests: rawVilla.guests || rawVilla.capacity || 10,
+        capacity: rawVilla.guests || rawVilla.capacity || 10,
+        bedrooms: rawVilla.bedrooms || 4,
+        bathrooms: rawVilla.bathrooms || rawVilla.bedrooms || 4,
+        rating: rawVilla.rating || 4.8,
+        amenities: rawVilla.amenities || [],
+        type: rawVilla.type || "VILLA",
       }
 
-      console.log("Transformed villa with prices:", transformedVilla); // Debug log
       setVilla(transformedVilla)
       setLoading(false)
     } catch (error) {
@@ -425,6 +404,7 @@ export default function VillaDetails() {
   // Fetch blocked dates for the villa
   const fetchBlockedDates = async (villaId) => {
     try {
+      requireApiBaseUrl()
       console.log("[VILLA DETAILS] Fetching blocked dates for villa:", villaId)
       const response = await fetch(`${API_BASE_URL}/api/bookings/blocked-dates/${villaId}`)
       if (response.ok) {
@@ -478,34 +458,18 @@ export default function VillaDetails() {
         returnUrl: window.location.pathname + window.location.search,
       }
       localStorage.setItem("pendingBooking", JSON.stringify(bookingState))
-      Swal.fire({
-        icon: "info",
-        title: "Login Required",
-        text: "Please log in to book this villa. We'll save your booking details.",
-        confirmButtonColor: "#D4AF37",
-      }).then(() => {
-        navigate("/sign-in?redirect=booking")
-      })
+      toast.info("Please log in to book this villa. We've saved your booking details.");
+      navigate("/sign-in?redirect=booking")
       return
     }
 
     if (!checkInDate || !checkOutDate) {
-      Swal.fire({
-        icon: "warning",
-        title: "Missing Dates",
-        text: "Please select check-in and check-out dates.",
-        confirmButtonColor: "#D4AF37",
-      })
+      toast.warning("Please select check-in and check-out dates.");
       return
     }
 
     if (!villa?.name) {
-      Swal.fire({
-        icon: "error",
-        title: "Villa Error",
-        text: "Villa information is missing. Please refresh the page and try again.",
-        confirmButtonColor: "#D4AF37",
-      })
+      toast.error("Villa information is missing. Please refresh the page and try again.");
       return
     }
 
@@ -514,33 +478,25 @@ export default function VillaDetails() {
     isBookingInProgress.current = true
 
     try {
+      requireApiBaseUrl()
 
-      const startDate = new Date(checkInDate)
-      const endDate = new Date(checkOutDate)
-      const nights = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24))
-
-      let totalPrice = 0
-      for (let i = 0; i < nights; i++) {
-        const currentDate = new Date(startDate)
-        currentDate.setDate(currentDate.getDate() + i)
-        totalPrice += getPriceForDateSync(currentDate, villa.name)
+      if (!checkInDate || !checkOutDate) {
+        throw new Error("Please select your check-in and check-out dates.")
       }
 
-      const serviceFee = Math.round(totalPrice * 0.05)
-      const taxAmount = Math.round((totalPrice + serviceFee) * 0.18)
-      const calculatedTotalAmount = Math.round(totalPrice + serviceFee + taxAmount)
-
-      if (calculatedTotalAmount <= 0) {
-        throw new Error("Invalid booking amount calculated. Please try again.")
-      }
-
-
+      // No amount is computed here. The server prices the stay (base plus service
+      // fee plus GST) and returns the order in paise, which is what Razorpay is
+      // launched with below -- a locally derived total was how the charged amount
+      // and the shown amount drifted apart.
       const isScriptLoaded = await loadRazorpayScript()
       if (!isScriptLoaded) {
         throw new Error("Failed to load payment gateway. Please refresh and try again.")
       }
 
 
+      // The backend is the pricing authority: it calculates the total from villa + dates
+      // and ignores any client-supplied amount. Sending villaId, checkIn, and checkOut
+      // lets the backend compute the correct price with service fee and GST.
       const orderResponse = await fetch(`${API_BASE_URL}/api/payments/create-order`, {
         method: "POST",
         headers: {
@@ -548,21 +504,13 @@ export default function VillaDetails() {
           Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify({
-          amount: calculatedTotalAmount,
-          currency: "INR",
-          villaName: villa.name,
-          villaId: villa._id || villa.id,
-          guestName: userData?.name || userData?.firstName || "Guest",
-          email: userData?.email,
+          villaId: villa.id || villa._id,
           checkIn: checkInDate,
           checkOut: checkOutDate,
-          checkInTime: bookingData.checkInTime || "14:00",
-          checkOutTime: bookingData.checkOutTime || "12:00",
-          guests: adults + children,
-          infants,
-          totalDays: nights + 1,
-          totalNights: nights,
-          address: bookingData.address || {} // Include address data here
+          notes: {
+            villaName: villa.name,
+            guestName: userData?.name || userData?.firstName || "Guest",
+          },
         }),
       })
 
@@ -581,8 +529,13 @@ export default function VillaDetails() {
       }
 
 
+      const keyId = orderData.keyId || orderData.key || import.meta.env.VITE_RAZORPAY_KEY
+      if (!keyId) {
+        throw new Error("The payment gateway is not configured for this site. Please contact us.")
+      }
+
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY || "rzp_live_quNHH9YfEhaAru",
+        key: keyId,
         amount: orderData.order.amount,
         currency: orderData.order.currency || "INR",
         name: "LuxorStay",
@@ -590,6 +543,7 @@ export default function VillaDetails() {
         order_id: orderData.order.id,
         handler: async (response) => {
           try {
+            requireApiBaseUrl()
             const verifyResponse = await fetch(`${API_BASE_URL}/api/payments/verify`, {
               method: "POST",
               headers: {
@@ -611,9 +565,8 @@ export default function VillaDetails() {
                   checkOutTime: bookingData.checkOutTime || "12:00",
                   guests: adults + children,
                   infants,
-                  totalAmount: calculatedTotalAmount,
-                  totalDays: nights + 1,
-                  totalNights: nights,
+                  // No amount or night count is sent: the server recomputes both
+                  // from the villa and dates and verifies the captured total.
                   address: bookingData.address || {} // Include address data here
                 },
               }),
@@ -635,26 +588,14 @@ export default function VillaDetails() {
               setAdults(1)
               setChildren(0)
               setInfants(0)
-              Swal.fire({
-                icon: "success",
-                title: "Booking Confirmed! 🎉",
-                text: "Your payment was successful and booking has been confirmed!",
-                confirmButtonColor: "#D4AF37",
-                confirmButtonText: "View My Bookings",
-              }).then(() => {
-                navigate("/my-bookings", { replace: true })
-              })
+              toast.success("Booking Confirmed! Your payment was successful.");
+              navigate("/my-bookings", { replace: true });
             } else {
               throw new Error(verifyData.message || "Payment verification failed")
             }
           } catch (error) {
             console.error("Payment verification error:", error)
-            Swal.fire({
-              icon: "warning",
-              title: "Payment Verification Issue",
-              text: `Your payment was processed, but we're having trouble confirming it. Error: ${error.message}. Our team will contact you shortly.`,
-              confirmButtonColor: "#D4AF37",
-            })
+            toast.warning(`Payment processed, but trouble confirming: ${error.message}. Our team will contact you shortly.`);
           } finally {
             setPaymentProcessing(false)
             setBookingLoading(false)
@@ -679,12 +620,7 @@ export default function VillaDetails() {
       razorpayInstance.open()
     } catch (err) {
       console.error("Booking error:", err)
-      Swal.fire({
-        icon: "error",
-        title: "Booking Failed",
-        text: err.message || "There was a problem processing your booking.",
-        confirmButtonColor: "#D4AF37",
-      })
+      toast.error(err.message || "There was a problem processing your booking.");
       setPaymentProcessing(false)
       setBookingLoading(false)
       isBookingInProgress.current = false
@@ -712,7 +648,9 @@ export default function VillaDetails() {
 
       if (location.state?.fromSearch && (!processedImages.length || processedImages.length < 5)) {
         const villaName = navigationVilla.name?.toLowerCase() || ""
-        if (villaName.includes("amrith") || villaName.includes("palace")) {
+        if (villaName.includes("opal")) {
+          processedImages = villaImageCollections["Opal Villa"]
+        } else if (villaName.includes("amrith") || villaName.includes("palace")) {
           processedImages = villaImageCollections["Amrith Palace"]
         } else if (villaName.includes("east") || villaName.includes("coast")) {
           processedImages = villaImageCollections["East Coast Villa"]
@@ -875,48 +813,18 @@ export default function VillaDetails() {
                         console.error('Error sharing:', err);
                         try {
                           await navigator.clipboard.writeText(window.location.href);
-                          Swal.fire({
-                            icon: "success",
-                            title: "Link Copied!",
-                            text: "Villa link copied to clipboard.",
-                            confirmButtonColor: "#D4AF37",
-                            timer: 2000,
-                            showConfirmButton: false,
-                          });
+                          toast.success("Villa link copied to clipboard!");
                         } catch {
-                          Swal.fire({
-                            icon: "info",
-                            title: "Share",
-                            text: `Check out ${villa.name} at ${window.location.href}`,
-                            confirmButtonColor: "#D4AF37",
-                          });
+                          toast.info(`Villa: ${villa.name}`);
                         }
                       }
                     }
                   } else {
                     try {
                       await navigator.clipboard.writeText(window.location.href);
-                      Swal.fire({
-                        icon: "success",
-                        title: "Link Copied!",
-                        text: "Villa link copied to clipboard. You can now share it anywhere!",
-                        confirmButtonColor: "#D4AF37",
-                        timer: 2500,
-                        showConfirmButton: false,
-                      });
+                      toast.success("Villa link copied to clipboard!");
                     } catch {
-                      Swal.fire({
-                        icon: "info",
-                        title: "Share This Villa",
-                        html: `
-                          <p class="mb-3">Copy this link to share:</p>
-                          <div class="bg-gray-100 p-3 rounded-lg text-sm break-all">
-                            ${window.location.href}
-                          </div>
-                        `,
-                        confirmButtonColor: "#D4AF37",
-                        confirmButtonText: "Close"
-                      });
+                      toast.info("Share URL: " + window.location.href);
                     }
                   }
                 }}
@@ -935,12 +843,13 @@ export default function VillaDetails() {
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
-                    className={`h-3.5 w-3.5 ${i < Math.floor(villa.rating || 4.5) ? "text-yellow-400 fill-current" : "text-gray-500"
+                    className={`h-3.5 w-3.5 ${i < Math.floor(villa.rating || 0) ? "text-yellow-400 fill-current" : "text-gray-500"
                       }`}
                   />
                 ))}
-                <span className="font-semibold ml-1 text-white">{villa.rating || 4.5}</span>
-                <span className="text-gray-400">({Math.floor(Math.random() * 50) + 20})</span>
+                {/* Real rating only; a random review count and a default 4.5 made
+                    every villa look rated when none had been. */}
+                <span className="font-semibold ml-1 text-white">{villa.rating ? Number(villa.rating).toFixed(1) : "New"}</span>
               </div>
               <div className="text-gray-300 bg-white/10 rounded-lg px-2.5 py-1 flex items-center gap-1.5 backdrop-blur-sm">
                 <MapPin className="h-3.5 w-3.5 text-[#D4AF37]" />

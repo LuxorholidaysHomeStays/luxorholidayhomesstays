@@ -1,434 +1,232 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { API_BASE_URL } from '../config/api';
 import { useAuth } from '../context/AuthContext';
-import Swal from 'sweetalert2';
+import { toast } from '../utils/toast';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
+import { ShieldCheck, RefreshCw } from 'lucide-react';
 
 const VerifyOTP = () => {
-  // Initialize AOS for animations
   useEffect(() => {
     AOS.init({
       duration: 800,
       easing: 'ease-out',
-      once: true
+      once: true,
     });
   }, []);
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { setAuthToken, setUserData } = useAuth();
-  
-  // Get state params or fallback to sessionStorage
+  const { sendOTP, verifyOTP, resetPassword } = useAuth();
+
+  // This page also completes a password reset: the code emailed by
+  // forgot-password is consumed by /api/auth/reset-password together with the new
+  // password, never by the login verifier (which only accepts purpose "login").
+  const isPasswordReset = Boolean(location.state?.isPasswordReset);
+
   const email = location.state?.email || sessionStorage.getItem('verificationEmail') || '';
-  const isRegistration = location.state?.isRegistration ?? false;
-  const isPasswordReset = location.state?.isPasswordReset ?? false;
-  
-  if (!email) {
-    // Redirect to sign-in if no email is provided
-    useEffect(() => {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'No email provided for verification',
-        confirmButtonColor: '#ca8a04'
-      }).then(() => {
-        navigate('/sign-in');
-      });
-    }, [navigate]);
-  }
-  
-  // OTP input state
+
+  useEffect(() => {
+    if (!email) {
+      toast.error('No email provided for verification');
+      navigate('/sign-in');
+    }
+  }, [email, navigate]);
+
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [loading, setLoading] = useState(false);
-  const [resendLoading, setResendLoading] = useState(false);
-  const [resendTimeout, setResendTimeout] = useState(60); // 60 seconds timeout
   const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPasswordFields, setShowPasswordFields] = useState(isPasswordReset);
-  
-  // References for OTP inputs
+  const [loading, setLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(60);
+  const [error, setError] = useState('');
   const otpInputs = useRef([]);
-  
-  // Timer for resend OTP button
+
   useEffect(() => {
     let timer;
-    if (resendTimeout > 0) {
-      timer = setTimeout(() => setResendTimeout(resendTimeout - 1), 1000);
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
     }
-    return () => clearTimeout(timer);
-  }, [resendTimeout]);
-  
-  // Handler for OTP input
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
   const handleOtpChange = (e, index) => {
     const value = e.target.value;
-    
-    // Allow only numeric input
     if (value && !/^\d+$/.test(value)) return;
-    
-    // Update OTP state
+
     const newOtp = [...otp];
-    newOtp[index] = value.slice(0, 1); // Take only one character
+    newOtp[index] = value.slice(-1);
     setOtp(newOtp);
-    
-    // Auto-focus next input
+
     if (value && index < 5) {
-      otpInputs.current[index + 1].focus();
+      otpInputs.current[index + 1]?.focus();
     }
   };
-  
-  // Handle key events for navigation between inputs
+
   const handleKeyDown = (e, index) => {
-    // Move to previous input on backspace if current is empty
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      otpInputs.current[index - 1].focus();
+      otpInputs.current[index - 1]?.focus();
     }
   };
-  
-  // Handle OTP paste (e.g., from email)
+
   const handlePaste = (e) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text/plain').trim();
-    
-    if (/^\d+$/.test(pastedData)) { // Check if it contains only digits
-      const otpDigits = pastedData.slice(0, 6).split('');
-      
-      // Fill the available OTP inputs
-      const newOtp = [...otp];
-      otpDigits.forEach((digit, index) => {
-        if (index < 6) newOtp[index] = digit;
-      });
-      
-      setOtp(newOtp);
-      
-      // Focus on the next empty input or the last one
-      const lastFilledIndex = Math.min(otpDigits.length, 5);
-      if (otpInputs.current[lastFilledIndex]) {
-        otpInputs.current[lastFilledIndex].focus();
-      }
+    const pastedData = e.clipboardData.getData('text').trim();
+    if (/^\d{6}$/.test(pastedData)) {
+      setOtp(pastedData.split(''));
+      otpInputs.current[5]?.focus();
     }
   };
-  
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    try {
-      // Convert OTP array to string
-      const otpString = otp.join('');
-      
-      if (otpString.length !== 6) {
-        throw new Error('Please enter the complete 6-digit verification code');
-      }
-      
-      if (isPasswordReset) {
-        // Additional validation for password reset
-        if (!newPassword) {
-          throw new Error('Please enter a new password');
-        }
-        
-        if (newPassword.length < 8) {
-          throw new Error('Password must be at least 8 characters long');
-        }
-        
-        if (newPassword !== confirmPassword) {
-          throw new Error('Passwords do not match');
-        }
-        
-        // Verify OTP and reset password
-        const response = await fetch(`${API_BASE_URL}/api/auth/verify-reset-otp`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            otp: otpString,
-            newPassword
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to verify code or reset password');
-        }
-        
-        // Show success message
-        Swal.fire({
-          icon: 'success',
-          title: 'Password Reset Successful',
-          text: 'Your password has been reset successfully. Please sign in with your new password.',
-          confirmButtonColor: '#ca8a04'
-        }).then(() => {
-          // Clear verification email from session
-          sessionStorage.removeItem('verificationEmail');
-          // Navigate to sign in page
-          navigate('/sign-in');
-        });
-        
-      } else {
-        // Verify OTP for registration
-        const response = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            otp: otpString,
-            purpose: isRegistration ? 'registration' : 'login'
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'Invalid verification code');
-        }
-        
-        // Store auth token
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userId', data.user._id || data.user.id);
-        localStorage.setItem('userEmail', data.user.email);
-        
-        // Update auth context
-        setAuthToken(data.token);
-        setUserData(data.user);
-        
-        // Show success message
-        Swal.fire({
-          icon: 'success',
-          title: isRegistration ? 'Registration Complete' : 'Verification Complete',
-          text: isRegistration 
-            ? 'Your account has been successfully created and verified.' 
-            : 'Your account has been verified successfully.',
-          confirmButtonColor: '#ca8a04'
-        }).then(() => {
-          // Clear verification email from session
-          sessionStorage.removeItem('verificationEmail');
-          // Use the same redirect logic as SignIn
-          const redirectUrl = localStorage.getItem("authRedirectUrl");
-          if (redirectUrl) {
-            localStorage.removeItem("authRedirectUrl");
-            navigate(redirectUrl);
-          } else {
-            navigate('/');
-          }
-        });
-      }
-      
-    } catch (error) {
-      console.error("Verification error:", error);
-      
-      Swal.fire({
-        icon: 'error',
-        title: 'Verification Failed',
-        text: error.message || 'Invalid verification code. Please try again.',
-        confirmButtonColor: '#ca8a04'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Handle resend OTP
+
   const handleResendOTP = async () => {
-    setResendLoading(true);
-    
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/resend-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          purpose: isPasswordReset ? 'password-reset' : 'registration'
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to resend verification code');
-      }
-      
-      // Reset OTP inputs
-      setOtp(['', '', '', '', '', '']);
-      
-      // Reset resend timer
-      setResendTimeout(60);
-      
-      // Show success message
-      Swal.fire({
-        icon: 'success',
-        title: 'Verification Code Sent',
-        text: 'A new verification code has been sent to your email.',
-        confirmButtonColor: '#ca8a04',
-        timer: 3000,
-        timerProgressBar: true
-      });
-      
-    } catch (error) {
-      console.error("Resend OTP error:", error);
-      
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.message || 'Failed to resend verification code',
-        confirmButtonColor: '#ca8a04'
-      });
-    } finally {
-      setResendLoading(false);
+    if (resendCooldown > 0 || loading) return;
+    setLoading(true);
+    setError('');
+
+    const res = await sendOTP(email);
+    setLoading(false);
+
+    if (res.success) {
+      setResendCooldown(60);
+      toast.success(`A new verification code has been sent to ${email}`);
+    } else {
+      setError(res.message || 'Failed to resend OTP');
     }
-  };    return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-yellow-50 px-4 py-16">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-10 left-10 w-72 h-72 bg-yellow-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-float"></div>
-        <div className="absolute top-40 right-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-float" style={{animationDelay: '2s'}}></div>
-        <div className="absolute -bottom-8 left-40 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-float" style={{animationDelay: '4s'}}></div>
+  };
+
+  const handleVerify = async (e) => {
+    if (e) e.preventDefault();
+    const fullOtp = otp.join('');
+    if (fullOtp.length !== 6) {
+      setError('Please enter all 6 digits of the verification code');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    if (isPasswordReset) {
+      if (newPassword.length < 6) {
+        setError('Please choose a new password of at least 6 characters');
+        setLoading(false);
+        return;
+      }
+
+      const res = await resetPassword(email, fullOtp, newPassword);
+      setLoading(false);
+
+      if (res.success) {
+        toast.success(res.message);
+        sessionStorage.removeItem('verificationEmail');
+        navigate('/sign-in', { replace: true });
+      } else {
+        setError(res.message || 'Invalid or expired reset code');
+      }
+      return;
+    }
+
+    const res = await verifyOTP(email, fullOtp);
+    setLoading(false);
+
+    if (res.success) {
+      toast.success('Your email has been verified successfully!');
+
+      if (res.isAdmin) {
+        navigate('/dashboard', { replace: true });
+      } else {
+        const from = location.state?.from || '/';
+        navigate(from, { replace: true });
+      }
+    } else {
+      setError(res.message || 'Invalid or expired OTP');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-stone-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 text-stone-100 relative">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center" data-aos="fade-down">
+        <Link to="/" className="inline-block">
+          <h1 className="text-3xl font-extrabold tracking-wider bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent uppercase">
+            Luxor
+          </h1>
+        </Link>
+        <h2 className="mt-4 text-2xl font-bold tracking-tight text-stone-100">
+          Verify OTP Code
+        </h2>
+        <p className="mt-2 text-sm text-stone-400">
+          Verification code sent to <span className="text-amber-400 font-medium">{email}</span>
+        </p>
       </div>
-      
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden" data-aos="fade-up">
-        <div className="p-8 lg:p-10">
-          <div className="mb-6">
-            <Link to="/sign-in" className="flex items-center text-gray-600 hover:text-gray-800 transition-colors">
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back to Sign In
-            </Link>
-          </div>
-          
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-100 text-yellow-700 mb-4">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4" data-aos="fade-up">
+        <div className="bg-stone-900/80 backdrop-blur-xl py-8 px-6 shadow-2xl rounded-2xl border border-amber-500/20 sm:px-10">
+          {error && (
+            <div className="mb-6 p-3 rounded-lg bg-red-900/30 border border-red-500/50 text-red-200 text-sm">
+              {error}
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              {isPasswordReset ? 'Reset Your Password' : 'Verify Your Email'}
-            </h2>
-            <p className="text-gray-600">
-              {isPasswordReset 
-                ? 'Enter the verification code sent to your email and set a new password' 
-                : 'Enter the verification code sent to your email'}
-            </p>
-            <p className="text-sm font-medium text-yellow-700 mt-2">{email}</p>
-          </div>
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div data-aos="fade-up" data-aos-delay="100">
-              <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-3">
-                Verification Code
-              </label>
-              <div className="flex gap-2 justify-center mb-1">
-                {otp.map((digit, index) => (
-                  <input
-                    key={index}
-                    type="text"
-                    ref={el => otpInputs.current[index] = el}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(e, index)}
-                    onKeyDown={(e) => handleKeyDown(e, index)}
-                    onPaste={index === 0 ? handlePaste : null}
-                    maxLength={1}
-                    className="w-12 h-14 text-center text-xl font-bold border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
-                    required
-                  />
-                ))}
-              </div>
-              <div className="text-center mt-3">
-                <p className="text-sm text-gray-500">
-                  Didn't receive the code?{' '}
-                  {resendTimeout > 0 ? (
-                    <span className="text-gray-400">
-                      Resend in {resendTimeout}s
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleResendOTP}
-                      disabled={resendLoading}
-                      className="font-medium text-yellow-700 hover:text-yellow-600 transition-colors"
-                    >
-                      {resendLoading ? 'Sending...' : 'Resend Code'}
-                    </button>
-                  )}
-                </p>
-              </div>
+          )}
+
+          <form onSubmit={handleVerify} className="space-y-6">
+            <div className="flex justify-between gap-2" onPaste={handlePaste}>
+              {otp.map((digit, idx) => (
+                <input
+                  key={idx}
+                  ref={(el) => (otpInputs.current[idx] = el)}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpChange(e, idx)}
+                  onKeyDown={(e) => handleKeyDown(e, idx)}
+                  className="w-12 h-14 text-center text-xl font-bold bg-stone-950 border border-stone-800 rounded-xl text-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                />
+              ))}
             </div>
-            
+
             {isPasswordReset && (
-              <>
-                <div data-aos="fade-up" data-aos-delay="200">
-                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                    New Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                    </div>
-                    <input
-                      id="newPassword"
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
-                      placeholder="••••••••"
-                      required={isPasswordReset}
-                      minLength={8}
-                    />
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Password must be at least 8 characters long
-                  </p>
-                </div>
-                
-                <div data-aos="fade-up" data-aos-delay="300">
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                    Confirm New Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                    </div>
-                    <input
-                      id="confirmPassword"
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300"
-                      placeholder="••••••••"
-                      required={isPasswordReset}
-                    />
-                  </div>
-                </div>
-              </>
+              <div>
+                <label htmlFor="new-password" className="block text-sm font-medium text-stone-300 mb-1">
+                  New password
+                </label>
+                <input
+                  id="new-password"
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={6}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="At least 6 characters"
+                  className="w-full px-4 py-3 bg-stone-950 border border-stone-800 rounded-xl text-stone-100 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                />
+              </div>
             )}
-            
-            <div data-aos="fade-up" data-aos-delay={isPasswordReset ? "400" : "200"}>
+
+            <button
+              type="submit"
+              disabled={loading || otp.join('').length !== 6}
+              className="w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-amber-500/30 rounded-xl shadow-lg text-sm font-semibold text-stone-950 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {loading ? (
+                <RefreshCw className="h-5 w-5 animate-spin text-stone-950" />
+              ) : (
+                <>
+                  <ShieldCheck className="h-5 w-5" />
+                  <span>{isPasswordReset ? "Reset password" : "Verify & Proceed"}</span>
+                </>
+              )}
+            </button>
+
+            <div className="flex items-center justify-between pt-2 text-xs">
+              <Link to="/sign-in" className="text-stone-400 hover:text-amber-400">
+                ← Back to Sign In
+              </Link>
               <button
-                type="submit"
-                className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-all duration-300 ${
-                  loading 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 shadow-lg hover:shadow-xl'
-                }`}
-                disabled={loading}
+                type="button"
+                disabled={resendCooldown > 0 || loading}
+                onClick={handleResendOTP}
+                className="text-amber-400 hover:text-amber-300 font-medium disabled:text-stone-500 disabled:cursor-not-allowed transition-colors"
               >
-                {loading ? (
-                  <div className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Verifying...
-                  </div>
-                ) : (
-                  isPasswordReset ? 'Reset Password' : 'Verify Account'
-                )}
+                {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
               </button>
             </div>
           </form>

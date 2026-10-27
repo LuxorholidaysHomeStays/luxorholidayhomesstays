@@ -19,6 +19,10 @@ const Newsletter = () => {
   const [showForm, setShowForm] = useState(false); // Changed from showModal
   const [email, setEmail] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showCampaignForm, setShowCampaignForm] = useState(false);
+  const [campaignSubject, setCampaignSubject] = useState('');
+  const [campaignBody, setCampaignBody] = useState('');
+  const [sendingCampaign, setSendingCampaign] = useState(false);
 
   const { authToken } = useAuth();
   const { addToast } = useToast();
@@ -47,7 +51,7 @@ const Newsletter = () => {
       const data = await response.json();
 
       if (data.success) {
-        setSubscribers(data.subscribers);
+        setSubscribers(data.subscribers || []);
       } else {
         throw new Error(data.error || 'Failed to fetch subscribers');
       }
@@ -171,13 +175,99 @@ const Newsletter = () => {
     }
   };
 
-  const exportSubscribers = () => {
-    window.open(`${API_BASE_URL}/api/admin/newsletter/export/csv`);
+  const exportSubscribers = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`${API_BASE_URL}/api/admin/newsletter/export`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to export subscribers');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `newsletter-subscribers-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+      addToast({
+        type: 'error',
+        message: err.message || 'Failed to export subscribers.'
+      });
+    }
+  };
+
+  const handleSendCampaign = async (e) => {
+    e.preventDefault();
+
+    if (!campaignSubject.trim() || !campaignBody.trim()) {
+      addToast({
+        type: 'error',
+        message: 'Please provide both subject and message body'
+      });
+      return;
+    }
+
+    setSendingCampaign(true);
+    let offset = 0;
+    let totalSent = 0;
+    let totalRemaining = subscribers.length;
+
+    try {
+      const token = localStorage.getItem('authToken');
+
+      while (offset < totalRemaining) {
+        const response = await fetch(`${API_BASE_URL}/api/admin/newsletter/send?offset=${offset}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            subject: campaignSubject,
+            html: campaignBody
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          totalSent += data.sent || 0;
+          offset = data.nextOffset || offset + 50;
+          totalRemaining = data.remaining === true ? totalRemaining : 0;
+        } else {
+          throw new Error(data.error || 'Failed to send campaign');
+        }
+      }
+
+      addToast({
+        type: 'success',
+        message: `Campaign sent successfully to ${totalSent} subscribers!`
+      });
+      setCampaignSubject('');
+      setCampaignBody('');
+      setShowCampaignForm(false);
+    } catch (err) {
+      console.error('Error sending campaign:', err);
+      addToast({
+        type: 'error',
+        message: err.message || 'Failed to send campaign. Please try again.'
+      });
+    } finally {
+      setSendingCampaign(false);
+    }
   };
 
   // Filter subscribers based on search term
-  const filteredSubscribers = subscribers.filter(subscriber => 
-    subscriber.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredSubscribers = subscribers.filter(subscriber =>
+    (subscriber.email ?? '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -186,7 +276,7 @@ const Newsletter = () => {
         <h1 className="text-2xl font-bold text-gray-800">Newsletter Subscribers</h1>
         <div className="flex space-x-3">
           <button
-            onClick={() => setShowForm(!showForm)} // Toggle form visibility
+            onClick={() => setShowForm(!showForm)}
             className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded-md flex items-center"
           >
             {showForm ? (
@@ -198,6 +288,22 @@ const Newsletter = () => {
               <>
                 <PlusIcon className="h-5 w-5 mr-1" />
                 Add Subscriber
+              </>
+            )}
+          </button>
+          <button
+            onClick={() => setShowCampaignForm(!showCampaignForm)}
+            className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md flex items-center"
+          >
+            {showCampaignForm ? (
+              <>
+                <XMarkIcon className="h-5 w-5 mr-1" />
+                Cancel
+              </>
+            ) : (
+              <>
+                <EnvelopeIcon className="h-5 w-5 mr-1" />
+                Send Campaign
               </>
             )}
           </button>
@@ -255,6 +361,86 @@ const Newsletter = () => {
                 >
                   <CheckIcon className="h-5 w-5 mr-1" />
                   Add Subscriber
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Send Campaign Form */}
+      {showCampaignForm && (
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 mb-6">
+          <div className="border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-gray-800">Send Newsletter Campaign</h2>
+            <button
+              onClick={() => setShowCampaignForm(false)}
+              className="text-gray-400 hover:text-gray-500"
+              type="button"
+            >
+              <XMarkIcon className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="p-6">
+            <form onSubmit={handleSendCampaign} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Subject
+                </label>
+                <input
+                  type="text"
+                  value={campaignSubject}
+                  onChange={(e) => setCampaignSubject(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter email subject"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Message Body
+                </label>
+                <textarea
+                  value={campaignBody}
+                  onChange={(e) => setCampaignBody(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={6}
+                  placeholder="Enter email message"
+                  required
+                />
+              </div>
+
+              <div className="text-sm text-gray-500">
+                This will send to {subscribers.length} subscribers.
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setShowCampaignForm(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  disabled={sendingCampaign}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md flex items-center"
+                  disabled={sendingCampaign}
+                >
+                  {sendingCampaign ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <EnvelopeIcon className="h-5 w-5 mr-1" />
+                      Send Campaign
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -329,7 +515,7 @@ const Newsletter = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredSubscribers.map((subscriber) => (
-                <tr key={subscriber._id} className="hover:bg-gray-50">
+                <tr key={subscriber.id || subscriber._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <EnvelopeIcon className="h-5 w-5 text-yellow-500 mr-3" />
@@ -354,7 +540,7 @@ const Newsletter = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
-                      onClick={() => handleUpdateSubscriber(subscriber._id, !subscriber.subscribed)}
+                      onClick={() => handleUpdateSubscriber(subscriber.id || subscriber._id, !subscriber.subscribed)}
                       className={`mr-3 ${
                         subscriber.subscribed
                           ? 'text-red-600 hover:text-red-900'
@@ -364,7 +550,7 @@ const Newsletter = () => {
                       {subscriber.subscribed ? 'Deactivate' : 'Activate'}
                     </button>
                     <button
-                      onClick={() => handleDeleteSubscriber(subscriber._id)}
+                      onClick={() => handleDeleteSubscriber(subscriber.id || subscriber._id)}
                       className="text-red-600 hover:text-red-900"
                     >
                       <TrashIcon className="h-5 w-5" />

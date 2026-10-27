@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { API_BASE_URL } from "../../config/api"
 import { useAuth } from "../../context/AuthContext"
@@ -16,6 +14,7 @@ import {
   HomeIcon,
 } from "@heroicons/react/24/outline"
 
+import StarRating from "../../components/StarRating";
 // Helper function to get villa image based on villa name with better matching
 const getVillaImage = (villaName) => {
   // Return an SVG data URI with the villa name
@@ -38,7 +37,7 @@ const VillaManagement = () => {
 
   const [villas, setVillas] = useState([])
   const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false) // Change showModal to showForm
+  const [showForm, setShowForm] = useState(false)
   const [editingVilla, setEditingVilla] = useState(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [formData, setFormData] = useState({
@@ -57,8 +56,9 @@ const VillaManagement = () => {
 
   
   useEffect(() => {
-    fetchVillas()
-  }, [])
+    fetchVillas();
+  }, []);
+
 
   // Update the fetchVillas function
   const fetchVillas = async () => {
@@ -91,7 +91,7 @@ const VillaManagement = () => {
       console.log("Fetched villas list:", villasList);
 
       // For each villa, try to fetch its image (but don't fail if image fetch fails)
-      const updatedVillas = await Promise.all(
+      const villasWithImages = await Promise.all(
         villasList.map(async (villa) => {
           // Only try to fetch image if it doesn't already have one
           if (!villa.mainImage) {
@@ -126,6 +126,11 @@ const VillaManagement = () => {
           return villa;
         })
       );
+
+      const updatedVillas = villasWithImages.map(villa => ({
+        ...villa,
+        averageRating: Number(villa.rating) || 0
+      }));
 
       setVillas(updatedVillas);
     } catch (error) {
@@ -198,63 +203,58 @@ const VillaManagement = () => {
     e.preventDefault();
     
     try {
-      // Check if image is provided for new villas
-      if (!editingVilla && !formData.mainImage) {
-        addToast("Please upload a main image for the villa", "error");
-        return;
-      }
-      
+      const defaultImage = "/AmrithPalace/AP8.jpg";
+      const finalImage = formData.mainImage || defaultImage;
+
       setLoading(true);
       
-      // Prepare villa data (without image)
+      const priceVal = parseFloat(formData.price) || 0;
+      const weekendPriceVal = parseFloat(formData.weekendPrice) || Math.round(priceVal * 1.5);
+      const guestsVal = parseInt(formData.maxGuests) || parseInt(formData.guests) || 1;
+
+      // Prepare villa data matching Go backend struct
       const villaData = {
         name: formData.name,
-        description: formData.description,
-        location: formData.location,
-        price: parseFloat(formData.price),
-        maxGuests: parseInt(formData.maxGuests),
-        bedrooms: parseInt(formData.bedrooms),
-        bathrooms: parseInt(formData.bathrooms)
+        description: formData.description || "Luxury villa with premium amenities.",
+        longDescription: formData.longDescription || formData.description || "Experience unparalleled luxury in our stunning villa...",
+        location: formData.location || "Perur ECR, Chennai",
+        price: priceVal,
+        weekdayPrice: priceVal,
+        weekendPrice: weekendPriceVal,
+        guests: guestsVal,
+        bedrooms: parseInt(formData.bedrooms) || 1,
+        bathrooms: parseInt(formData.bathrooms) || 1,
+        mainImage: finalImage,
+        images: [finalImage],
+        amenities: ["WiFi", "AC", "Private Pool", "Free Parking", "Kitchen"],
       };
       
-      console.log("Submitting villa data:", villaData);
+      console.log("Submitting villa data to Go backend:", villaData);
       
-      // Define API endpoint based on whether we're creating or updating
+      const villaId = editingVilla?.id || editingVilla?._id;
       const url = editingVilla 
-        ? `${API_BASE_URL}/api/villas/${editingVilla._id}` 
-        : `${API_BASE_URL}/api/villas`;
+        ? `${API_BASE_URL}/api/admin/villas/${villaId}` 
+        : `${API_BASE_URL}/api/admin/villas`;
       const method = editingVilla ? "PUT" : "POST";
 
-      // Send villa data to API
+      const token = authToken || localStorage.getItem("authToken");
+
+      // Send villa data to Go API
       const response = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${authToken}`
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify(villaData)
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to ${editingVilla ? 'update' : 'create'} villa: ${errorData.message || response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || `Failed to ${editingVilla ? 'update' : 'create'} villa`);
       }
 
-      // Get the response data (including the villa ID for new villas)
-      const responseData = await response.json();
-      
-      // Upload image if available
-      let imageUploadSuccess = true;
-      if (formData.mainImage) {
-        imageUploadSuccess = await uploadVillaImage(formData.name, formData.mainImage);
-      }
-      
-      // Show appropriate toast messages
-      if (imageUploadSuccess) {
-        addToast(`Villa ${editingVilla ? 'updated' : 'created'} successfully`, "success");
-      } else {
-        addToast(`Villa ${editingVilla ? 'updated' : 'created'}, but image upload failed. Try again later.`, "warning");
-      }
+      addToast(`Villa ${editingVilla ? 'updated' : 'created'} successfully`, "success");
       
       // Reset form and UI state
       setShowForm(false);
@@ -282,59 +282,24 @@ const VillaManagement = () => {
 
   // Modify the getVillaImage function to use the villa.mainImage if available
   const getDisplayVillaImage = (villa) => {
-    // If villa has a mainImage property and it's a non-empty string
     if (villa.mainImage && typeof villa.mainImage === 'string' && villa.mainImage.length > 0) {
-      return villa.mainImage; // Use the base64 image from API
+      return villa.mainImage;
     }
-    
-    // Otherwise fall back to our SVG generator
     return getVillaImage(villa.name);
   }
 
-  // Update the handleEdit function to match your actual villa model
   const handleEdit = async (villa) => {
     setEditingVilla(villa);
-    
-    console.log("Editing villa:", villa);
-    
-    // Copy the basic villa details to the form - NO amenities field
     setFormData({
-      name: villa.name,
+      name: villa.name || '',
       description: villa.description || '',
       location: villa.location || '',
-      price: villa.price || 0,
-      maxGuests: villa.maxGuests || villa.guests || 1,
+      price: villa.price || villa.weekdayPrice || 0,
+      maxGuests: villa.guests || villa.maxGuests || 1,
       bedrooms: villa.bedrooms || 1,
       bathrooms: villa.bathrooms || 1,
       mainImage: villa.mainImage || null,
     });
-    
-    // If mainImage isn't available in the villa object, try to fetch it
-    if (!villa.mainImage) {
-      try {
-        const imageResponse = await fetch(
-          `${API_BASE_URL}/api/admin/villa-images/${encodeURIComponent(villa.name)}`,
-          {
-            headers: {
-              Authorization: `Bearer ${authToken}`,
-            },
-          }
-        );
-
-        if (imageResponse.ok) {
-          const imageData = await imageResponse.json();
-          if (imageData.success && imageData.image) {
-            setFormData(prev => ({
-              ...prev,
-              mainImage: imageData.image
-            }));
-          }
-        }
-      } catch (imageError) {
-        console.error(`Error fetching image for ${villa.name}:`, imageError);
-      }
-    }
-    
     setShowForm(true);
   }
 
@@ -347,11 +312,17 @@ const VillaManagement = () => {
   }
 
   const handleDelete = async (villaId) => {
+    if (!villaId) {
+      addToast("Unable to delete villa: missing villa ID", "error")
+      return
+    }
+
     try {
-      const response = await fetch(`${API_BASE_URL}/api/villas/${villaId}`, {
+      const token = authToken || localStorage.getItem("authToken");
+      const response = await fetch(`${API_BASE_URL}/api/admin/villas/${villaId}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${authToken}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       })
@@ -411,7 +382,7 @@ const VillaManagement = () => {
         return true;
       } else {
         const errorData = await response.json();
-        console.error(`Failed to upload image: ${errorData.message || response.statusText}`);
+        console.error(`Failed to upload image: ${errorData.error || errorData.message || response.statusText}`);
         return false;
       }
     } catch (error) {
@@ -673,6 +644,9 @@ const VillaManagement = () => {
               <div className="absolute bottom-3 left-3 right-3">
                 <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2">
                   <h3 className="text-lg font-semibold text-gray-800 truncate">{villa.name}</h3>
+                  {villa.averageRating > 0 && (
+                    <StarRating rating={villa.averageRating} />
+                  )}
                 </div>
               </div>
             </div>
@@ -761,7 +735,7 @@ const VillaManagement = () => {
 
       {/* Delete confirmation modal */}
       {deleteConfirmation && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-900/75 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Delete Villa</h3>
             <p className="text-gray-700 mb-6">
@@ -775,7 +749,7 @@ const VillaManagement = () => {
                 Cancel
               </button>
               <button
-                onClick={() => handleDelete(deleteConfirmation._id)}
+                onClick={() => handleDelete(deleteConfirmation.id)}
                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
               >
                 Delete

@@ -44,7 +44,7 @@ const UserProfiles = () => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/user-profiles`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -59,9 +59,9 @@ const UserProfiles = () => {
       const data = await response.json();
 
       if (data.success) {
-        setProfiles(data.profiles);
+        setProfiles(data.users || []); // Update parsing to data.users
       } else {
-        throw new Error(data.error || 'Failed to fetch user profiles');
+        throw new Error(data.error || 'Failed to fetch users');
       }
     } catch (err) {
       console.error('Error fetching user profiles:', err);
@@ -122,21 +122,14 @@ const UserProfiles = () => {
 
     try {
       const url = editingProfile 
-        ? `${API_BASE_URL}/api/admin/user-profiles/${editingProfile._id}`
-        : `${API_BASE_URL}/api/admin/user-profiles`;
+        ? `${API_BASE_URL}/api/admin/users/${editingProfile.id || editingProfile._id}`
+        : `${API_BASE_URL}/api/admin/users`;
       
       const method = editingProfile ? 'PUT' : 'POST';
       
       const submitData = {
         ...formData
       };
-
-      // If creating a new profile, user ID is required
-      if (!editingProfile) {
-        const userId = prompt("Please enter the User ID for this profile:");
-        if (!userId) return;
-        submitData.userId = userId;
-      }
       
       const response = await fetch(url, {
         method,
@@ -149,12 +142,12 @@ const UserProfiles = () => {
 
       const data = await response.json();
 
-      if (data.success) {
+      if (data.success || response.ok) {
         addToast({
           type: 'success',
           message: editingProfile 
-            ? 'User profile updated successfully!' 
-            : 'User profile created successfully!'
+            ? 'User updated successfully!' 
+            : 'User created successfully!'
         });
         fetchProfiles();
         closeModal();
@@ -165,18 +158,18 @@ const UserProfiles = () => {
       console.error('Error submitting profile:', err);
       addToast({
         type: 'error',
-        message: err.message || 'Failed to save profile. Please try again.'
+        message: err.message || 'Failed to save user. Please try again.'
       });
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this user profile? This action cannot be undone.')) {
+    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       return;
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/user-profiles/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/users/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -186,14 +179,14 @@ const UserProfiles = () => {
 
       const data = await response.json();
 
-      if (data.success) {
+      if (data.success || response.ok) {
         addToast({
           type: 'success',
-          message: 'User profile deleted successfully!'
+          message: 'User deleted successfully!'
         });
         fetchProfiles();
       } else {
-        throw new Error(data.error || 'Failed to delete user profile');
+        throw new Error(data.error || 'Failed to delete user');
       }
     } catch (err) {
       console.error('Error deleting profile:', err);
@@ -220,6 +213,12 @@ const UserProfiles = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">User Profiles Management</h1>
+        <button
+          onClick={() => openModal()}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+        >
+          <PlusIcon className="h-5 w-5" /> Add User
+        </button>
       </div>
 
       {/* Search */}
@@ -280,7 +279,7 @@ const UserProfiles = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredProfiles.map((profile) => (
-                <tr key={profile._id} className="hover:bg-gray-50">
+                <tr key={profile.id || profile._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       {profile.profileImage ? (
@@ -326,7 +325,7 @@ const UserProfiles = () => {
                       <PencilIcon className="h-5 w-5" />
                     </button>
                     <button
-                      onClick={() => handleDelete(profile._id)}
+                      onClick={() => handleDelete(profile.id || profile._id)}
                       className="text-red-600 hover:text-red-900"
                     >
                       <TrashIcon className="h-5 w-5" />

@@ -18,7 +18,8 @@ const directories = [
   'public/ramwatervilla',
   'public/LavishVilla 1',
   'public/LavishVilla 2',
-  'public/LavishVilla 3'
+  'public/LavishVilla 3',
+  'public/opal'
 ];
 
 // Process each directory

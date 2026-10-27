@@ -34,7 +34,7 @@ const CancelRequestsManagement = () => {
     try {
       setLoading(true);
       
-      const response = await fetch(`${API_BASE_URL}/api/cancel-requests`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/cancel-requests`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -47,7 +47,8 @@ const CancelRequestsManagement = () => {
       }
 
       const data = await response.json();
-      setCancelRequests(data.requests);
+      const list = Array.isArray(data) ? data : (data.requests || data.data || []);
+      setCancelRequests(list);
     } catch (error) {
       console.error('Error fetching cancellation requests:', error);
       addToast({
@@ -70,8 +71,8 @@ const CancelRequestsManagement = () => {
     
     try {
       setProcessingAction(true);
-      
-      const response = await fetch(`${API_BASE_URL}/api/cancel-requests/${selectedRequest._id}`, {
+      const reqId = selectedRequest.id || selectedRequest._id;
+      const response = await fetch(`${API_BASE_URL}/api/admin/cancel-requests/${reqId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -92,7 +93,7 @@ const CancelRequestsManagement = () => {
       // Update the request in the list
       setCancelRequests(prevRequests => 
         prevRequests.map(req => 
-          req._id === selectedRequest._id 
+          (req.id || req._id) === (selectedRequest.id || selectedRequest._id) 
             ? { ...req, status, adminResponse, adminActionDate: new Date() } 
             : req
         )
@@ -181,11 +182,13 @@ const CancelRequestsManagement = () => {
     if (!searchTerm) return true;
     
     const searchLower = searchTerm.toLowerCase();
+    const reqId = String(request.id || request._id || '').toLowerCase();
+    const bookId = String(request.bookingId?.id || request.bookingId?._id || request.bookingId || '').toLowerCase();
     return (
-      request.userEmail?.toLowerCase().includes(searchLower) ||
-      request.villaName?.toLowerCase().includes(searchLower) ||
-      request._id.toLowerCase().includes(searchLower) ||
-      request.bookingId?._id?.toLowerCase().includes(searchLower)
+      (request.userEmail || '').toLowerCase().includes(searchLower) ||
+      (request.villaName || '').toLowerCase().includes(searchLower) ||
+      reqId.includes(searchLower) ||
+      bookId.includes(searchLower)
     );
   });
 
@@ -281,10 +284,10 @@ const CancelRequestsManagement = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredRequests.map((request) => (
-                <tr key={request._id} className="hover:bg-gray-50">
+                <tr key={request.id || request._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">#{request._id.substring(0, 8).toUpperCase()}</div>
-                    <div className="text-sm text-gray-500">Booking #{request.bookingId?._id.substring(0, 6)}</div>
+                    <div className="text-sm font-medium text-gray-900">#{String(request.id || request._id || '').substring(0, 8).toUpperCase()}</div>
+                    <div className="text-sm text-gray-500">Booking #{String(request.bookingId?.id || request.bookingId?._id || request.bookingId || '').substring(0, 6)}</div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm font-medium text-gray-900">{request.villaName || 'Unknown Villa'}</div>

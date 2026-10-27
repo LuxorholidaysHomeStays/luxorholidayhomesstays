@@ -1,10 +1,9 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { useParams, useNavigate, useLocation } from "react-router-dom"
 import { API_BASE_URL } from "../config/api"
+import { api } from "../utils/apiClient"
 import { useAuth } from "../context/AuthContext"
-import Swal from "sweetalert2"
+import { toast } from "../utils/toast"
 import {
   Calendar,
   Users,
@@ -23,14 +22,15 @@ import {
   Share2,
 } from "lucide-react"
 
-// Import villa images
-import AP1 from "/AmrithPalace/AP8.jpg"
-import EC1 from "/eastcoastvilla/EC1.jpg"
-import anandvilla1 from "/empireanandvillasamudra/anandvilla1.jpg"
-import RW1 from "/ramwatervilla/RW19.jpg"
-import LAV1 from "/LavishVilla 1/lvone18.jpg"
-import LAV2 from "/LavishVilla 2/lvtwo22.jpg"
-import LAV3 from "/LavishVilla 3/lvthree5.jpg"
+// Import villa images from src/assets for Vite asset hashing
+import AP1 from "../assets/villas/AmrithPalace/AP8.jpg"
+import EC1 from "../assets/villas/eastcoastvilla/EC1.jpg"
+import anandvilla1 from "../assets/villas/empireanandvillasamudra/anandvilla1.jpg"
+import RW1 from "../assets/villas/ramwatervilla/RW19.jpg"
+import LAV1 from "../assets/villas/LavishVilla 1/lvone18.jpg"
+import LAV2 from "../assets/villas/LavishVilla 2/lvtwo22.jpg"
+import LAV3 from "../assets/villas/LavishVilla 3/lvthree5.jpg"
+import OPAL5 from "../assets/villas/opal/opal5.jpg"
 
 const villaImageMap = {
   "Amrith Palace": AP1,
@@ -40,6 +40,8 @@ const villaImageMap = {
   "Lavish Villa I": LAV1,
   "Lavish Villa II": LAV2,
   "Lavish Villa III": LAV3,
+  "Opal Villa": OPAL5,
+  "Opal": OPAL5,
   default: AP1,
 }
 
@@ -51,7 +53,9 @@ const getVillaImage = (villaName) => {
   }
 
   const lowerName = villaName.toLowerCase()
-  if (lowerName.includes("amrith") || lowerName.includes("palace")) {
+  if (lowerName.includes("opal")) {
+    return villaImageMap["Opal Villa"]
+  } else if (lowerName.includes("amrith") || lowerName.includes("palace")) {
     return villaImageMap["Amrith Palace"]
   } else if (lowerName.includes("east") || lowerName.includes("coast")) {
     return villaImageMap["East Coast Villa"]
@@ -75,6 +79,13 @@ const getVillaImage = (villaName) => {
   return villaImageMap.default
 }
 
+const getShortConfirmationId = (booking, fallback = "") => {
+  const rawId = String(booking?.id ?? booking?._id ?? fallback)
+  const compactId = rawId.replace(/[^a-z0-9]/gi, "").slice(-8).toUpperCase()
+  return compactId || "PENDING"
+}
+
+
 const PrintStyles = () => (
   <style type="text/css" media="print">
     {`
@@ -85,12 +96,25 @@ const PrintStyles = () => (
       display: block !important;
     }
     .print-container {
-      width: 100% !important;
-      max-width: 100% !important;
-      margin: 0 !important;
+      width: 90mm !important;
+      max-width: 90mm !important;
+      margin: 0 auto !important;
       padding: 0 !important;
     }
-    body {
+    .ticket-document {
+      width: 90mm !important;
+      max-width: 90mm !important;
+      margin: 0 auto !important;
+      border: 1px solid #e5c35b !important;
+      border-radius: 10px !important;
+      overflow: hidden !important;
+      box-shadow: none !important;
+    }
+    .ticket-document .ticket-image { height: 36mm !important; }
+    .ticket-document .ticket-content { padding: 5mm !important; }
+    .ticket-document .ticket-grid { gap: 3mm !important; }
+    .ticket-document .ticket-hide { display: none !important; }
+    body { 
       background-color: white !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
@@ -108,7 +132,8 @@ const PrintStyles = () => (
       page-break-inside: avoid !important;
     }
     @page {
-      margin: 1cm;
+      size: 90mm auto;
+      margin: 4mm;
     }
     * {
       -webkit-print-color-adjust: exact !important;
@@ -274,26 +299,13 @@ const BookingDetails = () => {
       // Store in sessionStorage to persist across navigation
       sessionStorage.setItem('redirectAfterLogin', JSON.stringify(currentState))
       
-      Swal.fire({
-        icon: "warning",
-        title: "Authentication Required",
-        text: `Please log in to proceed with ${step}.`,
-        confirmButtonColor: "#ca8a04",
-        confirmButtonText: "Go to Sign In",
-        showCancelButton: true,
-        cancelButtonText: "Cancel",
-        allowOutsideClick: false,
-        allowEscapeKey: false
-      }).then((result) => {
-        if (result.isConfirmed) {
-          navigate("/sign-in", { 
-            state: { 
-              redirectTo: location.pathname,
-              redirectState: currentState
-            }
-          })
+      toast.warning(`Please log in to proceed with ${step}.`);
+      navigate("/sign-in", { 
+        state: { 
+          redirectTo: location.pathname,
+          redirectState: currentState
         }
-      })
+      });
       return false // Not authenticated
     }
     return true // Authenticated
@@ -314,24 +326,13 @@ const BookingDetails = () => {
       // Store in sessionStorage to persist across navigation
       sessionStorage.setItem('redirectAfterLogin', JSON.stringify(currentState))
       
-      Swal.fire({
-        icon: "warning",
-        title: "Authentication Required",
-        text: "Please log in to view your booking details.",
-        confirmButtonColor: "#ca8a04",
-        confirmButtonText: "Go to Sign In",
-        allowOutsideClick: false,
-        allowEscapeKey: false
-      }).then((result) => {
-        if (result.isConfirmed) {
-          navigate("/sign-in", { 
-            state: { 
-              redirectTo: location.pathname,
-              redirectState: currentState
-            }
-          })
+      toast.warning("Please log in to view your booking details.");
+      navigate("/sign-in", { 
+        state: { 
+          redirectTo: location.pathname,
+          redirectState: currentState
         }
-      })
+      });
       return
     }
 
@@ -389,7 +390,7 @@ const BookingDetails = () => {
 
   useEffect(() => {
     if (booking && booking.email) {
-      fetchGuestDetails(booking.email)
+      fetchGuestDetails()
     }
   }, [booking])
 
@@ -398,23 +399,45 @@ const BookingDetails = () => {
       setLoading(true)
       console.log("Fetching booking details for ID:", bookingId)
 
+      const token = authToken || localStorage.getItem("authToken") || localStorage.getItem("token")
       const response = await fetch(`${API_BASE_URL}/api/bookings/${bookingId}`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${authToken}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`)
+      if (response.ok) {
+        const data = await response.json()
+        const bookingData = data.booking || data
+        console.log("Booking details received:", bookingData)
+        setBooking(bookingData)
+        setLoading(false)
+        return
       }
 
-      const data = await response.json()
-      console.log("Booking details received:", data)
-      setBooking(data)
-      setLoading(false)
+      // Fallback: Fetch user's bookings and find by ID
+      const myBookingsRes = await fetch(`${API_BASE_URL}/api/bookings/my`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (myBookingsRes.ok) {
+        const myData = await myBookingsRes.json()
+        const bookingsList = myData.bookings || myData || []
+        const found = bookingsList.find(b => (b.id === bookingId || b._id === bookingId))
+        if (found) {
+          setBooking(found)
+          setLoading(false)
+          return
+        }
+      }
+
+      throw new Error("Unable to load booking details.")
     } catch (err) {
       console.error("Error fetching booking details:", err)
       setError(err.message || "Unable to load booking details. Please try again later.")
@@ -422,32 +445,15 @@ const BookingDetails = () => {
     }
   }
 
-  const fetchGuestDetails = async (email) => {
-    if (!email || !authToken) return
+  const fetchGuestDetails = async () => {
+    if (!authToken) return
 
     try {
       setLoadingGuestInfo(true)
-      const response = await fetch(
-        `${API_BASE_URL}/api/bookings/guest-details?email=${encodeURIComponent(email)}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      )
-
-      if (!response.ok) {
-        console.error("Failed to fetch guest details:", response.status)
-        return
-      }
-
-      const data = await response.json()
-      if (data.success) {
-        setGuestContactInfo(data.guestDetails)
-        console.log("Guest details loaded:", data.guestDetails)
-      }
+      // No email is sent: the server derives the address from the session token,
+      // so this can only ever return the signed-in guest's own details.
+      const data = await api("/api/bookings/guest-details")
+      if (data?.success) setGuestContactInfo(data.guestDetails)
     } catch (error) {
       console.error("Error fetching guest details:", error)
     } finally {
@@ -913,7 +919,7 @@ const BookingDetails = () => {
 
         {/* Booking Header */}
         <div
-          className={`${isPrintView ? "bg-white border-emerald-100" : "bg-white border-gray-200"} rounded-xl ${isPrintView ? "" : "shadow-md"} overflow-hidden mb-6 sm:mb-8 page-break-inside-avoid border relative`}
+          className={`${isPrintView ? "ticket-document bg-white border-emerald-100" : "bg-white border-gray-200"} rounded-xl ${isPrintView ? "" : "shadow-md"} overflow-hidden mb-6 sm:mb-8 page-break-inside-avoid border relative`}
         >
           {/* Processing overlay */}
           {booking.processingCancel && (
@@ -933,7 +939,7 @@ const BookingDetails = () => {
 
           <div className="md:flex">
             {/* Villa Image */}
-            <div className="md:w-1/3 h-48 sm:h-60 md:h-auto relative overflow-hidden">
+            <div className="ticket-image md:w-1/3 h-48 sm:h-60 md:h-auto relative overflow-hidden">
               <img
                 src={villaImage || getVillaImage(booking.villaName)}
                 alt={booking.villaName}
@@ -949,12 +955,12 @@ const BookingDetails = () => {
             </div>
 
             {/* Booking Summary */}
-            <div className="md:w-2/3 p-4 sm:p-6">
+            <div className="ticket-content md:w-2/3 p-4 sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
                 <div>
                   <div className="text-xs sm:text-sm text-gray-500 mb-1">Booking Reference</div>
                   <div className="text-lg sm:text-xl font-bold text-yellow-600">
-                    #{booking._id.substring(0, 8).toUpperCase()}
+                    #{getShortConfirmationId(booking, bookingId)}
                   </div>
                 </div>
                 <div
@@ -1045,7 +1051,7 @@ const BookingDetails = () => {
                       <span className="font-medium">{formatShortDate(booking.bookingDate || booking.createdAt)}</span>
                     </div>
                     <div>
-                      Confirmation ID: <span className="font-medium">{booking._id}</span>
+                      Confirmation ID: <span className="font-medium">{getShortConfirmationId(booking, bookingId)}</span>
                     </div>
                   </div>
                 </div>
@@ -1055,10 +1061,10 @@ const BookingDetails = () => {
         </div>
 
         {/* Cancellation Request Status - New Section */}
-        {booking.cancelRequestPending && <CancellationRequestStatus booking={booking} />}
+        {!isPrintView && booking.cancelRequestPending && <CancellationRequestStatus booking={booking} />}
 
         {/* Booking Details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8 ${isPrintView ? "ticket-hide" : ""}`}>
           {/* Guest Information - Enhanced with Contact Info */}
           <div
             className={`${isPrintView ? "bg-white border-emerald-100" : "bg-white border-gray-200"} p-4 sm:p-6 rounded-xl ${isPrintView ? "" : "shadow-md"} page-break-inside-avoid border`}
@@ -1080,37 +1086,43 @@ const BookingDetails = () => {
             </h3>
             <div className="space-y-3 sm:space-y-4">
               {(() => {
-                // Calculate the correct breakdown from totalAmount
-                // Formula: totalAmount = basePrice + serviceFee + taxAmount
-                // Where: serviceFee = basePrice * 0.05, taxAmount = (basePrice + serviceFee) * 0.18
-                // Solving: totalAmount = basePrice + (basePrice * 0.05) + ((basePrice + basePrice * 0.05) * 0.18)
-                // totalAmount = basePrice * (1 + 0.05 + (1.05 * 0.18))
-                // totalAmount = basePrice * (1 + 0.05 + 0.189)
-                // totalAmount = basePrice * 1.239
-                // Therefore: basePrice = totalAmount / 1.239
-                
-                const basePrice = Math.round(booking.totalAmount / 1.239);
-                const serviceFee = Math.round(basePrice * 0.05);
-                const taxAmount = Math.round((basePrice + serviceFee) * 0.18);
-                
+                // The server prices the stay and stores the breakdown, so the
+                // receipt shows what was actually charged. Dividing the total by
+                // 1.239 invented a fee and a tax that older bookings never charged.
+                const hasBreakdown =
+                  booking.baseAmount != null && booking.serviceFee != null && booking.gstAmount != null;
+
+                if (!hasBreakdown) {
+                  return (
+                    <div className="flex justify-between items-center">
+                      <div className="text-gray-500 text-xs sm:text-sm">
+                        Total charged for {booking.totalDays} {booking.totalDays === 1 ? 'night' : 'nights'}
+                      </div>
+                      <div className="font-medium text-gray-700 text-xs sm:text-sm">
+                        ₹{Number(booking.totalAmount || 0).toLocaleString()}
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
                   <>
                     <div className="flex justify-between items-center">
                       <div className="text-gray-500 text-xs sm:text-sm">Base Price × {booking.totalDays} nights</div>
                       <div className="font-medium text-gray-700 text-xs sm:text-sm">
-                        ₹{basePrice.toLocaleString()}
+                        ₹{Number(booking.baseAmount).toLocaleString()}
                       </div>
                     </div>
                     <div className="flex justify-between items-center">
                       <div className="text-gray-500 text-xs sm:text-sm">Service Fee (5%)</div>
                       <div className="font-medium text-gray-700 text-xs sm:text-sm">
-                        ₹{serviceFee.toLocaleString()}
+                        ₹{Number(booking.serviceFee).toLocaleString()}
                       </div>
                     </div>
                     <div className="flex justify-between items-center">
                       <div className="text-gray-500 text-xs sm:text-sm">Taxes (18%)</div>
                       <div className="font-medium text-gray-700 text-xs sm:text-sm">
-                        ₹{taxAmount.toLocaleString()}
+                        ₹{Number(booking.gstAmount).toLocaleString()}
                       </div>
                     </div>
                   </>
@@ -1180,7 +1192,7 @@ const BookingDetails = () => {
 
         {/* Cancellation Policy */}
         <div
-          className={`${isPrintView ? "bg-white border-emerald-100" : "bg-white border-gray-200"} p-4 sm:p-6 rounded-xl ${isPrintView ? "" : "shadow-md"} mb-6 sm:mb-8 page-break-inside-avoid border`}
+          className={`${isPrintView ? "ticket-hide " : ""}${isPrintView ? "bg-white border-emerald-100" : "bg-white border-gray-200"} p-4 sm:p-6 rounded-xl ${isPrintView ? "" : "shadow-md"} mb-6 sm:mb-8 page-break-inside-avoid border`}
         >
           <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 flex items-center gap-2 text-gray-800">
             <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
@@ -1213,12 +1225,9 @@ const BookingDetails = () => {
 
         {/* Print view footer */}
         {isPrintView && (
-          <div className="mt-8 text-center text-gray-700 text-sm print-only">
-            <p>Thank you for choosing Luxor Stay!</p>
-            <p>This is an electronic confirmation and does not require a physical signature.</p>
-            <div className="border-t border-yellow-200 mt-4 pt-2">
-              <p>Luxor Stay Pvt. Ltd. | www.luxorstay.com | +91 79040 40739</p>
-            </div>
+          <div className="mt-3 text-center text-gray-700 text-[10px] print-only">
+            <p>Thank you for choosing Luxor Holiday Home Stays.</p>
+            <p>Present this ticket and a valid ID at check-in.</p>
           </div>
         )}
 

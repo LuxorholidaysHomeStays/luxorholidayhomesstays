@@ -23,19 +23,16 @@ const VillaInfoManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingVillaInfo, setEditingVillaInfo] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [formData, setFormData] = useState({
+  const emptyForm = {
     villaId: '',
     villaName: '',
+    checkIn: '14:00',
+    checkOut: '12:00',
+    contactPhone: '',
     fullDescription: '',
     shortDescription: '',
     amenities: [],
-    location: {
-      address: '',
-      coordinates: '',
-      description: '',
-      mapUrl: '',
-      nearbyAttractions: []
-    },
+    location: { address: '', coordinates: '', description: '', mapUrl: '', nearbyAttractions: [] },
     weekdayPrice: 0,
     weekendPrice: 0,
     maxGuests: 0,
@@ -43,7 +40,8 @@ const VillaInfoManagement = () => {
     bedrooms: 0,
     bathrooms: 0,
     images: []
-  });
+  };
+  const [formData, setFormData] = useState(emptyForm);
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
   const [nearbyAttraction, setNearbyAttraction] = useState('');
   const [imageUrl, setImageUrl] = useState('');
@@ -59,13 +57,10 @@ const VillaInfoManagement = () => {
     try {
       setLoading(true);
       
-      // Fetch villa infos, villas, and amenities in parallel
-      const [villaInfosResponse, villasResponse, amenitiesResponse] = await Promise.all([
+      // Fetch actual villa-info records, villas for selection, and amenities.
+      const [villaInfoResponse, villasResponse, amenitiesResponse] = await Promise.all([
         fetch(`${API_BASE_URL}/api/villa-info`, {
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
         }),
         fetch(`${API_BASE_URL}/api/villas`, {
           headers: {
@@ -73,7 +68,7 @@ const VillaInfoManagement = () => {
             'Content-Type': 'application/json',
           },
         }),
-        fetch(`${API_BASE_URL}/api/amenities`, {
+        fetch(`${API_BASE_URL}/api/admin/amenities`, {
           headers: {
             'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json',
@@ -81,19 +76,18 @@ const VillaInfoManagement = () => {
         })
       ]);
 
-      if (!villaInfosResponse.ok || !villasResponse.ok || !amenitiesResponse.ok) {
+      if (!villaInfoResponse.ok || !villasResponse.ok || !amenitiesResponse.ok) {
         throw new Error('Failed to fetch data');
       }
 
-      const [villaInfosData, villasData, amenitiesData] = await Promise.all([
-        villaInfosResponse.json(),
-        villasResponse.json(),
-        amenitiesResponse.json()
+      const [villaInfoData, villasData, amenitiesData] = await Promise.all([
+        villaInfoResponse.json(), villasResponse.json(), amenitiesResponse.json()
       ]);
 
-      setVillaInfos(villaInfosData);
-      setVillas(villasData);
-      setAmenities(amenitiesData);
+      setVillas(villasData.villas || villasData || []);
+      setAmenities(amenitiesData.data || amenitiesData.amenities || amenitiesData || []);
+      setVillaInfos(villaInfoData.data || villaInfoData.villaInfo || []);
+
     } catch (error) {
       console.error('Error fetching data:', error);
       addToast({
@@ -141,12 +135,12 @@ const VillaInfoManagement = () => {
 
   const handleVillaSelect = (e) => {
     const villaId = e.target.value;
-    const selectedVilla = villas.find(v => v._id === villaId);
+    const selectedVilla = villas.find(v => (v.id || v._id) === villaId);
     
     if (selectedVilla) {
       setFormData({
         ...formData,
-        villaId: selectedVilla._id,
+        villaId: selectedVilla.id || selectedVilla._id,
         villaName: selectedVilla.name,
         weekdayPrice: selectedVilla.price || 0,
         weekendPrice: selectedVilla.weekendPrice || 0,
@@ -200,19 +194,30 @@ const VillaInfoManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      if (!formData.villaId) throw new Error('Select a villa');
+      const vInfoId = editingVillaInfo ? editingVillaInfo.id : '';
+      const payload = {
+        villaId: formData.villaId,
+        villaName: formData.villaName,
+        rules: formData.amenities || [],
+        checkIn: formData.checkIn || '14:00',
+        checkOut: formData.checkOut || '12:00',
+        description: formData.fullDescription || formData.shortDescription || '',
+        address: formData.location?.address || '',
+        contactPhone: formData.contactPhone || '',
+        mapLocation: formData.location?.mapUrl || formData.location?.coordinates || ''
+      };
       const url = editingVillaInfo
-        ? `${API_BASE_URL}/api/villa-info/${editingVillaInfo._id}`
-        : `${API_BASE_URL}/api/villa-info`;
-      
+        ? `${API_BASE_URL}/api/admin/villa-info/${vInfoId}`
+        : `${API_BASE_URL}/api/admin/villa-info`;
       const method = editingVillaInfo ? 'PUT' : 'POST';
-      
       const response = await fetch(url, {
         method,
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -238,7 +243,7 @@ const VillaInfoManagement = () => {
 
   const handleDelete = async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/villa-info/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/villa-info/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -269,52 +274,29 @@ const VillaInfoManagement = () => {
   const openEditModal = (villaInfo) => {
     setEditingVillaInfo(villaInfo);
     setFormData({
+      ...emptyForm,
       villaId: villaInfo.villaId,
       villaName: villaInfo.villaName,
-      fullDescription: villaInfo.fullDescription || '',
-      shortDescription: villaInfo.shortDescription || '',
-      amenities: villaInfo.amenities || [],
+      fullDescription: villaInfo.description || '',
+      shortDescription: villaInfo.description || '',
+      amenities: Array.isArray(villaInfo.rules) ? villaInfo.rules : [],
       location: {
-        address: villaInfo.location?.address || '',
-        coordinates: villaInfo.location?.coordinates || '',
-        description: villaInfo.location?.description || '',
-        mapUrl: villaInfo.location?.mapUrl || '',
-        nearbyAttractions: villaInfo.location?.nearbyAttractions || []
+        ...emptyForm.location,
+        address: villaInfo.address || '',
+        coordinates: villaInfo.mapLocation || '',
+        description: villaInfo.description || '',
+        mapUrl: villaInfo.mapLocation || ''
       },
-      weekdayPrice: villaInfo.weekdayPrice || 0,
-      weekendPrice: villaInfo.weekendPrice || 0,
-      maxGuests: villaInfo.maxGuests || 0,
-      securityDeposit: villaInfo.securityDeposit || 0,
-      bedrooms: villaInfo.bedrooms || 0,
-      bathrooms: villaInfo.bathrooms || 0,
-      images: villaInfo.images || []
+      checkIn: villaInfo.checkIn || '14:00',
+      checkOut: villaInfo.checkOut || '12:00',
+      contactPhone: villaInfo.contactPhone || ''
     });
     setShowModal(true);
   };
 
   const openCreateModal = () => {
     setEditingVillaInfo(null);
-    setFormData({
-      villaId: '',
-      villaName: '',
-      fullDescription: '',
-      shortDescription: '',
-      amenities: [],
-      location: {
-        address: '',
-        coordinates: '',
-        description: '',
-        mapUrl: '',
-        nearbyAttractions: []
-      },
-      weekdayPrice: 0,
-      weekendPrice: 0,
-      maxGuests: 0,
-      securityDeposit: 0,
-      bedrooms: 0,
-      bathrooms: 0,
-      images: []
-    });
+    setFormData({ ...emptyForm, location: { ...emptyForm.location } });
     setShowModal(true);
   };
 
@@ -343,7 +325,7 @@ const VillaInfoManagement = () => {
         <h1 className="text-2xl font-bold text-gray-800">Villa Information Management</h1>
         <button
           onClick={openCreateModal}
-          className="flex items-center bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded-md"
+          className="flex items-center bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition-colors"
         >
           <PlusIcon className="h-5 w-5 mr-2" />
           Add Villa Information
@@ -395,7 +377,7 @@ const VillaInfoManagement = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredVillaInfos.map((villaInfo) => (
-                <tr key={villaInfo._id} className="hover:bg-gray-50">
+                <tr key={villaInfo.id || villaInfo._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{villaInfo.villaName}</div>
                     <div className="text-sm text-gray-500">
@@ -534,7 +516,7 @@ const VillaInfoManagement = () => {
                         >
                           <option value="">-- Select a Villa --</option>
                           {villas.map((villa) => (
-                            <option key={villa._id} value={villa._id}>
+                            <option key={villa.id || villa._id} value={villa.id || villa._id}>
                               {villa.name}
                             </option>
                           ))}
@@ -753,7 +735,7 @@ const VillaInfoManagement = () => {
                         <button
                           type="button"
                           onClick={addNearbyAttraction}
-                          className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
                         >
                           Add
                         </button>
@@ -824,7 +806,7 @@ const VillaInfoManagement = () => {
                       <button
                         type="button"
                         onClick={addImage}
-                        className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
                       >
                         Add Image
                       </button>
@@ -865,13 +847,13 @@ const VillaInfoManagement = () => {
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
                 >
                   {editingVillaInfo ? 'Update' : 'Create'}
                 </button>
@@ -883,7 +865,7 @@ const VillaInfoManagement = () => {
       
       {/* Delete Confirmation Modal */}
       {deleteConfirmation && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-gray-900/75 flex items-center justify-center z-[100]">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
             <h2 className="text-xl font-bold text-gray-800 mb-4">Confirm Delete</h2>
             <p className="text-gray-600 mb-6">
@@ -897,7 +879,7 @@ const VillaInfoManagement = () => {
                 Cancel
               </button>
               <button
-                onClick={() => handleDelete(deleteConfirmation._id)}
+                onClick={() => handleDelete(deleteConfirmation.id || deleteConfirmation._id)}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md"
               >
                 Delete

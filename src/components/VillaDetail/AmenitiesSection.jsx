@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import {
   Check,
@@ -177,13 +175,19 @@ export default function AmenitiesSection({ amenities = [], villaName }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-6">
         {visibleAmenities.map((amenity, idx) => {
-          const IconComponent = getAmenityIcon(amenity)
+          // The backend `amenities` column is raw JSONB, so an entry can be a plain
+          // string, an object carrying a `name`, or null/undefined. Rendering an
+          // object directly crashed React ("Objects are not valid as a React child").
+          let label = amenity && typeof amenity === "object" ? amenity.name : amenity
+          if (label === null || label === undefined || label === "") return null
+          label = String(label)
+          const IconComponent = getAmenityIcon(label)
           return (
-            <div key={`${amenity}-${idx}`} className="flex items-center gap-3.5 group">
+            <div key={`${label}-${idx}`} className="flex items-center gap-3.5 group">
               <div className="w-10 h-10 rounded-full bg-[#FAF5E6] border border-[#F2E5BA]/60 flex items-center justify-center text-[#D4AF37] flex-shrink-0 transition-transform group-hover:scale-105">
                 <IconComponent className="w-5 h-5" />
               </div>
-              <span className="text-sm sm:text-base text-gray-800 font-medium leading-tight">{amenity}</span>
+              <span className="text-sm sm:text-base text-gray-800 font-medium leading-tight">{label}</span>
             </div>
           )
         })}

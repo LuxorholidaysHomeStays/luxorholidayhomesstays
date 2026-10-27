@@ -1,26 +1,48 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
-import { splitVendorChunkPlugin } from 'vite'
-import { resolve } from 'path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+import { fileURLToPath, URL } from 'node:url';
+import { ViteImageOptimizer } from 'vite-plugin-image-optimizer';
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    splitVendorChunkPlugin(),
+    ViteImageOptimizer({
+      cache: true,
+      cacheLocation: './node_modules/.cache/vite-plugin-image-optimizer',
+      webp: { quality: 80 },
+      png: { quality: 80 },
+      jpeg: { quality: 80 },
+      jpg: { quality: 80 },
+    }),
   ],
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'chart.js',
+      'react-chartjs-2',
+      'react-datepicker',
+      '@floating-ui/react',
+    ],
+  },
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-vendor': ['framer-motion', 'styled-components', '@headlessui/react', '@heroicons/react'],
-          'date-vendor': ['react-date-range', 'react-datepicker'],
-          'chart-vendor': ['chart.js', 'react-chartjs-2'],
-          'animation-vendor': ['aos', 'react-intersection-observer', 'react-countup'],
-          'icons-vendor': ['react-icons', 'lucide-react'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (
+              /node_modules\/(?:react|react-dom|react-router-dom|react-chartjs-2)(?:\/|$)/.test(id)
+            ) {
+              return 'react-vendor';
+            }
+            if (id.includes('node_modules/react-icons/') || id.includes('node_modules/lucide-react/')) {
+              return 'icons-vendor';
+            }
+            return 'vendor';
+          }
         },
       },
     },
@@ -36,11 +58,21 @@ export default defineConfig({
   },
   server: {
     open: true,
+    headers: {
+      "Cache-Control": "public, max-age=31536000, immutable",
+    },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:9000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   resolve: {
+    dedupe: ['react', 'react-dom', 'react-datepicker', '@floating-ui/react'],
     alias: {
-      '@': resolve(__dirname, 'src'),
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
 })
-

@@ -47,6 +47,25 @@ const Footer = () => {
   });
   const [showDevelopersDropdown, setShowDevelopersDropdown] = useState(false);
   const [activeDeveloper, setActiveDeveloper] = useState(null);
+  const [villasList, setVillasList] = useState([]);
+
+  useEffect(() => {
+    const fetchFooterVillas = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/villas/`);
+        if (res.ok) {
+          const data = await res.json();
+          const list = Array.isArray(data) ? data : (data.villas || data.data || []);
+          if (list.length > 0) {
+            setVillasList(list);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching villas for footer:", err);
+      }
+    };
+    fetchFooterVillas();
+  }, []);
   
   // Use our custom hook to detect if calendar modal is open
   const isCalendarModalOpen = useCalendarModalDetection();
@@ -285,38 +304,42 @@ const Footer = () => {
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <motion.li 
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, delay: 0.2 }}
-                >
-                  <Link to="/rooms" className="hover:text-[#D4AF37] transition-colors inline-block py-1">Amrith Palace</Link>
-                </motion.li>
-                <motion.li 
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, delay: 0.3 }}
-                >
-                  <Link to="/rooms" className="hover:text-[#D4AF37] transition-colors inline-block py-1">Ram Water Villa</Link>
-                </motion.li>
-                <motion.li 
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, delay: 0.4 }}
-                >
-                  <Link to="/rooms" className="hover:text-[#D4AF37] transition-colors inline-block py-1">East Coast Villa</Link>
-                </motion.li>
+                {villasList.length > 0 ? (
+                  villasList.slice(0, 8).map((villa, idx) => (
+                    <motion.li 
+                      key={villa.id || villa._id || idx}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2, delay: 0.05 * (idx + 1) }}
+                    >
+                      <Link 
+                        to={`/villa/${villa.id || villa._id}`} 
+                        className="hover:text-[#D4AF37] transition-colors inline-block py-1"
+                      >
+                        {villa.name}
+                      </Link>
+                    </motion.li>
+                  ))
+                ) : (
+                  <>
+                    <motion.li initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, delay: 0.2 }}>
+                      <Link to="/rooms" className="hover:text-[#D4AF37] transition-colors inline-block py-1">Amrith Palace</Link>
+                    </motion.li>
+                    <motion.li initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, delay: 0.3 }}>
+                      <Link to="/rooms" className="hover:text-[#D4AF37] transition-colors inline-block py-1">Ram Water Villa</Link>
+                    </motion.li>
+                    <motion.li initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, delay: 0.4 }}>
+                      <Link to="/rooms" className="hover:text-[#D4AF37] transition-colors inline-block py-1">East Coast Villa</Link>
+                    </motion.li>
+                    <motion.li initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, delay: 0.5 }}>
+                      <Link to="/rooms" className="hover:text-[#D4AF37] transition-colors inline-block py-1">Empire Anand Villa</Link>
+                    </motion.li>
+                  </>
+                )}
                 <motion.li 
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2, delay: 0.5 }}
-                >
-                  <Link to="/rooms" className="hover:text-[#D4AF37] transition-colors inline-block py-1">Empire Anand Villa</Link>
-                </motion.li>
-                <motion.li 
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, delay: 0.6 }}
                 >
                   <Link to="/rooms" className="hover:text-[#D4AF37] transition-colors inline-block py-1 font-medium text-gray-300 hover:text-[#D4AF37]">View All Properties</Link>
                 </motion.li>
