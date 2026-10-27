@@ -29,23 +29,6 @@ export default defineConfig({
     ],
   },
   build: {
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (
-              /node_modules\/(?:react|react-dom|react-router-dom|react-chartjs-2)(?:\/|$)/.test(id)
-            ) {
-              return 'react-vendor';
-            }
-            if (id.includes('node_modules/react-icons/') || id.includes('node_modules/lucide-react/')) {
-              return 'icons-vendor';
-            }
-            return 'vendor';
-          }
-        },
-      },
-    },
     chunkSizeWarningLimit: 1000,
     sourcemap: false,
     minify: 'terser',
