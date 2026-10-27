@@ -1,10 +1,75 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { ChevronLeft, ChevronRight, Grid3X3, X, Maximize2 } from "lucide-react"
 
+// Helper to resolve optimized thumbnail URL if available
+const getOptimizedThumbnail = (imgSrc) => {
+  if (!imgSrc || typeof imgSrc !== "string") return imgSrc || "/placeholder.svg"
+  if (imgSrc.includes("-thumbnail.webp") || imgSrc.startsWith("data:") || imgSrc.startsWith("blob:")) {
+    return imgSrc
+  }
+  const lastSlashIndex = imgSrc.lastIndexOf("/")
+  if (lastSlashIndex !== -1) {
+    const dir = imgSrc.slice(0, lastSlashIndex)
+    const file = imgSrc.slice(lastSlashIndex + 1)
+    const dotIndex = file.lastIndexOf(".")
+    if (dotIndex !== -1) {
+      const baseName = file.slice(0, dotIndex)
+      return `${dir}/optimized/${baseName}-thumbnail.webp`
+    }
+  }
+  return imgSrc
+}
+
+// Subcomponent for each modal thumbnail item with skeleton loading state
+function ModalThumbnail({ img, idx, isActive, onClick }) {
+  const [isLoaded, setIsLoaded] = useState(false)
+  const [thumbSrc, setThumbSrc] = useState(() => getOptimizedThumbnail(img))
+
+  return (
+    <button
+      data-index={idx}
+      type="button"
+      onClick={onClick}
+      className={`relative flex-shrink-0 w-14 h-11 sm:w-18 sm:h-14 rounded-lg overflow-hidden transition-all duration-200 cursor-pointer bg-neutral-900 ${
+        isActive
+          ? "border-2 border-[#D4AF37] ring-2 ring-[#D4AF37]/50 scale-105 opacity-100 shadow-md shadow-[#D4AF37]/30"
+          : "opacity-50 hover:opacity-90 border border-white/10"
+      }`}
+      aria-label={`Photo ${idx + 1}`}
+    >
+      {/* Loading Skeleton */}
+      {!isLoaded && (
+        <div className="absolute inset-0 bg-white/10 animate-pulse flex items-center justify-center">
+          <div className="w-2.5 h-2.5 rounded-full border border-t-[#D4AF37] border-white/20 animate-spin" />
+        </div>
+      )}
+
+      <img
+        src={encodeURI(thumbSrc)}
+        alt=""
+        loading="lazy"
+        onLoad={() => setIsLoaded(true)}
+        onError={() => {
+          // Fall back to original image if optimized thumbnail fails
+          if (thumbSrc !== img) {
+            setThumbSrc(img)
+          } else {
+            setIsLoaded(true)
+          }
+        }}
+        className={`w-full h-full object-cover transition-opacity duration-300 ${
+          isLoaded ? "opacity-100" : "opacity-0"
+        }`}
+      />
+    </button>
+  )
+}
+
 export default function VillaGallery({ villa }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalImageIndex, setModalImageIndex] = useState(0)
+  const [isMainImageLoading, setIsMainImageLoading] = useState(true)
   const thumbnailStripRef = useRef(null)
 
   const images = villa?.images && villa.images.length > 0 ? villa.images : ["/placeholder.svg"]
@@ -21,6 +86,7 @@ export default function VillaGallery({ villa }) {
 
   const openModal = (index) => {
     setModalImageIndex(index)
+    setIsMainImageLoading(true)
     setIsModalOpen(true)
   }
 
@@ -29,12 +95,40 @@ export default function VillaGallery({ villa }) {
   }
 
   const nextModalImage = useCallback(() => {
+    setIsMainImageLoading(true)
     setModalImageIndex((prev) => (prev + 1) % images.length)
   }, [images.length])
 
   const prevModalImage = useCallback(() => {
+    setIsMainImageLoading(true)
     setModalImageIndex((prev) => (prev - 1 + images.length) % images.length)
   }, [images.length])
+
+  const selectModalImage = (index) => {
+    if (index !== modalImageIndex) {
+      setIsMainImageLoading(true)
+      setModalImageIndex(index)
+    }
+  }
+
+  // Preload adjacent images for smooth instant transitions
+  useEffect(() => {
+    if (!isModalOpen || !images || images.length === 0) return
+
+    const preloadIndices = [
+      (modalImageIndex + 1) % images.length,
+      (modalImageIndex - 1 + images.length) % images.length,
+      (modalImageIndex + 2) % images.length,
+    ]
+
+    preloadIndices.forEach((idx) => {
+      const src = images[idx]
+      if (src && typeof src === "string") {
+        const img = new Image()
+        img.src = encodeURI(src)
+      }
+    })
+  }, [modalImageIndex, isModalOpen, images])
 
   // Keyboard navigation
   useEffect(() => {
@@ -77,11 +171,11 @@ export default function VillaGallery({ villa }) {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 h-[320px] sm:h-[400px] lg:h-[480px] rounded-2xl overflow-hidden border border-gray-200 bg-gray-100">
         {/* Hero Image */}
         <div
-          className="lg:col-span-2 relative group cursor-pointer overflow-hidden"
+          className="lg:col-span-2 relative group cursor-pointer overflow-hidden bg-gray-900"
           onClick={() => openModal(currentImageIndex)}
         >
           <img
-            src={images[currentImageIndex] || images[0]}
+            src={encodeURI(images[currentImageIndex] || images[0])}
             alt={villa?.name || "Villa"}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
@@ -100,7 +194,7 @@ export default function VillaGallery({ villa }) {
               <button
                 type="button"
                 onClick={prevImage}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center border border-gray-200 transition-all duration-200 hover:scale-110 z-10"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center border border-gray-200 transition-all duration-200 hover:scale-110 z-10 cursor-pointer shadow-md"
                 aria-label="Previous image"
               >
                 <ChevronLeft className="h-4 w-4 text-gray-700" />
@@ -109,7 +203,7 @@ export default function VillaGallery({ villa }) {
               <button
                 type="button"
                 onClick={nextImage}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center border border-gray-200 transition-all duration-200 hover:scale-110 z-10"
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center border border-gray-200 transition-all duration-200 hover:scale-110 z-10 cursor-pointer shadow-md"
                 aria-label="Next image"
               >
                 <ChevronRight className="h-4 w-4 text-gray-700" />
@@ -132,11 +226,11 @@ export default function VillaGallery({ villa }) {
             return (
               <div
                 key={actualIndex}
-                className="relative group cursor-pointer overflow-hidden rounded-xl bg-gray-200"
+                className="relative group cursor-pointer overflow-hidden rounded-xl bg-gray-900"
                 onClick={() => openModal(actualIndex)}
               >
                 <img
-                  src={image || "/placeholder.svg"}
+                  src={encodeURI(image || "/placeholder.svg")}
                   alt={`${villa?.name || "Villa"} - Photo ${actualIndex + 1}`}
                   className="w-full h-full object-cover transition-all duration-300 group-hover:scale-110 group-hover:brightness-105"
                 />
@@ -163,7 +257,7 @@ export default function VillaGallery({ villa }) {
         <button
           type="button"
           onClick={() => openModal(0)}
-          className="flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-white hover:bg-gray-50 border border-gray-300 hover:border-[#D4AF37] rounded-xl transition-all duration-200 text-sm sm:text-base font-semibold text-gray-800 hover:text-[#D4AF37] active:scale-95"
+          className="flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-white hover:bg-gray-50 border border-gray-300 hover:border-[#D4AF37] rounded-xl transition-all duration-200 text-sm sm:text-base font-semibold text-gray-800 hover:text-[#D4AF37] active:scale-95 shadow-sm"
         >
           <Grid3X3 className="h-4 w-4 text-[#D4AF37]" />
           <span>View All {images.length} Photos</span>
@@ -202,7 +296,7 @@ export default function VillaGallery({ villa }) {
 
           {/* Center Main Stage */}
           <div
-            className="relative flex-1 flex items-center justify-center min-h-0 py-2 sm:py-4 z-10"
+            className="relative flex-1 flex items-center justify-center min-h-0 py-2 sm:py-4 z-10 w-full"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Previous Button */}
@@ -217,12 +311,31 @@ export default function VillaGallery({ villa }) {
               </button>
             )}
 
-            {/* Centered Image */}
-            <div className="relative max-h-full max-w-full flex items-center justify-center px-2">
+            {/* Centered Image with Elegant Loading State */}
+            <div className="relative max-h-full max-w-full flex items-center justify-center px-2 min-h-[300px] sm:min-h-[460px] w-full">
+              {/* Spinner & Placeholder State */}
+              {isMainImageLoading && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 pointer-events-none">
+                  <div className="relative w-12 h-12">
+                    <div className="absolute inset-0 rounded-full border-2 border-white/20"></div>
+                    <div className="absolute inset-0 rounded-full border-2 border-t-[#D4AF37] border-r-transparent border-b-transparent border-l-transparent animate-spin"></div>
+                  </div>
+                  <span className="text-xs text-gray-400 tracking-wider uppercase font-medium animate-pulse">
+                    Loading photo...
+                  </span>
+                </div>
+              )}
+
               <img
-                src={images[modalImageIndex]}
+                key={modalImageIndex}
+                src={encodeURI(images[modalImageIndex])}
                 alt={`${villa?.name || "Villa"} - ${modalImageIndex + 1}`}
-                className="max-h-[60vh] sm:max-h-[70vh] max-w-[92vw] sm:max-w-[85vw] object-contain rounded-xl border border-white/10 shadow-2xl transition-all duration-300"
+                loading="eager"
+                onLoad={() => setIsMainImageLoading(false)}
+                onError={() => setIsMainImageLoading(false)}
+                className={`max-h-[60vh] sm:max-h-[70vh] max-w-[92vw] sm:max-w-[85vw] object-contain rounded-xl border border-white/10 shadow-2xl transition-all duration-300 ${
+                  isMainImageLoading ? "opacity-0 scale-95" : "opacity-100 scale-100"
+                }`}
               />
             </div>
 
@@ -249,23 +362,13 @@ export default function VillaGallery({ villa }) {
               className="flex items-center gap-2 overflow-x-auto py-2 px-2 scrollbar-none justify-start sm:justify-center"
             >
               {images.map((img, idx) => (
-                <button
+                <ModalThumbnail
                   key={idx}
-                  data-index={idx}
-                  type="button"
-                  onClick={() => setModalImageIndex(idx)}
-                  className={`relative flex-shrink-0 w-14 h-11 sm:w-18 sm:h-14 rounded-lg overflow-hidden transition-all duration-200 cursor-pointer ${
-                    modalImageIndex === idx
-                      ? "border-2 border-[#D4AF37] ring-2 ring-[#D4AF37]/50 scale-105 opacity-100"
-                      : "opacity-40 hover:opacity-80 border border-white/10"
-                  }`}
-                >
-                  <img
-                    src={img}
-                    alt={`Thumbnail ${idx + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </button>
+                  img={img}
+                  idx={idx}
+                  isActive={modalImageIndex === idx}
+                  onClick={() => selectModalImage(idx)}
+                />
               ))}
             </div>
           </div>

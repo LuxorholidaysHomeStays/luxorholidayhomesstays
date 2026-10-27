@@ -13,6 +13,7 @@ import axios from "axios"
 import { useAuth } from "../context/AuthContext"
 import { API_BASE_URL, requireApiBaseUrl } from "../config/api"
 import { getVillaPricing } from "../data/villa-pricing.jsx"
+import { getBestMatchingVillaImages } from "../utils/villaImageUtils"
 
 // Import all villa images (keeping existing imports)
 import AP1 from "/AmrithPalace/AP1.jpg"
@@ -358,16 +359,8 @@ export default function VillaDetails() {
       const villaName = rawVilla.name || "Unknown Villa"
       let images = []
 
-      // Get images based on villa name
-      if (villaName.toLowerCase().includes("opal")) {
-        images = villaImageCollections["Opal Villa"]
-      } else if (villaName.toLowerCase().includes("amrith") || villaName.toLowerCase().includes("palace")) {
-        images = villaImageCollections["Amrith Palace"]
-      } else if (villaName.toLowerCase().includes("east") || villaName.toLowerCase().includes("coast")) {
-        images = villaImageCollections["East Coast Villa"]
-      } else {
-        images = villaImageCollections["Empire Anand Villa Samudra"]
-      }
+      // Get images based on villa name or collection
+      images = getBestMatchingVillaImages(villaName)
 
       const weekendPrice = Number(rawVilla.weekendprice) || Number(rawVilla.weekendPrice) || 0;
       const weekdayPrice = Number(rawVilla.price) || Number(rawVilla.weekdayPrice) || 0;
@@ -647,16 +640,8 @@ export default function VillaDetails() {
       let processedImages = navigationVilla.images || []
 
       if (location.state?.fromSearch && (!processedImages.length || processedImages.length < 5)) {
-        const villaName = navigationVilla.name?.toLowerCase() || ""
-        if (villaName.includes("opal")) {
-          processedImages = villaImageCollections["Opal Villa"]
-        } else if (villaName.includes("amrith") || villaName.includes("palace")) {
-          processedImages = villaImageCollections["Amrith Palace"]
-        } else if (villaName.includes("east") || villaName.includes("coast")) {
-          processedImages = villaImageCollections["East Coast Villa"]
-        } else {
-          processedImages = villaImageCollections["Empire Anand Villa Samudra"]
-        }
+        const villaName = navigationVilla.name || ""
+        processedImages = getBestMatchingVillaImages(villaName)
       }
       setVilla({ ...navigationVilla, images: processedImages })
       setLoading(false)
