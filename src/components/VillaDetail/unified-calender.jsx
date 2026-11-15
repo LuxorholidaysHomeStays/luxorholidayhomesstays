@@ -301,10 +301,26 @@ export default function UnifiedCalendar({
               price = 0 // Show 0 if there's an error - makes it obvious there's an issue
             }
 
+            // Check package-specific eligibility for Opal Villa
+            const isOpal = (villa?.name || "").trim().toLowerCase() === "opal villa"
+            const dayOfWeek = date.getDay()
+            let isPackageRestricted = false
+            if (isOpal) {
+              if (selectedPackage === "midweek_couple_regular" || selectedPackage === "midweek_couple_horizon") {
+                // Mon-Thu only: Fri(5), Sat(6), Sun(0) restricted
+                if (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0) {
+                  isPackageRestricted = true
+                }
+              } else if (selectedPackage === "midweek_family") {
+                // Sun-Thu only: Fri(5), Sat(6) restricted
+                if (dayOfWeek === 5 || dayOfWeek === 6) {
+                  isPackageRestricted = true
+                }
+              }
+            }
+
             // Different styling for different block types
             const getBlockedStyle = () => {
-              if (!isBlocked) return "";
-
               if (blockType === 'booking') {
                 return "bg-red-100 text-red-600 cursor-not-allowed border-red-200";
               } else if (blockType === 'blocked') {
@@ -317,40 +333,46 @@ export default function UnifiedCalendar({
               <div
                 key={index}
                 className={`
-                  relative flex flex-col items-center justify-center rounded-lg cursor-pointer 
+                  relative flex flex-col items-center justify-center rounded-lg 
                   min-h-[45px] transition-all duration-200 select-none border
-                  ${!isCurrentMonth ? "opacity-40" : ""}
+                  ${!isCurrentMonth ? "opacity-30" : ""}
                   ${isPast
                     ? "bg-gray-100 text-gray-400 cursor-not-allowed border-transparent opacity-60"
                     : isBlocked
-                      ? getBlockedStyle()
-                      : isCheckIn
-                        ? "bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-white font-bold border-[#D4AF37] scale-105"
-                        : isCheckOut
-                          ? "bg-gradient-to-r from-[#BFA181] to-[#D4AF37] text-white font-bold border-[#BFA181] scale-105"
-                          : isInRange
-                            ? "bg-gradient-to-r from-[#D4AF37]/20 to-[#BFA181]/20 text-[#D4AF37] border-[#D4AF37]/30"
-                            : isToday
-                              ? "bg-gray-50 text-gray-900 font-semibold border-gray-300"
-                              : "hover:bg-gray-50 hover:border-gray-300 border-transparent hover:scale-105"
+                      ? `${getBlockedStyle()} cursor-not-allowed`
+                      : isPackageRestricted
+                        ? "bg-gray-100/80 text-gray-400 cursor-not-allowed border-gray-200/50 opacity-40 hover:opacity-40"
+                        : isCheckIn
+                          ? "bg-gradient-to-r from-[#D4AF37] to-[#BFA181] text-white font-bold border-[#D4AF37] scale-105 cursor-pointer shadow-sm"
+                          : isCheckOut
+                            ? "bg-gradient-to-r from-[#BFA181] to-[#D4AF37] text-white font-bold border-[#BFA181] scale-105 cursor-pointer shadow-sm"
+                            : isInRange
+                              ? "bg-gradient-to-r from-[#D4AF37]/20 to-[#BFA181]/20 text-[#D4AF37] border-[#D4AF37]/30 cursor-pointer"
+                              : isToday
+                                ? "bg-gray-50 text-gray-900 font-semibold border-gray-300 cursor-pointer"
+                                : "hover:bg-gray-50 hover:border-gray-300 border-transparent hover:scale-105 cursor-pointer"
                   }
                 `}
-                onClick={() => handleDateClick(date)}
-                title={isBlocked ?
-                  (blockType === 'booking' ?
-                    "Already booked" :
-                    `Blocked: ${blockInfo.reason || 'Not available'}`
-                  ) :
-                  undefined
+                onClick={() => !isPackageRestricted && handleDateClick(date)}
+                title={
+                  isPackageRestricted
+                    ? (selectedPackage === "midweek_family" 
+                        ? "Not available for Midweek Family Stay (Sun-Thu nights only)" 
+                        : "Not available for Midweek Couple's Retreat (Mon-Thu nights only)")
+                    : isBlocked
+                      ? (blockType === 'booking' ? "Already booked" : `Blocked: ${blockInfo.reason || 'Not available'}`)
+                      : undefined
                 }
               >
-                <div className="text-sm font-medium">{date.getDate()}</div>
+                <div className={`text-sm font-medium ${isPackageRestricted ? "line-through text-gray-400" : ""}`}>
+                  {date.getDate()}
+                </div>
                 {isCurrentMonth && !isPast && !isBlocked && (
-                  <div className={`text-xs mt-1 ${isCheckIn || isCheckOut ? "text-white" : "text-gray-600"}`}>
-                    <span className={`${(date.getDay() === 0 || date.getDay() === 6) && !isCheckIn && !isCheckOut ? "text-yellow-700 font-medium" : ""}`}>
+                  <div className={`text-xs mt-1 ${isCheckIn || isCheckOut ? "text-white" : isPackageRestricted ? "text-gray-400/70" : "text-gray-600"}`}>
+                    <span className={`${!isPackageRestricted && (date.getDay() === 0 || date.getDay() === 6) && !isCheckIn && !isCheckOut ? "text-yellow-700 font-medium" : ""}`}>
                       {formatPrice(getPriceForDate(date))}
                     </span>
-                    {(date.getDay() === 0 || date.getDay() === 6) && (
+                    {!isPackageRestricted && (date.getDay() === 0 || date.getDay() === 6) && (
                       <span className={`text-[8px] ml-0.5 ${isCheckIn || isCheckOut ? "text-white/80" : "text-yellow-600"} font-semibold`}>
                         ★
                       </span>
@@ -419,15 +441,27 @@ export default function UnifiedCalendar({
   // Early return if modal and not visible
   if (isModal && !isVisible) return null;
 
+  const isOpalVilla = (villa?.name || "").trim().toLowerCase() === "opal villa"
+  const isMidweekPackage = isOpalVilla && (selectedPackage.startsWith("midweek_"))
+
   const calendarContent = (
     <div className={`bg-white rounded-2xl ${isModal ? 'border border-gray-200 max-w-4xl w-[95%] sm:w-full max-h-[90vh] overflow-hidden relative z-[10000]' : 'w-full'}`}>
       {isModal && (
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-[#D4AF37] to-[#BFA181]">
           <div>
-            <h2 className="text-xl font-bold text-white">Select your dates</h2>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              Select your dates
+              {isMidweekPackage && (
+                <span className="text-xs bg-white/20 text-white font-medium px-2 py-0.5 rounded-full border border-white/30">
+                  {selectedPackage === "midweek_family" ? "Sun - Thu Only" : "Mon - Thu Only"}
+                </span>
+              )}
+            </h2>
             <p className="text-white/90 mt-1 text-sm">
               {selectionMode === "checkin"
-                ? "Choose your check-in date"
+                ? (isMidweekPackage 
+                    ? `Choose check-in date (${selectedPackage === "midweek_family" ? "Sun to Wed" : "Mon to Wed"})`
+                    : "Choose your check-in date")
                 : tempCheckIn
                   ? `Check-in: ${new Date(tempCheckIn).toLocaleDateString("en-US", { month: "short", day: "numeric" })} • Now select check-out`
                   : "Choose your check-out date"}
@@ -469,6 +503,12 @@ export default function UnifiedCalendar({
             <div className="w-3 h-3 bg-gradient-to-r from-[#D4AF37]/20 to-[#BFA181]/20 border-2 border-[#D4AF37]/30 rounded" />
             <span>Range</span>
           </div>
+          {isMidweekPackage && (
+            <div className="flex items-center gap-1 text-xs mr-1">
+              <div className="w-3 h-3 bg-gray-200 border border-gray-300 rounded opacity-60" />
+              <span className="text-gray-500">Not Applicable</span>
+            </div>
+          )}
           <div className="flex items-center gap-1 text-xs mr-1">
             <div className="w-3 h-3 bg-red-100 border border-red-200 rounded relative">
               <div className="absolute inset-0 flex items-center justify-center">
