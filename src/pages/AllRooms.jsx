@@ -460,6 +460,9 @@ const AllRooms = () => {
 
           // Use backend price directly - no fallback pricing since backend is the authority
           let price = Number(villa.price) || 0
+          if ((villa.name || "").trim().toLowerCase() === "opal villa") {
+            price = 40000
+          }
 
           // Extract amenities from backend if available
           let amenities = []

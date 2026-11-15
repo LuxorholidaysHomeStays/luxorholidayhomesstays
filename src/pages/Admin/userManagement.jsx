@@ -14,6 +14,7 @@ import {
   MagnifyingGlassIcon,
   ArrowPathIcon
 } from "@heroicons/react/24/outline"
+import PaginationControls from "../../components/PaginationControls"
 const UserManagement = () => {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -21,6 +22,8 @@ const UserManagement = () => {
   const [showForm, setShowForm] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [savingUser, setSavingUser] = useState(false)
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 50, total: 0, hasMore: false })
   const [selectedUser, setSelectedUser] = useState(null)
   const [newUserData, setNewUserData] = useState({
     name: "",
@@ -39,12 +42,12 @@ const UserManagement = () => {
 
   useEffect(() => {
     fetchUsers()
-  }, [])
+  }, [page])
 
   const fetchUsers = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/users?page=${page}&pageSize=50`, {
         headers: {
           Authorization: `Bearer ${authToken}`,
           "Content-Type": "application/json",
@@ -57,6 +60,7 @@ const UserManagement = () => {
           setUsers(data)
         } else if (data && Array.isArray(data.users)) {
           setUsers(data.users)
+          setPagination(data.pagination || { page, pageSize: 50, total: data.users.length, hasMore: false })
         } else {
           setUsers([])
         }
@@ -739,6 +743,7 @@ const UserManagement = () => {
           </div>
         </div>
       )}
+      <PaginationControls {...pagination} onPageChange={setPage} />
     </div>
   )
 }

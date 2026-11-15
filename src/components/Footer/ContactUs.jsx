@@ -2,6 +2,7 @@ import React, { useState } from "react"
 import { Phone, Mail, MapPin, Send, CheckCircle, Sparkles, ExternalLink, Navigation } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { API_BASE_URL } from "../../config/api"
+import { getRateLimitMessage } from "../../utils/apiClient"
 
 const countryCodes = [
   { code: "+91", name: "India", flag: "🇮🇳" },
@@ -92,18 +93,9 @@ export default function Contact() {
         body: JSON.stringify(payload),
       })
 
+      const data = await response.json().catch(() => ({}))
       if (!response.ok) {
-        const errorText = await response.text()
-        console.error("Contact form server error:", errorText)
-        throw new Error(errorText || "Failed to send message")
-      }
-
-      let data
-      try {
-        data = await response.json()
-      } catch (jsonError) {
-        console.error("JSON parsing error:", jsonError)
-        data = { success: true, message: "Message sent successfully" }
+        throw new Error(getRateLimitMessage(response, data, "Failed to send message"))
       }
 
       if (data.success === false) {

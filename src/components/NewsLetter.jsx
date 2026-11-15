@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import Title from './Title';
 import { API_BASE_URL } from "../config/api";
+import { getRateLimitMessage } from "../utils/apiClient";
 
 const NewsLetter = () => {
 const [email, setEmail] = useState('');
@@ -26,13 +27,13 @@ headers: {
 },
 body: JSON.stringify({ email }),
 });
-const data = await response.json();
+const data = await response.json().catch(() => ({}));
 if (response.ok) {
 setMessage(data.message);
 setStatus('success');
 setEmail('');
 } else {
-setMessage(data.error || 'Subscription failed. Please try again.');
+setMessage(getRateLimitMessage(response, data, 'Subscription failed. Please try again.'));
 setStatus('error');
 }
 } catch (error) {

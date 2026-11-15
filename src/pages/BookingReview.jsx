@@ -402,6 +402,7 @@ export default function BookingReview() {
 
     setPaymentProcessing(true)
     const token = authToken || localStorage.getItem("authToken")
+    const idempotencyKey = crypto.randomUUID()
 
     try {
       const scriptReady = await loadRazorpayScript()
@@ -424,6 +425,8 @@ export default function BookingReview() {
         email: guestEmail.trim(),
         phone: `${countryCode} ${phone.trim()}`,
         paymentMethod: "Razorpay",
+        package: bookingData?.package,
+        includeHorizonSuite: bookingData?.includeHorizonSuite,
         status: "pending",
         paymentStatus: "pending",
       }
@@ -433,6 +436,7 @@ export default function BookingReview() {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "Idempotency-Key": idempotencyKey,
         },
         body: JSON.stringify(bookingPayload),
       })

@@ -12,7 +12,29 @@ export class ApiError extends Error {
     this.name = 'ApiError'
     this.status = status
     this.data = data
+    this.retryAfterSeconds = Number(data?.retryAfterSeconds || 0) || undefined
   }
+}
+
+export function getRetryAfterSeconds(response, data = {}) {
+  const bodySeconds = Number(data?.retryAfterSeconds)
+  if (Number.isFinite(bodySeconds) && bodySeconds > 0) return Math.ceil(bodySeconds)
+
+  const header = response?.headers?.get('Retry-After')
+  if (!header) return 0
+  const seconds = Number(header)
+  if (Number.isFinite(seconds) && seconds > 0) return Math.ceil(seconds)
+
+  const retryAt = Date.parse(header)
+  return Number.isNaN(retryAt) ? 0 : Math.max(1, Math.ceil((retryAt - Date.now()) / 1000))
+}
+
+export function getRateLimitMessage(response, data = {}, fallback = 'Too many attempts. Please try again later.') {
+  if (response?.status !== 429) return data?.error || data?.message || fallback
+  const seconds = getRetryAfterSeconds(response, data)
+  if (!seconds) return 'Too many attempts. Please try again later.'
+  const minutes = Math.ceil(seconds / 60)
+  return `Too many attempts. Please try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`
 }
 
 // The Go backend serialises primary keys as `id`; large parts of this codebase
@@ -114,7 +136,7 @@ export async function api(path, options = {}) {
   if (response.status === 401 && auth && unauthorizedHandler) unauthorizedHandler()
 
   if (!response.ok) {
-    throw new ApiError(data?.error || data?.message || `Request failed (${response.status})`, {
+    throw new ApiError(getRateLimitMessage(response, data, `Request failed (${response.status})`), {
       status: response.status,
       data,
     })

@@ -21,7 +21,7 @@ const villaFallbackPrices = {
   "Lavish Villa II": { weekday: 18000, weekend: 25000 },
   "Lavish Villa III": { weekday: 16000, weekend: 23000 },
   "Empire Anand Villa Samudra": { weekday: 40000, weekend: 60000 },
-  "Opal Villa": { weekday: 25000, weekend: 35000 }
+  "Opal Villa": { weekday: 40000, weekend: 65000 }
 };
 
 export default function UnifiedCalendar({
@@ -53,6 +53,14 @@ export default function UnifiedCalendar({
 
   const getPriceForDate = (date) => {
     const isWeekend = isWeekendDay(date);
+
+    if ((villa?.name || "").trim().toLowerCase() === "opal villa") {
+      switch (date.getDay()) {
+        case 5: case 0: return 45000;
+        case 6: return 65000;
+        default: return 40000;
+      }
+    }
 
     const getFallbackPrice = () => {
       const villaName = villa?.name || "";
@@ -177,6 +185,11 @@ export default function UnifiedCalendar({
       // Check if the selected range overlaps with any blocked dates
       const finalCheckIn = dateStr <= tempCheckIn ? dateStr : tempCheckIn
       const finalCheckOut = dateStr <= tempCheckIn ? tempCheckIn : dateStr
+
+      if ((villa?.name || "").trim().toLowerCase() === "opal villa") {
+        const nights = (new Date(`${finalCheckOut}T00:00:00`) - new Date(`${finalCheckIn}T00:00:00`)) / 86400000
+        if (nights < 2) return
+      }
 
       if (doesRangeOverlapBlocked(finalCheckIn, finalCheckOut)) {
         // Reset selection if range overlaps with blocked dates

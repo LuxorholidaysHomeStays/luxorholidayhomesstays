@@ -362,8 +362,9 @@ export default function VillaDetails() {
       // Get images based on villa name or collection
       images = getBestMatchingVillaImages(villaName)
 
-      const weekendPrice = Number(rawVilla.weekendprice) || Number(rawVilla.weekendPrice) || 0;
-      const weekdayPrice = Number(rawVilla.price) || Number(rawVilla.weekdayPrice) || 0;
+      const isOpal = villaName.trim().toLowerCase() === "opal villa";
+      const weekendPrice = isOpal ? 65000 : (Number(rawVilla.weekendprice) || Number(rawVilla.weekendPrice) || 0);
+      const weekdayPrice = isOpal ? 40000 : (Number(rawVilla.price) || Number(rawVilla.weekdayPrice) || 0);
 
 
       const transformedVilla = {
@@ -372,13 +373,14 @@ export default function VillaDetails() {
         name: rawVilla.name || villaName,
         location: rawVilla.location || "Perur ECR, Chennai",
         price: weekdayPrice,
+        weekdayPrice: weekdayPrice,
         weekendPrice: weekendPrice,
         weekendprice: weekendPrice,
         description: rawVilla.description || "Luxury villa with all modern amenities for a comfortable stay.",
         longDescription: rawVilla.longDescription || "Experience unparalleled luxury in our stunning villa...",
         images: (rawVilla.images && rawVilla.images.length > 0) ? rawVilla.images : images,
-        guests: rawVilla.guests || rawVilla.capacity || 10,
-        capacity: rawVilla.guests || rawVilla.capacity || 10,
+        guests: isOpal ? 10 : (rawVilla.guests || rawVilla.capacity || 10),
+        capacity: isOpal ? 10 : (rawVilla.guests || rawVilla.capacity || 10),
         bedrooms: rawVilla.bedrooms || 4,
         bathrooms: rawVilla.bathrooms || rawVilla.bedrooms || 4,
         rating: rawVilla.rating || 4.8,
@@ -500,6 +502,8 @@ export default function VillaDetails() {
           villaId: villa.id || villa._id,
           checkIn: checkInDate,
           checkOut: checkOutDate,
+          package: bookingData?.package,
+          includeHorizonSuite: bookingData?.includeHorizonSuite,
           notes: {
             villaName: villa.name,
             guestName: userData?.name || userData?.firstName || "Guest",
@@ -558,6 +562,8 @@ export default function VillaDetails() {
                   checkOutTime: bookingData.checkOutTime || "12:00",
                   guests: adults + children,
                   infants,
+                  package: bookingData?.package,
+                  includeHorizonSuite: bookingData?.includeHorizonSuite,
                   // No amount or night count is sent: the server recomputes both
                   // from the villa and dates and verifies the captured total.
                   address: bookingData.address || {} // Include address data here

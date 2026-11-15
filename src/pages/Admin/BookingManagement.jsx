@@ -3,6 +3,7 @@ import { API_BASE_URL } from "../../config/api"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../context/ToastContext"
 import { getVillaImage } from "../../utils/villaImages"
+import PaginationControls from "../../components/PaginationControls"
 import {
   CalendarDaysIcon,
   UserIcon,
@@ -23,6 +24,8 @@ const BookingManagement = () => {
   const [showDetails, setShowDetails] = useState(null)
   const [sortField, setSortField] = useState("checkIn")
   const [sortDirection, setSortDirection] = useState("desc")
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 50, total: 0, hasMore: false })
   const { authToken } = useAuth()
   const { addToast } = useToast()
 
@@ -45,11 +48,11 @@ const BookingManagement = () => {
     }, 60000); // Check every minute
 
     return () => clearInterval(interval);
-  }, []);
+  }, [page]);
 
   const fetchBookings = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/bookings`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/bookings?page=${page}&pageSize=50`, {
         headers: {
           Authorization: `Bearer ${authToken}`,
           "Content-Type": "application/json",
@@ -58,6 +61,7 @@ const BookingManagement = () => {
       const data = await response.json()
       const bookingList = Array.isArray(data) ? data : (data.bookings || data.data || []);
       setBookings(bookingList)
+      setPagination(data.pagination || { page, pageSize: 50, total: bookingList.length, hasMore: false })
     } catch (error) {
       console.error("Error fetching bookings:", error)
       addToast("Error fetching bookings", "error")
@@ -594,6 +598,7 @@ const BookingManagement = () => {
           </table>
         </div>
       </div>
+      <PaginationControls {...pagination} onPageChange={setPage} />
     </div>
   )
 }

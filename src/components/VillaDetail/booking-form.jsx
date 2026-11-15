@@ -32,11 +32,28 @@ export default function BookingForm({
   const navigate = useNavigate()
   const [showCalendarModal, setShowCalendarModal] = useState(false)
 
+  const isOpal = (villa?.name || "").trim().toLowerCase() === "opal villa"
+  const [selectedPackage, setSelectedPackage] = useState("standard_full")
+  const [includeHorizonSuite, setIncludeHorizonSuite] = useState(false)
+
   // Pricing. ?? not || so a genuine zero is not replaced by an invented default,
   // and no weekend premium is fabricated for a villa that has none.
-  const weekdayPrice = Number(villa?.weekdayPrice) || Number(villa?.price) || 0
-  const weekendPrice = Number(villa?.weekendPrice) || weekdayPrice
-  const maxGuests = Number(villa?.guests) || 10
+  const weekdayPrice = isOpal ? 40000 : (Number(villa?.weekdayPrice) || Number(villa?.price) || 0)
+  const weekendPrice = isOpal ? 65000 : (Number(villa?.weekendPrice) || weekdayPrice)
+
+  // Max guests depends on Opal package / suite
+  let maxGuests = Number(villa?.guests) || 10
+  if (isOpal) {
+    if (selectedPackage === "midweek_couple_regular" || selectedPackage === "midweek_couple_horizon") {
+      maxGuests = 2
+    } else if (selectedPackage === "midweek_family") {
+      maxGuests = 5
+    } else if (includeHorizonSuite || selectedPackage === "villa_horizon_suite") {
+      maxGuests = 12
+    } else {
+      maxGuests = 10
+    }
+  }
 
   const totalNights = checkInDate && checkOutDate ? daysBetween(checkInDate, checkOutDate) : 0
 
@@ -44,30 +61,50 @@ export default function BookingForm({
   // base + 5% + 18% and stores that split on the booking. Until the quote returns
   // the form shows the base only, rather than guessing at tax.
   const [quote, setQuote] = useState(null)
+  const [quoteError, setQuoteError] = useState("")
 
   useEffect(() => {
     let cancelled = false
     setQuote(null)
+    setQuoteError("")
 
     const villaId = villa?.id || villa?._id
     if (!villaId || !checkInDate || !checkOutDate) return
 
+    const quotePayload = {
+      villaId,
+      checkIn: checkInDate,
+      checkOut: checkOutDate,
+      package: isOpal ? selectedPackage : undefined,
+      includeHorizonSuite: isOpal ? (includeHorizonSuite || selectedPackage === "villa_horizon_suite" || selectedPackage === "midweek_couple_horizon") : undefined,
+    }
+
     api("/api/quote", {
       method: "POST",
       auth: false,
-      body: { villaId, checkIn: checkInDate, checkOut: checkOutDate },
+      body: quotePayload,
     })
       .then((data) => {
-        if (!cancelled && data?.breakdown) setQuote(data.breakdown)
+        if (!cancelled) {
+          if (data?.breakdown) {
+            setQuote(data.breakdown)
+            setQuoteError("")
+          } else if (data?.error) {
+            setQuoteError(data.error)
+          }
+        }
       })
-      .catch(() => {
-        if (!cancelled) setQuote(null)
+      .catch((err) => {
+        if (!cancelled) {
+          setQuote(null)
+          setQuoteError(err?.message || "Could not retrieve pricing quote")
+        }
       })
 
     return () => {
       cancelled = true
     }
-  }, [villa?.id, villa?._id, checkInDate, checkOutDate])
+  }, [villa?.id, villa?._id, checkInDate, checkOutDate, selectedPackage, includeHorizonSuite, isOpal])
 
   const localBase = (() => {
     if (!checkInDate || !checkOutDate || totalNights <= 0) return weekdayPrice
@@ -107,11 +144,28 @@ export default function BookingForm({
       return
     }
 
+    if (isOpal) {
+      if (totalNights < 2) {
+        toast.warning("Opal Villa requires a minimum stay of 2 nights.")
+        return
+      }
+      if (selectedPackage === "midweek_family" && totalNights < 3) {
+        toast.warning("Midweek Family Stay requires a minimum stay of 3 nights.")
+        return
+      }
+      if (totalNights >= 28) {
+        toast.info("Stays of 28 nights or longer require a custom quotation. Please call our concierge.")
+        return
+      }
+    }
+
     const totalGuests = adults + children
     if (totalGuests > maxGuests) {
-      toast.warning(`This villa accommodates a maximum of ${maxGuests} guests.`)
+      toast.warning(`This package accommodates a maximum of ${maxGuests} guests.`)
       return
     }
+
+    const hasHorizon = isOpal && (includeHorizonSuite || selectedPackage === "villa_horizon_suite" || selectedPackage === "midweek_couple_horizon")
 
     const bookingPayload = {
       villaId: villa?._id || villa?.id,
@@ -129,11 +183,16 @@ export default function BookingForm({
       guests: totalGuests,
       pricePerNight: weekdayPrice,
       weekendPrice,
+      package: isOpal ? selectedPackage : undefined,
+      includeHorizonSuite: hasHorizon,
       breakdown: {
         basePrice: baseAccommodationTotal,
         serviceFee,
         taxAmount,
         total: grandTotal,
+        discountAmount: quote?.discountAmount || 0,
+        discountRate: quote?.discountRate || 0,
+        requiresApproval: quote?.requiresApproval || false,
       },
       totalAmount: grandTotal,
       guestName: userData?.name || "",
@@ -187,6 +246,109 @@ export default function BookingForm({
       </div>
 
       <div className="p-6 space-y-6">
+        {/* Opal Villa Special Packages and Horizon Suite Selection */}
+        {isOpal && (
+          <div className="space-y-4 border border-[#D4AF37]/30 bg-[#ca8a04]/5 rounded-2xl p-4">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-bold text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-[#ca8a04]" />
+                  Select Stay Package
+                </span>
+                <span className="text-[11px] font-semibold text-[#ca8a04] bg-[#ca8a04]/10 px-2 py-0.5 rounded-full">
+                  Villa Opul Plan
+                </span>
+              </div>
+              <div className="space-y-2 mt-2">
+                {[
+                  {
+                    id: "standard_full",
+                    name: "Standard Full Villa",
+                    badge: "Up to 10 Guests • Min 2 Nights",
+                    desc: "Day-based rates (Mon-Thu ₹40k, Fri/Sun ₹45k, Sat ₹65k). Access to 4 bedrooms & all standard amenities.",
+                  },
+                  {
+                    id: "villa_horizon_suite",
+                    name: "Villa + Horizon Suite",
+                    badge: "Up to 12 Guests • Min 2 Nights",
+                    desc: "Full villa plus exclusive Horizon Suite (+₹25,000/night). Entire rentable property unlocked.",
+                  },
+                  {
+                    id: "midweek_couple_regular",
+                    name: "Midweek Couple's Retreat",
+                    badge: "2 Adults • Mon–Thu • Min 2 Nights",
+                    desc: "₹35,000 / night. 1 bedroom open with common amenities; remaining bedrooms locked.",
+                  },
+                  {
+                    id: "midweek_couple_horizon",
+                    name: "Midweek Couple's + Horizon Suite",
+                    badge: "2 Adults • Mon–Thu • Min 2 Nights",
+                    desc: "₹60,000 / night (₹35k + ₹25k). Horizon Suite plus common amenities; regular bedrooms locked.",
+                  },
+                  {
+                    id: "midweek_family",
+                    name: "Midweek Family Stay",
+                    badge: "Up to 5 Guests • Sun–Thu • Min 3 Nights",
+                    desc: "₹35,000 / night. Up to 3 sleeping rooms prepared; remaining bedrooms locked.",
+                  },
+                ].map((pkg) => (
+                  <label
+                    key={pkg.id}
+                    onClick={() => {
+                      setSelectedPackage(pkg.id)
+                      if (pkg.id === "villa_horizon_suite" || pkg.id === "midweek_couple_horizon") {
+                        setIncludeHorizonSuite(true)
+                      } else {
+                        setIncludeHorizonSuite(false)
+                      }
+                    }}
+                    className={`block p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                      selectedPackage === pkg.id
+                        ? "border-[#ca8a04] bg-white shadow-sm ring-1 ring-[#ca8a04]"
+                        : "border-gray-200/80 bg-white/60 hover:bg-white hover:border-[#ca8a04]/50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="opalPackage"
+                          checked={selectedPackage === pkg.id}
+                          onChange={() => {}}
+                          className="accent-[#ca8a04]"
+                        />
+                        <span className="text-xs font-bold text-gray-900">{pkg.name}</span>
+                      </div>
+                      <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                        {pkg.badge}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-gray-500 mt-1 pl-5 leading-relaxed">{pkg.desc}</p>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Horizon Suite Add-on checkbox for standard full villa */}
+            {selectedPackage === "standard_full" && (
+              <div className="pt-2 border-t border-gray-200/60 flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold text-gray-800 flex items-center gap-1">
+                    Add Horizon Suite (+₹25,000 / night)
+                  </span>
+                  <span className="text-[11px] text-gray-500">Expands capacity to 12 guests</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={includeHorizonSuite}
+                  onChange={(e) => setIncludeHorizonSuite(e.target.checked)}
+                  className="w-4 h-4 accent-[#ca8a04] rounded cursor-pointer"
+                />
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Date Selection Card */}
         <div>
           <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
@@ -311,10 +473,41 @@ export default function BookingForm({
             <span className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
               Price Breakdown
             </span>
+
+            {quoteError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 font-medium">
+                {quoteError}
+              </div>
+            )}
+
+            {quote?.requiresApproval && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-medium flex items-center gap-2">
+                <Info className="w-4 h-4 flex-shrink-0 text-amber-600" />
+                <span>Stays of 14+ nights receive a 15% discount and are subject to host approval.</span>
+              </div>
+            )}
+
+            {quote?.customQuote && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800 font-medium flex items-center gap-2">
+                <Info className="w-4 h-4 flex-shrink-0 text-blue-600" />
+                <span>Stays of 28+ nights require a custom quotation. Please contact our concierge.</span>
+              </div>
+            )}
+
             <div className="flex justify-between text-gray-600">
               <span>Accommodation ({totalNights} Night{totalNights > 1 ? "s" : ""})</span>
-              <span className="font-semibold text-gray-900">₹{baseAccommodationTotal.toLocaleString()}</span>
+              <span className="font-semibold text-gray-900">
+                ₹{((quote?.base || baseAccommodationTotal) + (quote?.discountAmount || 0)).toLocaleString()}
+              </span>
             </div>
+
+            {quote?.discountAmount > 0 && (
+              <div className="flex justify-between text-green-600 font-medium">
+                <span>Length-of-Stay Discount ({(quote.discountRate * 100).toFixed(0)}%)</span>
+                <span>-₹{quote.discountAmount.toLocaleString()}</span>
+              </div>
+            )}
+
             <div className="flex justify-between text-gray-600">
               <span>Service Fee (5%)</span>
               <span className="font-semibold text-gray-900">₹{serviceFee.toLocaleString()}</span>

@@ -27,6 +27,16 @@ export const getVillaPricing = (villaObj) => {
   }
 
   // Return properly structured pricing data from villa object
+  const vName = (villaObj?.name || "").trim().toLowerCase();
+  if (vName === "opal villa") {
+    return {
+      weekday: 40000,
+      weekend: 65000,
+      maxGuests: 10,
+      securityDeposit: villaObj.securityDeposit || 20000,
+    };
+  }
+
   return {
     weekday: villaObj.price || villaObj.weekdayPrice || 15000,
     weekend: villaObj.weekendPrice || villaObj.weekendprice || villaObj.price || 25000,
@@ -44,7 +54,7 @@ const villaFallbackPricing = {
   "Lavish Villa II": { weekday: 18000, weekend: 25000 },
   "Lavish Villa III": { weekday: 16000, weekend: 23000 },
   "Empire Anand Villa Samudra": { weekday: 40000, weekend: 60000 },
-  "Opal Villa": { weekday: 25000, weekend: 35000 }
+  "Opal Villa": { weekday: 40000, weekend: 65000 }
 };
 
 export const getPriceForDate = async (date, villa) => {
@@ -54,6 +64,18 @@ export const getPriceForDate = async (date, villa) => {
   // Get the day of week (0 = Sunday, 6 = Saturday)
   const day = checkDate.getDay();
   const isWeekend = day === 0 || day === 6; // Sunday or Saturday
+
+  const vName = (typeof villa === 'string' ? villa : (villa?.name || "")).trim().toLowerCase();
+  if (vName === "opal villa") {
+    let opalPrice = 40000;
+    if (day === 5 || day === 0) opalPrice = 45000; // Fri, Sun
+    else if (day === 6) opalPrice = 65000; // Sat
+    return {
+      originalPrice: opalPrice,
+      offerPrice: opalPrice,
+      hasOffer: false,
+    };
+  }
   
   // Try to get villa data in different formats
   let villaData;

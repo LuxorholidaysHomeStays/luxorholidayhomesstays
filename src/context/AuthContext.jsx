@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { API_BASE_URL, requireApiBaseUrl } from "../config/api";
-import { onUnauthorized } from "../utils/apiClient";
+import { getRateLimitMessage, onUnauthorized } from "../utils/apiClient";
 
 const AuthContext = createContext();
 
@@ -42,7 +42,8 @@ export const AuthProvider = ({ children }) => {
       if (!response.ok) {
         return {
           success: false,
-          message: data.error || data.message || "Failed to send OTP",
+          message: getRateLimitMessage(response, data, "Failed to send OTP"),
+          retryAfterSeconds: response.status === 429 ? Number(data.retryAfterSeconds || response.headers.get("Retry-After") || 0) : 0,
         };
       }
 
@@ -73,7 +74,8 @@ export const AuthProvider = ({ children }) => {
       if (!response.ok || !data.success) {
         return {
           success: false,
-          message: data.error || data.message || "Invalid or expired OTP",
+          message: getRateLimitMessage(response, data, "Invalid or expired OTP"),
+          retryAfterSeconds: response.status === 429 ? Number(data.retryAfterSeconds || response.headers.get("Retry-After") || 0) : 0,
         };
       }
 
@@ -124,7 +126,8 @@ export const AuthProvider = ({ children }) => {
       if (!response.ok || !data.token) {
         return {
           success: false,
-          message: data.error || data.message || "Login failed",
+          message: getRateLimitMessage(response, data, "Login failed"),
+          retryAfterSeconds: response.status === 429 ? Number(data.retryAfterSeconds || response.headers.get("Retry-After") || 0) : 0,
         };
       }
 
@@ -159,7 +162,7 @@ export const AuthProvider = ({ children }) => {
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok || data.success === false) {
-        return { success: false, message: data.error || data.message || "Could not reset the password" };
+        return { success: false, message: getRateLimitMessage(response, data, "Could not reset the password"), retryAfterSeconds: response.status === 429 ? Number(data.retryAfterSeconds || response.headers.get("Retry-After") || 0) : 0 };
       }
       return { success: true, message: data.message || "Password reset. Please sign in." };
     } catch (error) {

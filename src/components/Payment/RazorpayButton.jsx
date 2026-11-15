@@ -45,6 +45,7 @@ const RazorpayButton = ({ amount, bookingData, onSuccess, onError }) => {
 
     setLoading(true);
     const token = authToken || localStorage.getItem('authToken');
+    const idempotencyKey = crypto.randomUUID();
 
     try {
       requireApiBaseUrl();
@@ -58,7 +59,8 @@ const RazorpayButton = ({ amount, bookingData, onSuccess, onError }) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            'Idempotency-Key': idempotencyKey
           },
           body: JSON.stringify({
             ...bookingData,

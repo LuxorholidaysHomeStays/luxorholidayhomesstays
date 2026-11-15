@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../../config/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import PaginationControls from '../PaginationControls';
 import {
   TrashIcon,
   PlusIcon,
@@ -23,20 +24,22 @@ const Newsletter = () => {
   const [campaignSubject, setCampaignSubject] = useState('');
   const [campaignBody, setCampaignBody] = useState('');
   const [sendingCampaign, setSendingCampaign] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 50, total: 0, hasMore: false });
 
   const { authToken } = useAuth();
   const { addToast } = useToast();
 
   useEffect(() => {
     fetchSubscribers();
-  }, []);
+  }, [page]);
 
   const fetchSubscribers = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/newsletter`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/newsletter?page=${page}&pageSize=50`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -52,6 +55,7 @@ const Newsletter = () => {
 
       if (data.success) {
         setSubscribers(data.subscribers || []);
+        setPagination(data.pagination || { page, pageSize: 50, total: (data.subscribers || []).length, hasMore: false });
       } else {
         throw new Error(data.error || 'Failed to fetch subscribers');
       }
@@ -367,6 +371,7 @@ const Newsletter = () => {
           </div>
         </div>
       )}
+      <PaginationControls {...pagination} onPageChange={setPage} />
 
       {/* Send Campaign Form */}
       {showCampaignForm && (

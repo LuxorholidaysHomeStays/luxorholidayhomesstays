@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { Calendar, MapPin, Users, CheckCircle, Clock, AlertCircle, CreditCard, Home } from 'lucide-react';
+import PaginationControls from '../components/PaginationControls';
 
 // Helper function to format time from 24-hour to 12-hour format
 const formatTimeFor12Hour = (time24) => {
@@ -90,6 +91,8 @@ const MyBookings = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all'); // New state for active filter
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 10, total: 0, hasMore: false });
   const navigate = useNavigate();
   const { userData, authToken } = useAuth();
 
@@ -101,7 +104,7 @@ const MyBookings = () => {
       return;
     }
     fetchBookings();
-  }, [authToken, navigate]);
+  }, [authToken, navigate, page]);
   
   // Apply filter whenever bookings or activeFilter changes
   useEffect(() => {
@@ -125,7 +128,7 @@ const MyBookings = () => {
       
       // Never log token material, even truncated: it is a bearer credential.
       
-      const response = await fetch(`${API_BASE_URL}/api/bookings/my`, {
+      const response = await fetch(`${API_BASE_URL}/api/bookings/my?page=${page}&pageSize=10`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -156,6 +159,7 @@ const MyBookings = () => {
       console.log("Fetched bookings data:", data); // Debug log to see the actual structure
       const allBookings = data.bookings || [];
       setBookings(allBookings);
+      setPagination(data.pagination || { page, pageSize: 10, total: allBookings.length, hasMore: false });
       setFilteredBookings(allBookings); // Initially show all bookings
     } catch (err) {
       console.log("Error fetching bookings:", err);
@@ -508,6 +512,7 @@ const MyBookings = () => {
             ))}
           </div>
         )}
+        <PaginationControls {...pagination} onPageChange={setPage} />
       </div>
     </div>
   );

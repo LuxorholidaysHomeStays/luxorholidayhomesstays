@@ -269,6 +269,47 @@ export default function VillaInfo({
         </div>
       </div>
 
+      {/* Opal Villa Pricing Structure & Terms Section */}
+      {(villa?.name || "").trim().toLowerCase() === "opal villa" && (
+        <div className="space-y-4 pt-2">
+          <hr className="border-gray-200" />
+          <h2 className="text-xl font-bold text-gray-900">Villa Opul Pricing & Packages</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="border border-gray-200 rounded-2xl p-4 bg-gray-50/70 space-y-2">
+              <span className="text-xs font-bold text-[#ca8a04] uppercase tracking-wider">Standard Nightly Rates</span>
+              <ul className="text-xs text-gray-700 space-y-1.5 pt-1">
+                <li className="flex justify-between"><span>Monday – Thursday:</span> <strong className="text-gray-900">₹40,000 / night</strong></li>
+                <li className="flex justify-between"><span>Friday:</span> <strong className="text-gray-900">₹45,000 / night</strong></li>
+                <li className="flex justify-between"><span>Saturday:</span> <strong className="text-gray-900">₹65,000 / night</strong></li>
+                <li className="flex justify-between"><span>Sunday:</span> <strong className="text-gray-900">₹45,000 / night</strong></li>
+                <li className="pt-1 text-[11px] text-gray-500 italic">• Minimum stay: 2 nights across all dates</li>
+              </ul>
+            </div>
+
+            <div className="border border-gray-200 rounded-2xl p-4 bg-gray-50/70 space-y-2">
+              <span className="text-xs font-bold text-green-700 uppercase tracking-wider">Length-of-Stay Discounts</span>
+              <ul className="text-xs text-gray-700 space-y-1.5 pt-1">
+                <li className="flex justify-between"><span>2 – 3 nights:</span> <span>No discount</span></li>
+                <li className="flex justify-between"><span>4 – 6 nights:</span> <strong className="text-green-700">5% discount</strong></li>
+                <li className="flex justify-between"><span>7 – 13 nights:</span> <strong className="text-green-700">10% discount</strong></li>
+                <li className="flex justify-between"><span>14 – 27 nights:</span> <strong className="text-green-700">15% discount (Approval req.)</strong></li>
+                <li className="flex justify-between"><span>28+ nights:</span> <strong className="text-blue-700">Custom quotation</strong></li>
+                <li className="pt-1 text-[11px] text-gray-500 italic">• Applied on standard villa accommodation</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="border border-amber-200 rounded-2xl p-4 bg-amber-50/40 text-xs text-gray-700 space-y-1.5">
+            <div className="font-bold text-gray-900 flex items-center gap-1.5">
+              <span>Horizon Suite Add-On:</span>
+              <span className="text-[#ca8a04]">₹25,000 / night</span>
+            </div>
+            <p className="text-gray-600">Available exclusively with a full-villa reservation. Adds 2 additional guest capacity (up to 12 registered guests total).</p>
+          </div>
+        </div>
+      )}
+
       {/* Divider */}
       <hr className="border-gray-200" />
 
