@@ -32,7 +32,8 @@ export default function UnifiedCalendar({
   onDateSelect,
   villa,
   blockedDates = [],
-  isModal = true
+  isModal = true,
+  selectedPackage = "standard_full"
 }) {
   // Always the 1st of the month. Carrying today's day-of-month into setMonth
   // arithmetic makes JavaScript roll over (31 Jan + 1 month -> 3 Mar), which
@@ -143,7 +144,25 @@ export default function UnifiedCalendar({
 
   // Helper function to check if a date is blocked (backward compatibility)
   const isDateBlocked = (date) => {
-    return getDateBlockInfo(date).isBlocked
+    if (getDateBlockInfo(date).isBlocked) return true;
+
+    // Check package-specific day-of-week eligibility for Opal Villa
+    if ((villa?.name || "").trim().toLowerCase() === "opal villa") {
+      const day = date.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+      if (selectedPackage === "midweek_couple_regular" || selectedPackage === "midweek_couple_horizon") {
+        // Mon-Thu only for stay nights (Mon=1, Tue=2, Wed=3, Thu=4). Fri/Sat/Sun cannot be check-in nights
+        if (day === 5 || day === 6 || day === 0) {
+          return true;
+        }
+      } else if (selectedPackage === "midweek_family") {
+        // Sun-Thu only (Sun=0, Mon=1, Tue=2, Wed=3, Thu=4). Fri/Sat cannot be stay nights
+        if (day === 5 || day === 6) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   // Helper function to check if a date range overlaps with any blocked dates
@@ -188,7 +207,20 @@ export default function UnifiedCalendar({
 
       if ((villa?.name || "").trim().toLowerCase() === "opal villa") {
         const nights = (new Date(`${finalCheckOut}T00:00:00`) - new Date(`${finalCheckIn}T00:00:00`)) / 86400000
-        if (nights < 2) return
+        const minNights = selectedPackage === "midweek_family" ? 3 : 2
+        if (nights < minNights) return
+
+        // Verify that every night in the range is valid for the package
+        const checkStart = new Date(`${finalCheckIn}T00:00:00`)
+        const checkEnd = new Date(`${finalCheckOut}T00:00:00`)
+        for (let d = new Date(checkStart); d < checkEnd; d.setDate(d.getDate() + 1)) {
+          const day = d.getDay()
+          if (selectedPackage === "midweek_couple_regular" || selectedPackage === "midweek_couple_horizon") {
+            if (day === 5 || day === 6 || day === 0) return // cannot include Friday, Saturday, Sunday night
+          } else if (selectedPackage === "midweek_family") {
+            if (day === 5 || day === 6) return // cannot include Friday or Saturday night
+          }
+        }
       }
 
       if (doesRangeOverlapBlocked(finalCheckIn, finalCheckOut)) {

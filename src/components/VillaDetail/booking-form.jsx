@@ -295,11 +295,24 @@ export default function BookingForm({
                   <label
                     key={pkg.id}
                     onClick={() => {
-                      setSelectedPackage(pkg.id)
-                      if (pkg.id === "villa_horizon_suite" || pkg.id === "midweek_couple_horizon") {
-                        setIncludeHorizonSuite(true)
-                      } else {
-                        setIncludeHorizonSuite(false)
+                      if (selectedPackage !== pkg.id) {
+                        setSelectedPackage(pkg.id)
+                        if (pkg.id === "villa_horizon_suite" || pkg.id === "midweek_couple_horizon") {
+                          setIncludeHorizonSuite(true)
+                        } else {
+                          setIncludeHorizonSuite(false)
+                        }
+
+                        // When switching to a midweek package or between packages,
+                        // reset existing dates so an invalid span (e.g. over a weekend) is not carried over,
+                        // and immediately prompt the user to choose valid dates for the package.
+                        if (onDateChange) {
+                          onDateChange("", "")
+                        }
+                        toast.info(`Switched to ${pkg.name}. Please select your stay dates.`)
+                        setTimeout(() => {
+                          handleOpenCalendar()
+                        }, 200)
                       }
                     }}
                     className={`block p-3 rounded-xl border text-left cursor-pointer transition-all ${
@@ -559,6 +572,7 @@ export default function BookingForm({
         villa={villa}
         blockedDates={blockedDates}
         isModal={true}
+        selectedPackage={isOpal ? selectedPackage : "standard_full"}
       />
     </div>
   )
