@@ -38,6 +38,30 @@ export const villaImageCollections = {
     "/opal/opal13.jpg", "/opal/opal14.jpg", "/opal/opal15.jpg", "/opal/opal16.jpg",
     "/opal/opal17.jpg", "/opal/opal18.jpg", "/opal/opal19.jpg", "/opal/opal20.jpg",
     "/opal/opal21.jpg", "/opal/opal22.jpg"
+  ],
+  "Hermes Villa 4Bhk": [
+    "/hermesvilla/hermes1.jpg", "/hermesvilla/hermes2.jpg", "/hermesvilla/hermes3.jpg", "/hermesvilla/hermes4.jpg",
+    "/hermesvilla/hermes5.jpg", "/hermesvilla/hermes6.jpg", "/hermesvilla/hermes7.jpg", "/hermesvilla/hermes8.jpg",
+    "/hermesvilla/hermes9.jpg", "/hermesvilla/hermes10.jpg", "/hermesvilla/hermes11.jpg", "/hermesvilla/hermes12.jpg",
+    "/hermesvilla/hermes13.jpg", "/hermesvilla/hermes14.jpg", "/hermesvilla/hermes15.jpg", "/hermesvilla/hermes16.jpg",
+    "/hermesvilla/hermes17.jpg", "/hermesvilla/hermes18.jpg", "/hermesvilla/hermes19.jpg", "/hermesvilla/hermes20.jpg",
+    "/hermesvilla/hermes21.jpg"
+  ],
+  "Ram New Water Villa 5Bhk": [
+    "/ramnewwatervilla/ramnew1.jpg", "/ramnewwatervilla/ramnew2.jpg", "/ramnewwatervilla/ramnew3.jpg", "/ramnewwatervilla/ramnew4.jpg",
+    "/ramnewwatervilla/ramnew5.jpg", "/ramnewwatervilla/ramnew6.jpg", "/ramnewwatervilla/ramnew7.jpg", "/ramnewwatervilla/ramnew8.jpg",
+    "/ramnewwatervilla/ramnew9.jpg", "/ramnewwatervilla/ramnew10.jpg", "/ramnewwatervilla/ramnew11.jpg", "/ramnewwatervilla/ramnew12.jpg",
+    "/ramnewwatervilla/ramnew13.jpg", "/ramnewwatervilla/ramnew14.jpg", "/ramnewwatervilla/ramnew15.jpg", "/ramnewwatervilla/ramnew16.jpg",
+    "/ramnewwatervilla/ramnew17.jpg", "/ramnewwatervilla/ramnew18.jpg", "/ramnewwatervilla/ramnew19.jpg", "/ramnewwatervilla/ramnew20.jpg",
+    "/ramnewwatervilla/ramnew21.jpg"
+  ],
+  "Rooftop Villa 2Bhk": [
+    "/rooftopvilla/rooftop1.jpg", "/rooftopvilla/rooftop2.jpg", "/rooftopvilla/rooftop3.jpg", "/rooftopvilla/rooftop4.jpg",
+    "/rooftopvilla/rooftop5.jpg", "/rooftopvilla/rooftop6.jpg", "/rooftopvilla/rooftop7.jpg", "/rooftopvilla/rooftop8.jpg",
+    "/rooftopvilla/rooftop9.jpg", "/rooftopvilla/rooftop10.jpg", "/rooftopvilla/rooftop11.jpg", "/rooftopvilla/rooftop12.jpg",
+    "/rooftopvilla/rooftop13.jpg", "/rooftopvilla/rooftop14.jpg", "/rooftopvilla/rooftop15.jpg", "/rooftopvilla/rooftop16.jpg",
+    "/rooftopvilla/rooftop17.jpg", "/rooftopvilla/rooftop18.jpg", "/rooftopvilla/rooftop19.jpg", "/rooftopvilla/rooftop20.jpg",
+    "/rooftopvilla/rooftop21.jpg", "/rooftopvilla/rooftop22.jpg", "/rooftopvilla/rooftop23.jpg"
   ]
 };
 
@@ -62,6 +86,11 @@ export const getBestMatchingVillaImages = (villaName = "") => {
   }
 
   const nameKeywords = {
+    "hermes": "Hermes Villa 4Bhk",
+    "rooftop": "Rooftop Villa 2Bhk",
+    "ram new": "Ram New Water Villa 5Bhk",
+    "new ram": "Ram New Water Villa 5Bhk",
+    "ramnew": "Ram New Water Villa 5Bhk",
     "opal": "Opal Villa",
     "amrith": "Amrith Palace",
     "palace": "Amrith Palace",

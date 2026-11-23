@@ -29,6 +29,9 @@ const villaImageMap = {
   "Lavish Villa III": "/LavishVilla 3/lvthree5.jpg",
   "Opal Villa": "/opal/opal5.jpg",
   "Opal": "/opal/opal5.jpg",
+  "Hermes Villa 4Bhk": "/hermesvilla/hermes1.jpg",
+  "Ram New Water Villa 5Bhk": "/ramnewwatervilla/ramnew1.jpg",
+  "Rooftop Villa 2Bhk": "/rooftopvilla/rooftop1.jpg",
   default: "/AmrithPalace/AP8.jpg",
 }
 

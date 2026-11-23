@@ -46,7 +46,19 @@ const villaDescriptions = {
 
   "Opal Villa": `Opal Villa is an ultra-luxurious 4BHK private sanctuary located along the scenic East Coast Road (ECR), Chennai. Featuring cutting-edge contemporary architecture, the villa boasts a stunning private swimming pool, sun-drenched deck, spacious air-conditioned living areas, and en-suite designer bedrooms.
 
-  With lush private landscaped gardens, gourmet kitchen amenities, and close proximity to the beach, Opal Villa is the quintessential luxury haven for family retreats, celebrations, and peaceful weekends.`
+  With lush private landscaped gardens, gourmet kitchen amenities, and close proximity to the beach, Opal Villa is the quintessential luxury haven for family retreats, celebrations, and peaceful weekends.`,
+
+  "Hermes Villa 4Bhk": `Hermes Villa is an exclusive 1-acre private luxury 4BHK beach house located in Akkarai, ECR, just a 200-metre walk from the famous Kaka Beach. Perfect for family vacations, friends' get-togethers, corporate gatherings, and intimate celebrations, Hermes Villa offers a spacious and relaxing atmosphere surrounded by beautiful outdoor spaces.
+
+  Features 4 spacious bedrooms, 5 bathrooms, accommodation for up to 15 guests, private swimming pool (4–5 feet depth), a massive landscaped lawn ideal for outdoor celebrations, and parking for up to 10 cars with 24/7 caretaker service.`,
+
+  "Ram New Water Villa 5Bhk": `Ram New Water Villa is a magnificent newly constructed 5BHK private luxury villa situated in the coastal beauty of Nemmeli, Chennai ECR. Designed with modern architecture and premium comfort, this villa offers 5 air-conditioned bedrooms, a spacious air-conditioned hall, and top-tier amenities.
+
+  The villa features a crystal-clear private swimming pool, fully equipped kitchen, power backup, and peaceful beachside surroundings, accommodating up to 15 guests with comfort.`,
+
+  "Rooftop Villa 2Bhk": `Rooftop 2BHK Private Villa by Luxor Holiday Home Stays is an exclusive rooftop retreat located in Nemmeli, Chennai ECR. Perfect for couples, small families, and friends looking for a peaceful getaway.
+
+  Features 2 spacious AC bedrooms with Hall AC, an exclusive rooftop private swimming pool experience, party speaker, TV, free Wi-Fi, basic kitchen amenities, refrigerator, inverter power backup, and dedicated caretaker service for up to 6 guests.`
 }
 
 const villaLocations = {
@@ -84,6 +96,27 @@ const villaLocations = {
     description: "Scenic and serene location along ECR with private pool and quick beach access",
     mapUrl: "https://maps.google.com/?q=ECR+Chennai",
     nearbyAttractions: ["ECR Beach - 5 min walk", "Muttukadu Backwaters - 10 min drive", "Covelong Beach - 12 min drive"]
+  },
+  "Hermes Villa 4Bhk": {
+    address: "Akkarai, East Coast Road, Chennai, Tamil Nadu",
+    coordinates: "12.8710° N, 80.2460° E",
+    description: "Exclusive 1-acre property in Akkarai, 200m walk from Kaka Beach",
+    mapUrl: "https://maps.google.com/?q=Akkarai+ECR+Chennai",
+    nearbyAttractions: ["Kaka Beach - 200m walk", "Sholinganallur - 10 min drive", "VGP Universal Kingdom - 5 min drive"]
+  },
+  "Ram New Water Villa 5Bhk": {
+    address: "Nemmeli, East Coast Road, Chennai, Tamil Nadu",
+    coordinates: "12.7215° N, 80.2010° E",
+    description: "Serene coastal setting in Nemmeli with pristine beaches and tranquility",
+    mapUrl: "https://maps.google.com/?q=Nemmeli+ECR+Chennai",
+    nearbyAttractions: ["Nemmeli Beach - 5 min walk", "Mahabalipuram - 15 min drive", "Crocodile Bank - 8 min drive"]
+  },
+  "Rooftop Villa 2Bhk": {
+    address: "Nemmeli, East Coast Road, Chennai, Tamil Nadu",
+    coordinates: "12.7215° N, 80.2010° E",
+    description: "Relaxing private rooftop pool villa in Nemmeli along scenic ECR",
+    mapUrl: "https://maps.google.com/?q=Nemmeli+ECR+Chennai",
+    nearbyAttractions: ["Nemmeli Beach - 5 min walk", "Mahabalipuram - 15 min drive", "Muttukadu Boat House - 15 min drive"]
   }
 }
 

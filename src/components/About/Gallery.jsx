@@ -48,6 +48,33 @@ const VILLA_COLLECTIONS = [
       villa: 'Empire Anand Villa',
       tag: 'Royal Samudra'
     }))
+  },
+  {
+    id: 'hermesVilla',
+    name: 'Hermes Villa',
+    images: Array.from({ length: 5 }, (_, i) => ({
+      url: `/hermesvilla/hermes${i + 1}.jpg`,
+      villa: 'Hermes Villa 4Bhk',
+      tag: 'Beach House Luxury'
+    }))
+  },
+  {
+    id: 'ramNewWaterVilla',
+    name: 'Ram New Water Villa',
+    images: Array.from({ length: 5 }, (_, i) => ({
+      url: `/ramnewwatervilla/ramnew${i + 1}.jpg`,
+      villa: 'Ram New Water Villa 5Bhk',
+      tag: 'Coastal Sanctuary'
+    }))
+  },
+  {
+    id: 'rooftopVilla',
+    name: 'Rooftop Villa',
+    images: Array.from({ length: 5 }, (_, i) => ({
+      url: `/rooftopvilla/rooftop${i + 1}.jpg`,
+      villa: 'Rooftop Villa 2Bhk',
+      tag: 'Rooftop Pool Retreat'
+    }))
   }
 ];
 

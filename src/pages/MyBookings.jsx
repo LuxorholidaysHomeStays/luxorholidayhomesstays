@@ -38,6 +38,9 @@ import LAV1 from "../assets/villas/LavishVilla 1/lvone18.jpg"
 import LAV2 from "../assets/villas/LavishVilla 2/lvtwo22.jpg"
 import LAV3  from "../assets/villas/LavishVilla 3/lvthree5.jpg"
 import OPAL5 from "../assets/villas/opal/opal5.jpg"
+import HERMES1 from "../assets/villas/hermesvilla/hermes1.jpg"
+import RAMNEW1 from "../assets/villas/ramnewwatervilla/ramnew1.jpg"
+import ROOFTOP1 from "../assets/villas/rooftopvilla/rooftop1.jpg"
 
 // Villa image mapping for each villa type
 const villaImageMap = {
@@ -50,6 +53,9 @@ const villaImageMap = {
   "Lavish Villa III": LAV3,
   "Opal Villa": OPAL5,
   "Opal": OPAL5,
+  "Hermes Villa 4Bhk": HERMES1,
+  "Ram New Water Villa 5Bhk": RAMNEW1,
+  "Rooftop Villa 2Bhk": ROOFTOP1,
   "default": AP1  // Default image if no match found
 };
 
@@ -64,7 +70,13 @@ const getVillaImage = (villaName) => {
   
   // Case insensitive partial match
   const lowerName = villaName.toLowerCase();
-  if (lowerName.includes('opal')) {
+  if (lowerName.includes('hermes')) {
+    return villaImageMap["Hermes Villa 4Bhk"];
+  } else if (lowerName.includes('rooftop')) {
+    return villaImageMap["Rooftop Villa 2Bhk"];
+  } else if (lowerName.includes('ram new') || lowerName.includes('new ram') || lowerName.includes('ramnew')) {
+    return villaImageMap["Ram New Water Villa 5Bhk"];
+  } else if (lowerName.includes('opal')) {
     return villaImageMap["Opal Villa"];
   } else if (lowerName.includes('amrith') || lowerName.includes('palace')) {
     return villaImageMap["Amrith Palace"];
