@@ -265,6 +265,70 @@ const HelpCenter = () => {
         minStay: "1 night",
         mapLink: "https://maps.app.goo.gl/D1iCT5tYpnmbuHQr7",
         description: "Empire Anand Villa Samudra is a luxurious 6BHK private villa located in Kovalam (ECR). It offers private beach access, making it perfect for a serene coastal getaway. The villa features spacious, modern interiors equipped with high-end amenities and can accommodate 15-20 people."
+      },
+      "hermes villa": {
+        location: "Akkarai ECR, Chennai",
+        bedrooms: 4,
+        bathrooms: 5,
+        maxOccupancy: 15,
+        amenities: [
+          "Private swimming pool (4-5 ft)",
+          "Huge landscaped lawn",
+          "Spacious car parking (10 cars)",
+          "200m from Kaka Beach",
+          "WiFi",
+          "AC in all bedrooms",
+          "Kitchen",
+          "24/7 caretaker service"
+        ],
+        priceRange: "₹20,000 - ₹35,000 per night",
+        weekdayPrice: "₹20,000",
+        weekendPrice: "₹35,000",
+        events: "Events price varies depending on the events",
+        minStay: "1 night",
+        description: "Hermes Villa is an exclusive 1-acre luxury 4BHK private beach house in Akkarai, ECR, just 200m walk from Kaka Beach with swimming pool and massive celebration lawn."
+      },
+      "ram new water villa": {
+        location: "Nemmeli ECR, Chennai",
+        bedrooms: 5,
+        bathrooms: 5,
+        maxOccupancy: 15,
+        amenities: [
+          "Private swimming pool",
+          "5 AC bedrooms with AC hall",
+          "WiFi",
+          "Kitchen",
+          "Parking",
+          "Beach proximity",
+          "Caretaker service"
+        ],
+        priceRange: "₹32,000 - ₹42,000 per night",
+        weekdayPrice: "₹32,000",
+        weekendPrice: "₹42,000",
+        minStay: "1 night",
+        description: "Ram New Water Villa is a stunning new 5BHK luxury private sanctuary in Nemmeli, Chennai ECR featuring private swimming pool and modern amenities for up to 15 guests."
+      },
+      "rooftop villa": {
+        location: "Nemmeli ECR, Chennai",
+        bedrooms: 2,
+        bathrooms: 2,
+        maxOccupancy: 6,
+        amenities: [
+          "Rooftop private swimming pool",
+          "2AC bedrooms with Hall AC",
+          "TV",
+          "Party speaker",
+          "Free Wi-Fi",
+          "Refrigerator",
+          "Basic kitchen facilities",
+          "Power backup (Inverter)",
+          "Caretaker service"
+        ],
+        priceRange: "₹8,500 - ₹15,500 per night",
+        weekdayPrice: "₹8,500",
+        weekendPrice: "₹15,500",
+        minStay: "1 night",
+        description: "Rooftop 2BHK Private Villa is an exclusive private rooftop retreat in Nemmeli, Chennai ECR with rooftop swimming pool, party speaker, and AC throughout, accommodating up to 6 guests."
       }
     };
 

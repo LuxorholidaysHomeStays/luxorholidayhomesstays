@@ -298,6 +298,10 @@ const GuestReviews = () => {
                   <option value="Lavish Villa 1">Lavish Villa 1</option>
                   <option value="Lavish Villa 2">Lavish Villa 2</option>
                   <option value="Lavish Villa 3">Lavish Villa 3</option>
+                  <option value="Opal Villa">Opal Villa</option>
+                  <option value="Hermes Villa 4Bhk">Hermes Villa 4Bhk</option>
+                  <option value="Ram New Water Villa 5Bhk">Ram New Water Villa 5Bhk</option>
+                  <option value="Rooftop Villa 2Bhk">Rooftop Villa 2Bhk</option>
                 </select>
               </div>
               <div>

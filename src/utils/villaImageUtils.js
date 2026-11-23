@@ -196,6 +196,39 @@ export const createFallbackProperties = () => {
       guests: 10,
       rating: 4.8,
       description: "Luxurious contemporary villa featuring private pool, elegant living spaces, and top-tier amenities."
+    },
+    {
+      name: "Hermes Villa 4Bhk",
+      location: "Akkarai ECR, Chennai",
+      price: 20000,
+      weekendPrice: 35000,
+      bedrooms: 4,
+      bathrooms: 5,
+      guests: 15,
+      rating: 4.9,
+      description: "Exclusive 1-acre luxury 4BHK private beach house in Akkarai, ECR, 200m from Kaka Beach with private swimming pool and huge landscaped lawn."
+    },
+    {
+      name: "Ram New Water Villa 5Bhk",
+      location: "Nemmeli ECR, Chennai",
+      price: 32000,
+      weekendPrice: 42000,
+      bedrooms: 5,
+      bathrooms: 5,
+      guests: 15,
+      rating: 4.9,
+      description: "Stunning new 5BHK luxury private villa in Nemmeli, Chennai ECR featuring private swimming pool, spacious AC bedrooms and premium amenities."
+    },
+    {
+      name: "Rooftop Villa 2Bhk",
+      location: "Nemmeli ECR, Chennai",
+      price: 8500,
+      weekendPrice: 15500,
+      bedrooms: 2,
+      bathrooms: 2,
+      guests: 6,
+      rating: 4.85,
+      description: "Luxor Holiday Home Stays Rooftop 2BHK Private Villa in Nemmeli, Chennai ECR with exclusive rooftop swimming pool, perfect for couples and families."
     }
   ];
 

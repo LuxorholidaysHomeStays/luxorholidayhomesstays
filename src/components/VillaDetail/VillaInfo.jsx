@@ -151,6 +151,36 @@ const similarVillasList = [
     reviewsCount: 29,
     image: "/eastcoastvilla/EC1.jpg",
     specs: "3 Beds · 15 Guests"
+  },
+  {
+    id: "hermes-villa-4bhk",
+    name: "Hermes Villa 4Bhk",
+    location: "Akkarai, ECR",
+    price: 20000,
+    rating: 4.9,
+    reviewsCount: 31,
+    image: "/hermesvilla/hermes1.jpg",
+    specs: "4 Beds · 15 Guests"
+  },
+  {
+    id: "ram-new-water-villa-5bhk",
+    name: "Ram New Water Villa 5Bhk",
+    location: "Nemmeli, ECR",
+    price: 32000,
+    rating: 4.9,
+    reviewsCount: 25,
+    image: "/ramnewwatervilla/ramnew1.jpg",
+    specs: "5 Beds · 15 Guests"
+  },
+  {
+    id: "rooftop-villa-2bhk",
+    name: "Rooftop Villa 2Bhk",
+    location: "Nemmeli, ECR",
+    price: 8500,
+    rating: 4.85,
+    reviewsCount: 22,
+    image: "/rooftopvilla/rooftop1.jpg",
+    specs: "2 Beds · 6 Guests"
   }
 ]
 
