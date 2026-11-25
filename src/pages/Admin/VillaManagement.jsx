@@ -45,6 +45,7 @@ const VillaManagement = () => {
     description: "",
     location: "",
     price: 0,
+    weekendPrice: 0,
     maxGuests: 1,
     bedrooms: 1,
     bathrooms: 1,
@@ -216,7 +217,7 @@ const VillaManagement = () => {
       const villaData = {
         name: formData.name,
         description: formData.description || "Luxury villa with premium amenities.",
-        longDescription: formData.longDescription || formData.description || "Experience unparalleled luxury in our stunning villa...",
+        longDescription: editingVilla?.longDescription || formData.longDescription || formData.description || "Experience unparalleled luxury in our stunning villa...",
         location: formData.location || "Perur ECR, Chennai",
         price: priceVal,
         weekdayPrice: priceVal,
@@ -225,8 +226,8 @@ const VillaManagement = () => {
         bedrooms: parseInt(formData.bedrooms) || 1,
         bathrooms: parseInt(formData.bathrooms) || 1,
         mainImage: finalImage,
-        images: [finalImage],
-        amenities: ["WiFi", "AC", "Private Pool", "Free Parking", "Kitchen"],
+        images: editingVilla?.images?.length ? editingVilla.images : [finalImage],
+        amenities: editingVilla?.amenities?.length ? editingVilla.amenities : ["WiFi", "AC", "Private Pool", "Free Parking", "Kitchen"],
       };
       
       console.log("Submitting villa data to Go backend:", villaData);
@@ -264,6 +265,7 @@ const VillaManagement = () => {
         description: "",
         location: "",
         price: 0,
+        weekendPrice: 0,
         maxGuests: 1,
         bedrooms: 1,
         bathrooms: 1,
@@ -289,12 +291,15 @@ const VillaManagement = () => {
   }
 
   const handleEdit = async (villa) => {
+    const weekday = villa.weekdayPrice || villa.price || 0;
+    const weekend = villa.weekendPrice || Math.round(weekday * 1.5);
     setEditingVilla(villa);
     setFormData({
       name: villa.name || '',
       description: villa.description || '',
       location: villa.location || '',
-      price: villa.price || villa.weekdayPrice || 0,
+      price: weekday,
+      weekendPrice: weekend,
       maxGuests: villa.guests || villa.maxGuests || 1,
       bedrooms: villa.bedrooms || 1,
       bathrooms: villa.bathrooms || 1,
@@ -489,11 +494,24 @@ const VillaManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price per Night (₹)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Weekday Price / Night (₹)</label>
                   <input
                     type="number"
                     name="price"
                     value={formData.price}
+                    onChange={handleChange}
+                    min="0"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Weekend Price / Night (₹)</label>
+                  <input
+                    type="number"
+                    name="weekendPrice"
+                    value={formData.weekendPrice}
                     onChange={handleChange}
                     min="0"
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -669,10 +687,15 @@ const VillaManagement = () => {
               </div>
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <BanknotesIcon className="h-5 w-5 text-green-600 mr-1 flex-shrink-0" />
-                  <span className="text-lg font-semibold text-green-600">₹{villa.price.toLocaleString()}</span>
-                  <span className="text-gray-500 text-sm ml-1">/night</span>
+                <div className="flex flex-col">
+                  <div className="flex items-center">
+                    <BanknotesIcon className="h-5 w-5 text-green-600 mr-1 flex-shrink-0" />
+                    <span className="text-base font-semibold text-green-600">₹{(villa.weekdayPrice || villa.price || 0).toLocaleString()}</span>
+                    <span className="text-gray-500 text-xs ml-1">/weekday</span>
+                  </div>
+                  <div className="text-xs text-gray-600 ml-6">
+                    Weekend: <span className="font-semibold text-amber-700">₹{(villa.weekendPrice || Math.round((villa.weekdayPrice || villa.price || 0) * 1.5)).toLocaleString()}</span>
+                  </div>
                 </div>
                 <div className="flex space-x-2">
                   <button
