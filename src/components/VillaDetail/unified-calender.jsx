@@ -362,7 +362,7 @@ export default function UnifiedCalendar({
                     ? (selectedPackage === "midweek_family" 
                         ? "Not available for Midweek Family Stay (Sun-Thu nights only)" 
                         : "Not available for Midweek Couple's Retreat (Mon-Thu nights only)")
-                    : isBlocked
+                    : !isPast && isBlocked
                       ? (blockType === 'booking' ? "Already booked" : `Blocked: ${blockInfo.reason || 'Not available'}`)
                       : undefined
                 }
@@ -382,7 +382,7 @@ export default function UnifiedCalendar({
                     )}
                   </div>
                 )}
-                {isBlocked && isCurrentMonth && (
+                {isBlocked && isCurrentMonth && !isPast && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     {blockType === 'booking' ? (
                       // Red X for bookings

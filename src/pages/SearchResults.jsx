@@ -127,7 +127,7 @@ const SearchResults = () => {
         setVillas(results)
       } catch (err) {
         if (err.name === "AbortError") return
-        setError("Failed to fetch villa search results.")
+        setError("Our server is temporarily unavailable — we will be back soon! Please try again in a few moments.")
         console.error("Fetch error:", err)
       } finally {
         setLoading(false)

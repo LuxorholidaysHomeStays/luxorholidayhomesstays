@@ -509,6 +509,8 @@ const AllRooms = () => {
             // as unknown instead of random data the guest would rely on.
             location: villa.location || "",
             price: price,
+            weekdayPrice: Number(villa.weekdayPrice) || price,
+            weekendPrice: Number(villa.weekendPrice) || Number(villa.weekendprice) || 0,
             description: villa.description || "",
             images: images,
             guests: villa.guests || 0,

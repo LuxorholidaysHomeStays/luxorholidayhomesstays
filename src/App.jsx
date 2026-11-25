@@ -9,6 +9,8 @@ import { ToastProvider } from './context/ToastContext';
 import Toast from './components/Toast';
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
+import { ServerStatusProvider } from './context/ServerStatusContext';
+import ServerStatusBanner from './components/ServerStatusBanner';
 
 // Always loaded components
 import Navbar from './components/Navbar'
@@ -142,10 +144,12 @@ function App() {
 
   return (
     <AuthProvider>
-      <ToastProvider>
-        <LanguageProvider>
-          <SEOHead {...getDefaultSEO()} />
-          <div className="w-full max-w-[100vw] overflow-x-hidden">
+      <ServerStatusProvider>
+        <ToastProvider>
+          <LanguageProvider>
+            <SEOHead {...getDefaultSEO()} />
+            <ServerStatusBanner />
+            <div className="w-full max-w-[100vw] overflow-x-hidden">
             {!hideNavbar && <Navbar />}
             <div className={`min-h-[90vh] ${hideNavbar ? '' : 'pt-[3rem] md:pt-[4rem]'}`}>
               <ErrorBoundary>
@@ -339,6 +343,7 @@ function App() {
           <Toast />
         </LanguageProvider>
       </ToastProvider>
+      </ServerStatusProvider>
     </AuthProvider>
   );
 }

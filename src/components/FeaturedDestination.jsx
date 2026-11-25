@@ -414,6 +414,8 @@ export const FeaturedDestination = () => {
             rooms: Number(villa.bedrooms) || 0,
             baths: Number(villa.bathrooms) || 0,
             price: Number(villa.price) || 0,
+            weekdayPrice: Number(villa.weekdayPrice) || Number(villa.price) || 0,
+            weekendPrice: Number(villa.weekendPrice) || Number(villa.weekendprice) || 0,
             formattedPrice: villa.price ? `₹${Number(villa.price).toLocaleString()}` : "Price on request",
             featuredImage: featuredImage, // Single image for carousel
             images: images, // All images for detail view
