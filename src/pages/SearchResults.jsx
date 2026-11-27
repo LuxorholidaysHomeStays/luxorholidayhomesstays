@@ -459,7 +459,7 @@ const SearchResults = () => {
                       </div>
                       
                       <Link
-                        to={`/villas/${villa._id}`}
+                        to={`/villa/${villa._id}`}
                         className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-all text-sm sm:text-base ${
                           villa.isBooked
                             ? "bg-gray-100 text-gray-500 cursor-not-allowed"
